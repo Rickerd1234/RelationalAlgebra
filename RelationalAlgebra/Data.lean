@@ -1,66 +1,70 @@
 import Mathlib.Data.Set.Basic
-import Mathlib.Data.FinSet.Defs
+open Lean List
 
--- Alias for collection to easily try different types
-abbrev Collection := Array
+-- Define Attribute as a name
+abbrev Attribute := String
 
--- Variable part of the relational model
-inductive Attribute where
-  | a1
-  | a2
-  | a3
-  | b1
-  | b2
-  | b3
+-- Define Relation as a name
+abbrev Relation := String
 
-inductive Relation where
-  | R
-  | S
+-- Define a Value type for possible attribute values
+inductive Value
+  | Int : Int → Value
+  | Str : String → Value
+  | Bool : Bool → Value
+  | Null : Value
+  deriving Repr, BEq
 
-abbrev ValueType := Option String
+-- Define a Domain as a function that checks if a value is valid
+abbrev Domain := Value → Bool
 
+-- Define domains for attributes
+def intDomain : Domain
+  | .Int _ => true
+  | _ => false
 
--- Types for the general relational model
-abbrev RelationSchema := Collection Attribute
+def int?Domain : Domain
+  | .Int _ => true
+  | .Null => true
+  | _ => false
 
-abbrev TupleValues := Collection ValueType
+def strDomain : Domain
+  | .Str _ => true
+  | _ => false
 
-abbrev Tuple := Attribute → ValueType
+def mixDomain : Domain
+  | .Str _ => true
+  | .Int _ => true
+  | _ => false
 
-abbrev RelationInstance := Collection Tuple
+-- A Relation Schema is a finite set of attributes with associated domains
+structure RelationSchema where
+  attributes : List (Attribute × Domain)
+  nodup : Nodup (attributes.map Prod.fst)
 
+def RelationSchema.isValidValuePair (sch : RelationSchema) (AV : Attribute × Value) : Bool :=
+  ((sch.attributes.lookup AV.fst).getD (λ _ ↦ false)) AV.snd
 
+-- A Tuple for a given Relation Schema
+structure Tuple (schema : RelationSchema) where
+  values : List (Attribute × Value)
+  nodup : Nodup (values.map Prod.fst)
+  inSchema : ∀ AV, AV ∈ values → schema.isValidValuePair AV
+  coverSchema : ∀ rel, rel ∈ schema.attributes → rel.fst ∈ (values.map Prod.fst)
 
--- Instances for the relational model
-def r1 : RelationSchema := #[.a1, .a3, .b1]
+-- A Relation Instance is a finite set of tuples that conform to a relation type
+abbrev RelationInstance (relSchema : RelationSchema) := Set (Tuple relSchema)
 
-def t1 : Tuple
-  | .a1 => some "123"
-  | .a2 => some "abc"
-  | .a3 => some "true"
-  | _ => none
+-- A Database Schema assigns relation schemas to relation names
+structure DatabaseSchema where
+  relations : List (Relation × RelationSchema)
+  nodup : Nodup (relations.map Prod.fst)
 
-def data : RelationInstance := #[
-  t1,
-  fun
-  | .a1 => "example"
-  | .a2 => "text"
-  | .a3 => "more text"
-  | _ => none,
-  fun
-  | .a1 => "124"
-  | .a2 => "abd"
-  | .a3 => "false"
-  | _ => none
-]
+-- A Database Instance assigns relation instances to relation names, ensuring schema conformance
+abbrev DependentRelationInstanceType (dbSch : DatabaseSchema) := (Σ name : Relation, (((dbSch.relations.lookup name).map RelationInstance).getD Unit))
 
-
--- Experimental code to test relational model
-def tExec (t : Tuple) (as : RelationSchema) :=
-  as.foldl (λ agg att ↦ agg.push (t att)) #[]
-
-def riExec (ts : Collection Tuple) (rs : RelationSchema) : Collection TupleValues :=
-  ts.foldl (λ agg t ↦ agg.push (tExec t rs)) #[]
-
-#eval riExec data r1
-#check riExec data r1
+structure DatabaseInstance (dbSch : DatabaseSchema) where
+  relations : List (DependentRelationInstanceType dbSch)
+  nodup : Nodup (relations.map Sigma.fst)
+  inSchema : ∀ rel, rel ∈ relations → (dbSch.relations.lookup rel.fst).isSome
+  coverSchema : ∀ rel, rel ∈ dbSch.relations → rel.fst ∈ (relations.map Sigma.fst)
