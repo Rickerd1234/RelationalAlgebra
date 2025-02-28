@@ -4,11 +4,13 @@ abbrev Attribute := Type
 
 abbrev RelationName := Type
 
-abbrev Value := Type
+abbrev Value := Option Type
 
 abbrev RelationSchema := Set Attribute
 
-abbrev Tuple (relSch : RelationSchema) := relSch → Value
+structure Tuple (relSch : RelationSchema) where
+  val : Attribute → Value
+  inSchema : ∀ a ∈ relSch, (val a).isSome
 
 abbrev RelationInstance (relSch : RelationSchema) := Set (Tuple relSch)
 
