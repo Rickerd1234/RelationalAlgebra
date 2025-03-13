@@ -5,66 +5,63 @@ theorem not_mem_singleton_iff {a b : α} : a ∉ ({b} : Set α) ↔ a ≠ b := I
 -- Union
 def union {relSch : RelationSchema} (relI relI' : RelationInstance relSch) : RelationInstance relSch := Set.union relI relI'
 
-theorem union_comm {relSch : RelationSchema} (relI relI' : RelationInstance relSch) : union relI relI' = union relI' relI := by exact Set.union_comm relI relI'
+theorem union_comm {relSch : RelationSchema} (relI relI' : RelationInstance relSch) :
+  union relI relI' = union relI' relI := by
+    exact Set.union_comm relI relI'
 
 -- Rename
-def RenameSchema [DecidableEq Attribute] (relSch : RelationSchema) (oldA newA : Attribute) : RelationSchema := relSch \ {oldA} ∪ {newA}
+def rename {s s' : RelationSchema} (inst : RelationInstance s) (f : s → s') : RelationInstance s' :=
+  { t' | ∃ t ∈ inst, t' ∘ f = t}
 
-def renameTuple {relSch : RelationSchema}
-  [DecidableEq Attribute]
-  (a a' : Attribute)
-  (h : a ∈ relSch ∧ a' ∉ relSch)
-  (t : Tuple relSch) : Tuple (RenameSchema relSch a a') := {
-    val := λ att => t.val (if att = a' then a else att),
-    inSchema := by
-      -- Break open assumptions and simplify goal
-      intro att att_in_rs'
-      have ⟨v, old_inSchema⟩ := t
-      rw [old_inSchema]
+theorem rename_id {s : RelationSchema} (inst : RelationInstance s):
+  rename inst id = inst := by
+    -- Proof using witness
+    apply Set.ext
+    intro t
 
-      -- Split if then else goal
-      split_ifs with att_is_new
-      . exact h.left
-      . rw [RenameSchema] at att_in_rs'
-        -- Case distinction on data
-        cases att_in_rs' with
-        | inl att_in_rs => exact Set.mem_of_mem_diff att_in_rs
-        | inr att_in_new => exact False.elim (att_is_new att_in_new)
-  }
-
-def rename
-  [DecidableEq Attribute]
-  {relSch : RelationSchema}
-  (relI : RelationInstance relSch)
-  (a a' : Attribute)
-  (h : a ∈ relSch ∧ a' ∉ relSch) : RelationInstance (RenameSchema relSch a a') := relI.image (renameTuple a a' h)
-
-theorem rename_schema_id [DecidableEq Attribute] (relSch : RelationSchema) (a a' : Attribute) (h : a ∈ relSch ∧ a' ∉ relSch) : RenameSchema (RenameSchema relSch a a') a' a = relSch := by
-  -- Rename schema simplification
-  rw [RenameSchema, RenameSchema, Set.union_diff_right, Set.diff_diff_comm, Set.diff_union_self]
-  -- Split hypothesis
-  have ⟨hl, hr⟩ := h
-  --
-  apply Set.ext_iff.mpr
-  intro x
-  constructor
-  -- x ∈ LHS → x ∈ RHS
-  . intro h1
-    simp at h1
-    cases h1 with
-    | inl h1 => exact h1.left
-    | inr h1 => exact Set.mem_of_eq_of_mem h1 hl
-  -- x ∈ RHS → x ∈ LHS
-  . intro h1
-    simp
-    left
     constructor
-    . exact h1
-    . rw [not_mem_singleton_iff]
-      by_contra xa'
-      rw [xa'] at h1
-      exact hr h1
+    -- w ∈ rename inst id → w ∈ inst
+    · intro h
+      obtain ⟨t', ⟨hl, hr⟩⟩ := h
+      rw [← hr] at hl
+      simp only [Function.comp_id] at hl
+      exact hl
 
-theorem rename_id [DecidableEq Attribute] {relSch : RelationSchema} (relI : RelationInstance relSch)
-  (a a' : Attribute) (h : a ∈ relSch ∧ a' ∉ relSch) (h2 : a' ∈ RenameSchema relSch a a' ∧ a ∉ RenameSchema relSch a a') :
-  rename (rename relI a a' h) a' a h2 = relI := sorry
+    -- w ∈ inst → w ∈ rename inst id
+    · intro h
+      use t
+      simp only [Function.comp_id, and_self, and_true]
+      exact h
+
+theorem rename_inv {s s' : RelationSchema} (inst : RelationInstance s) (f : s → s') (g : s' → s) (c : g ∘ f = id) :
+  rename (rename inst f) g = inst := by
+    -- Proof using witness
+    apply Set.ext
+    intro t
+
+    constructor
+    -- t ∈ rename (rename inst f) g → t ∈ inst
+    · intro h
+      -- Unpack existence from renames
+      obtain ⟨_, ht', hg⟩ := h
+      obtain ⟨_, ht'', hf⟩ := ht'
+
+      -- Rewrite and simplify
+      subst hf hg
+      rw [Function.comp_assoc, c, Function.comp_id] at ht''
+      exact ht''
+
+    -- t ∈ inst → t ∈ rename (rename inst f) g
+    · intro h
+      unfold rename
+      simp only [exists_eq_right', Set.mem_setOf_eq]
+      rw [Function.comp_assoc, c, Function.comp_id]
+      exact h
+
+@[simp]
+theorem rename_comp {s s' s'' : RelationSchema} (inst : RelationInstance s) (f : s → s') (g : s' → s'') (h : s → s'') (c : g ∘ f = h) :
+  rename (rename inst f) g = rename inst h := by
+    unfold rename at *
+    subst c
+    simp_all only [exists_eq_right', Set.mem_setOf_eq]
+    rfl
