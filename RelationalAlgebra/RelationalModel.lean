@@ -1,5 +1,7 @@
 import Mathlib.Data.Set.Basic
 
+namespace RM
+
 abbrev Attribute := Type
 
 abbrev RelationName := Type
