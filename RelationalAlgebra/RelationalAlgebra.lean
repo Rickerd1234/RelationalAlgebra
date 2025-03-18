@@ -56,7 +56,7 @@ def join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : Relatio
 theorem join_empty {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
   join inst1 (∅ : RelationInstance s2) = (∅ : RelationInstance (s1 ∪ s2)) := by
     unfold join
-    simp only [Set.mem_empty_iff_false, Set.mem_inter_iff, false_and, and_false, exists_const, Set.setOf_false]
+    simp only [Set.mem_empty_iff_false, false_and, exists_false, and_false, Set.setOf_false];
 
 theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
   join inst1 inst2 = join inst2 inst1 := by sorry

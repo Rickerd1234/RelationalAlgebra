@@ -2,11 +2,21 @@ import Mathlib.Data.Set.Basic
 
 namespace RM
 
-abbrev Attribute := Type
+-- abbrev Attribute := DecidableEq Type
 
-abbrev RelationName := Type
+-- abbrev RelationName := DecidableEq Type
 
-abbrev Value := Type
+-- abbrev Value := DecidableEq Type
+
+inductive Attribute
+| Name | Age | Salary
+deriving DecidableEq
+
+inductive RelationName
+| Employee | Department
+deriving DecidableEq
+
+abbrev Value := String
 
 abbrev RelationSchema := Set Attribute
 

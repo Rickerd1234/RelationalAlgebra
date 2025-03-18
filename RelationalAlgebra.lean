@@ -3,3 +3,4 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.RelationalAlgebra
 import RelationalAlgebra.Coercions
+import RelationalAlgebra.Examples
