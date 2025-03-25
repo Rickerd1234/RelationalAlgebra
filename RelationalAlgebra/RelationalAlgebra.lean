@@ -19,6 +19,10 @@ theorem union_empty {s : RelationSchema} (inst : RelationInstance s) :
 theorem union_comm {s : RelationSchema} (inst inst' : RelationInstance s) :
   union inst inst' = union inst' inst := by exact Set.union_comm inst inst'
 
+@[simp]
+theorem union_assoc {s : RelationSchema} (inst inst' inst'' : RelationInstance s) :
+  union (union inst inst') inst'' = union inst (union inst' inst'') := by exact Set.union_assoc inst inst' inst''
+
 end union
 
 
