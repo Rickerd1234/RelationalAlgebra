@@ -2,24 +2,28 @@ import RelationalAlgebra.RelationalModel
 
 open RM
 
+@[simp]
 noncomputable def schema_union_comm {s1 s2 : RelationSchema} : {a // a ∈ s1 ∪ s2} ≃ {a // a ∈ s2 ∪ s1} where
   toFun a := ⟨a.val, Or.symm a.prop⟩
   invFun a := ⟨a.val, Or.symm a.prop⟩
   left_inv a := by simp
   right_inv a := by ext; simp
 
+@[simp]
 noncomputable def schema_union_self {s1 : RelationSchema} : s1 ≃ {a // a ∈ s1 ∪ s1} where
   toFun a := ⟨a.1, Or.inl a.2⟩
   invFun a := ⟨a.1, Or.elim a.2 id id⟩
   left_inv a := by simp only [Subtype.coe_eta]
   right_inv a := by simp only [Subtype.coe_eta]
 
+@[simp]
 noncomputable def tuple_equiv {s1 s2 : RelationSchema} (relation_equiv : s1 ≃ s2) : Tuple s1 ≃ Tuple s2 where
   toFun a := λ x => a (relation_equiv.symm x)
   invFun a := λ x => a (relation_equiv x)
   left_inv a := by simp only [Equiv.symm_apply_apply]
   right_inv a := by simp only [Equiv.apply_symm_apply]
 
+@[simp]
 noncomputable def instance_equiv {s1 s2 : RelationSchema} (relation_equiv : s1 ≃ s2) : RelationInstance s1 ≃ RelationInstance s2 where
   toFun a := a.image (tuple_equiv relation_equiv)
   invFun a := a.image (tuple_equiv relation_equiv.symm)

@@ -3,6 +3,9 @@ import RelationalAlgebra.Equiv
 
 open RM
 
+-- Selection and Difference are 'trivial', hence they are not included yet
+
+
 -- Union
 section union
 
@@ -107,11 +110,6 @@ theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 
           · apply And.intro
             · exact left
             · simp_all only [and_self, implies_true, true_and]
-              apply And.intro
-              · intro a b
-                apply right_1
-              · intro a b
-                apply left_3
 
 theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
   join inst1 inst1 = (instance_equiv schema_union_self) inst1 := by
@@ -150,3 +148,65 @@ theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
             · simp_all only
 
 end join
+
+
+-- Projection
+section projection
+
+def projection {s1 : RelationSchema} (inst1 : RelationInstance s1) (s2 : RelationSchema) (h : s2 ⊆ s1) :
+  RelationInstance s2 :=
+    { t | ∃ t1 ∈ inst1,
+      (∀ a : s2, t a = t1 ⟨a, Set.mem_of_mem_of_subset a.prop h⟩)
+    }
+
+theorem projection_id {s1 : RelationSchema} (inst1 : RelationInstance s1) : projection inst1 s1 (by simp) = inst1 := by
+  simp only [projection, Subtype.coe_eta, Subtype.forall]
+  ext x
+  simp_all only [Set.mem_setOf_eq]
+  apply Iff.intro
+  · intro a
+    obtain ⟨w, h⟩ := a
+    obtain ⟨left, right⟩ := h
+    have y : x = w := by
+      ext x_1 : 1
+      simp_all only [Subtype.coe_eta]
+    subst y
+    simp_all only [implies_true]
+  · intro a
+    use x
+    simp_all only [implies_true, and_self]
+
+theorem projection_cascade {s1 s2 s3 : RelationSchema} (inst1 : RelationInstance s1) (h1 : s2 ⊆ s1) (h2 : s3 ⊆ s2) (h3 : s3 ⊆ s2 ∧ s2 ⊆ s1 → s3 ⊆ s1) :
+  projection (projection inst1 s2 (by simp [h1])) s3 (by simp [h2]) = projection inst1 s3 (by simp [h1, h2, h3]) := by
+    simp [projection]
+    ext x
+    simp only [Set.mem_setOf_eq]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      simp_all only
+      obtain ⟨w_1, h⟩ := left
+      obtain ⟨left, right_1⟩ := h
+      simp_all only
+      apply Exists.intro
+      · apply And.intro
+        on_goal 2 => {
+          intro a b
+          rfl
+        }
+        · exact left
+    · intro a
+      obtain ⟨w, h⟩ := a
+      use λ a => w ⟨a, Set.mem_of_mem_of_subset a.prop h1⟩
+      simp_all only [implies_true, and_true]
+      obtain ⟨left, right⟩ := h
+      apply Exists.intro
+      · apply And.intro
+        on_goal 2 => {
+          intro a b
+          rfl
+        }
+        · exact left
+
+end projection
