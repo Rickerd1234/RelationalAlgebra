@@ -70,86 +70,44 @@ theorem empty_join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
 
 theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
   join inst1 inst2 = (instance_equiv schema_union_comm) (join inst2 inst1) := by
-    simp [join, instance_equiv, tuple_equiv]
     ext t
-    simp_all only [Set.mem_setOf_eq, Set.mem_image]
     apply Iff.intro
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      obtain ⟨w_1, h⟩ := right
-      obtain ⟨left_1, right⟩ := h
-      obtain ⟨left_2, right⟩ := right
-      obtain ⟨left_3, right⟩ := right
+    · -- t ∈ join inst1 inst2 → t ∈ (instance_equiv schema_union_comm) (join inst2 inst1)
+      intro ⟨w, w_in_1, v, v_in_2, w_v, t_w, t_v⟩
+      simp [join] at *
       use tuple_equiv schema_union_comm t
-      apply And.intro
-      · apply Exists.intro
-        · apply And.intro
-          · exact left_1
-          · apply Exists.intro
-            · apply And.intro
-              · exact left
-              · simp_all only [and_self, implies_true, true_and]
-                apply And.intro
-                · intro a b
-                  apply right
-                · intro a b
-                  apply left_3
-      · rfl
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      obtain ⟨w_1, h⟩ := left
-      obtain ⟨left, right_1⟩ := h
-      obtain ⟨w_2, h⟩ := right_1
-      obtain ⟨left_1, right_1⟩ := h
-      obtain ⟨left_2, right_1⟩ := right_1
-      obtain ⟨left_3, right_1⟩ := right_1
-      subst right
-      simp_all only
-      apply Exists.intro
-      · apply And.intro
-        · exact left_1
-        · apply Exists.intro
-          · apply And.intro
-            · exact left
-            · simp_all only [and_self, implies_true, true_and]
+      exact ⟨
+        ⟨v, v_in_2, w, w_in_1,
+          by simp_all only [and_self, implies_true, tuple_equiv, schema_union_comm, Equiv.coe_fn_symm_mk, Equiv.coe_fn_mk]
+        ⟩,
+        rfl
+      ⟩
+    · -- t ∈ (instance_equiv schema_union_comm) (join inst2 inst1) → t ∈ join inst1 inst2
+      intro ⟨w, ⟨v, v_in_2, u, u_in_1, v_u, w_v, w_u⟩, w_t⟩
+      simp [join] at *
+      subst w_t
+      exact ⟨u, u_in_1, v, v_in_2,
+        by simp_all only [and_self, implies_true]
+      ⟩
 
 theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
   join inst1 inst1 = (instance_equiv schema_union_self) inst1 := by
-    simp [join, instance_equiv, tuple_equiv, schema_union_self]
     ext t
-    simp_all only [Set.mem_setOf_eq, Set.mem_image]
     apply Iff.intro
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      obtain ⟨w_1, h⟩ := right
-      obtain ⟨left_1, right⟩ := h
-      obtain ⟨left_2, right⟩ := right
-      obtain ⟨left_3, right⟩ := right
-      simp_all only [implies_true]
+    · -- t ∈ join inst1 inst1 → t ∈ (instance_equiv schema_union_self) inst1
+      intro ⟨w, w_in_1, v, v_in_1, w_v, t_w, t_v⟩
       use tuple_equiv schema_union_self.symm t
-      apply And.intro
-      · simp [tuple_equiv, schema_union_self]
-        simp_all only [Subtype.coe_prop, Subtype.coe_eta]
-      · rfl
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      subst right
-      simp_all only
-      apply Exists.intro
-      · apply And.intro
-        · exact left
-        · simp_all only [implies_true, true_and, and_self]
-          apply Exists.intro
-          · apply And.intro
-            on_goal 2 => {
-              intro a b
-              rfl
-            }
-            · simp_all only
+      exact ⟨
+        by
+          simp [tuple_equiv, schema_union_self]
+          simp_all only [Subtype.coe_prop, Subtype.coe_eta],
+        rfl
+      ⟩
+    · -- t ∈ (instance_equiv schema_union_self) inst1 → t ∈ join inst1 inst
+      intro ⟨w, w_in_1, w_t⟩
+      simp only [join, Subtype.forall]
+      subst w_t
+      exact ⟨w, w_in_1, w, w_in_1, λ _ _ => rfl, λ _ _ => rfl, λ _ _ => rfl⟩
 
 end join
 
@@ -164,53 +122,29 @@ def projection {s1 : RelationSchema} (inst1 : RelationInstance s1) (s2 : Relatio
     }
 
 theorem projection_id {s1 : RelationSchema} (inst1 : RelationInstance s1) : projection inst1 s1 (by simp) = inst1 := by
-  simp only [projection, Subtype.coe_eta, Subtype.forall]
   ext x
-  simp_all only [Set.mem_setOf_eq]
   apply Iff.intro
-  · intro a
-    obtain ⟨w, h⟩ := a
-    obtain ⟨left, right⟩ := h
+  · intro ⟨w, w_in_1, w_project⟩
     have y : x = w := by
       ext x_1 : 1
       simp_all only [Subtype.coe_eta]
     subst y
-    simp_all only [implies_true]
-  · intro a
-    use x
-    simp_all only [implies_true, and_self]
+    exact w_in_1
+  · exact λ a => ⟨x, a, λ a => by simp only [Subtype.coe_eta]⟩
 
 theorem projection_cascade {s1 s2 s3 : RelationSchema} (inst1 : RelationInstance s1) (h1 : s2 ⊆ s1) (h2 : s3 ⊆ s2) (h3 : s3 ⊆ s2 ∧ s2 ⊆ s1 → s3 ⊆ s1) :
-  projection (projection inst1 s2 (by simp [h1])) s3 (by simp [h2]) = projection inst1 s3 (by simp [h1, h2, h3]) := by
-    simp [projection]
+  projection (projection inst1 s2 (by simp [h1])) s3 (by simp [h2]) = projection inst1 s3 (by simp only [h2, h1, and_self, h3]) := by
     ext x
-    simp only [Set.mem_setOf_eq]
-    apply Iff.intro
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      simp_all only
-      obtain ⟨w_1, h⟩ := left
-      obtain ⟨left, right_1⟩ := h
-      simp_all only
-      apply Exists.intro
-      · apply And.intro
-        on_goal 2 => {
-          intro a b
-          rfl
-        }
-        · exact left
-    · intro a
-      obtain ⟨w, h⟩ := a
-      use λ a => w ⟨a, Set.mem_of_mem_of_subset a.prop h1⟩
-      simp_all only [implies_true, and_true]
-      obtain ⟨left, right⟩ := h
-      apply Exists.intro
-      · apply And.intro
-        on_goal 2 => {
-          intro a b
-          rfl
-        }
-        · exact left
+    exact ⟨(
+      -- x ∈ projection (projection inst1 s2 (by simp [h1])) s3 (by simp [h2]) → x ∈ projection inst1 s3 (by simp [h1, h2, h3])
+      λ ⟨_, ⟨⟨w, w_in_1, project_1⟩, project_2⟩⟩ =>
+        ⟨w, w_in_1, λ _ => by simp only [Subtype.forall, project_2, project_1]⟩
+    ), (
+      -- x ∈ projection inst1 s3 (by simp [h1, h2, h3]) → x ∈ projection (projection inst1 s2 (by simp [h1])) s3 (by simp [h2])
+      λ ⟨w, w_in_1, w_project⟩ => by
+        use λ a => w ⟨a, Set.mem_of_mem_of_subset a.prop h1⟩
+        simp only [implies_true, and_true, w_project, Subtype.forall]
+        exact ⟨w, w_in_1, λ _ => rfl⟩
+    )⟩
 
 end projection
