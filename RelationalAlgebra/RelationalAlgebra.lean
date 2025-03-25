@@ -69,43 +69,48 @@ theorem empty_join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
     simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
 
 theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
-  join inst1 inst2 = (instance_equiv schema_union_comm) (join inst2 inst1) := Set.ext λ t => ⟨
+  join inst1 inst2 = (instance_equiv schema_union_comm) (join inst2 inst1) :=
+    Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
       -- t ∈ join inst1 inst2 → t ∈ (instance_equiv schema_union_comm) (join inst2 inst1)
-      (by
-        intro ⟨w, w_in_1, v, v_in_2, w_v, t_w, t_v⟩
-        simp [join] at *
-        use tuple_equiv schema_union_comm t
-        exact ⟨
-          ⟨v, v_in_2, w, w_in_1,
-            by simp_all only [and_self, implies_true, tuple_equiv, schema_union_comm, Equiv.coe_fn_symm_mk, Equiv.coe_fn_mk]
-          ⟩,
-          rfl
-        ⟩
+      (
+        λ ⟨l, l_in_1, r, r_in_2, both, t_in_l, t_in_r⟩ =>
+          ⟨
+            tuple_equiv schema_union_comm t,
+            ⟨r, r_in_2, l, l_in_1,
+              by
+                simp [join];
+                intro a b
+                simp_all only [Subtype.forall, Set.mem_inter_iff, and_self],
+              t_in_r,
+              t_in_l
+            ⟩,
+            rfl
+          ⟩
       ),
       -- t ∈ (instance_equiv schema_union_comm) (join inst2 inst1) → t ∈ join inst1 inst2
       (by
-        intro ⟨w, ⟨v, v_in_2, u, u_in_1, v_u, w_v, w_u⟩, w_t⟩
+        intro ⟨s, ⟨l, l_in_2, r, r_in_1, both, s_in_l, s_in_r⟩, s_t⟩
         simp [join] at *
-        subst w_t
-        exact ⟨u, u_in_1, v, v_in_2,
-          by simp_all only [and_self, implies_true]
+        subst s_t
+        exact ⟨r, r_in_1, l, l_in_2,
+          by simp_all only [and_self, implies_true],
         ⟩
       )
     ⟩
 
 theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
   join inst1 inst1 = (instance_equiv schema_union_self) inst1 :=
-    Set.ext λ t => ⟨
+    Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
       -- t ∈ join inst1 inst1 → t ∈ (instance_equiv schema_union_self) inst1
-      (by
-          intro ⟨w, w_in_1, v, v_in_1, w_v, t_w, t_v⟩
-          use tuple_equiv schema_union_self.symm t
-          exact ⟨
+      (λ ⟨l, l_in_1, r, r_in_1, both, t_in_l, t_in_r⟩ =>
+        ⟨tuple_equiv schema_union_self.symm t,
+          ⟨
             by
               simp [tuple_equiv, schema_union_self]
               simp_all only [Subtype.coe_prop, Subtype.coe_eta],
             rfl
           ⟩
+        ⟩
       ),
       -- t ∈ (instance_equiv schema_union_self) inst1 → t ∈ join inst1 inst
       (by
@@ -139,7 +144,7 @@ theorem projection_id {s1 : RelationSchema} (inst1 : RelationInstance s1) : proj
       subst y
       exact w_in_1
     ),
-    -- t ∈ projection inst1 s1 ⋯ ↔ t ∈ inst1
+    -- t ∈ inst1 → t ∈ projection inst1 s1 ⋯
     (λ a => ⟨t, a, λ a => by simp only [Subtype.coe_eta]⟩)
   ⟩
 
@@ -147,7 +152,7 @@ theorem projection_cascade {s1 s2 s3 : RelationSchema} (inst1 : RelationInstance
   projection (projection inst1 s2 h1) s3 h2 = projection inst1 s3 (subset_trans h2 h1) :=
     Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
       (
-        -- x ∈ projection (projection inst1 s2 h1) s3 h2 ↔ x ∈ projection inst1 s3 ⋯
+        -- x ∈ projection (projection inst1 s2 h1) s3 h2 → x ∈ projection inst1 s3 ⋯
         λ ⟨_, ⟨⟨w, w_in_1, project_1⟩, project_2⟩⟩ =>
           ⟨w, w_in_1, λ _ => by simp only [project_2, project_1]⟩
       ),
