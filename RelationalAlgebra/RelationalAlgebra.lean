@@ -9,7 +9,7 @@ open RM
 -- Union
 section union
 
-def union {s : RelationSchema} (inst inst' : RelationInstance s) : RelationInstance s := inst ∪ inst'
+def union (inst inst' : RelationInstance): RelationInstance := ⟨inst.schema, inst.val ∪ inst'.val⟩
 
 @[simp]
 theorem union_empty {s : RelationSchema} (inst : RelationInstance s) :
