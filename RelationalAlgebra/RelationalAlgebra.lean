@@ -1,5 +1,6 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Equiv
+import RelationalAlgebra.Util
 
 open RM
 
@@ -9,19 +10,24 @@ open RM
 -- Union
 section union
 
-def union (inst inst' : RelationInstance): RelationInstance := ⟨inst.schema, inst.val ∪ inst'.val⟩
+def union (inst inst' : RelationInstance) (h: inst.schema = inst'.schema): RelationInstance := ⟨
+    inst.schema,
+    inst.tuples ∪ inst'.tuples,
+    λ v hv => Or.elim hv (λ hv_l => inst.validSchema v hv_l) (λ hv_r => Eq.trans (inst'.validSchema v hv_r) h.symm)
+  ⟩
 
 @[simp]
-theorem union_empty {s : RelationSchema} (inst : RelationInstance s) :
-  union inst ∅ = inst := Set.union_empty inst
+theorem union_empty (inst : RelationInstance) : union inst emptyInst rfl = inst :=
+  by unfold union; simp_all only [emptyInst, Set.union_empty]
 
 @[simp]
-theorem union_comm {s : RelationSchema} (inst inst' : RelationInstance s) :
-  union inst inst' = union inst' inst := by exact Set.union_comm inst inst'
+theorem union_comm (inst inst' : RelationInstance) (h : inst.schema = inst'.schema) : union inst inst' h = union inst' inst h.symm :=
+  by unfold union; simp [Set.union_comm inst.tuples inst'.tuples, h]
 
 @[simp]
-theorem union_assoc {s : RelationSchema} (inst inst' inst'' : RelationInstance s) :
-  union (union inst inst') inst'' = union inst (union inst' inst'') := by exact Set.union_assoc inst inst' inst''
+theorem union_assoc (inst inst' inst'' : RelationInstance) (h : inst.schema = inst'.schema) (h' : inst'.schema = inst''.schema) :
+  union (union inst inst' h) inst'' (h.trans h') = union inst (union inst' inst'' h') (by simp [union, h]) :=
+    by unfold union; simp [Set.union_assoc inst.tuples inst'.tuples inst''.tuples]
 
 end union
 
@@ -29,15 +35,79 @@ end union
 -- Rename
 section rename
 
-def rename {s s' : RelationSchema} (inst : RelationInstance s) (f : s → s') : RelationInstance s' := { t' | ∃ t ∈ inst, t' ∘ f = t }
+@[simp]
+theorem rename_in_old_schema {t : Tuple} {a a' a'' : Attribute} (prop : a'' ∈ t.schema \ {a} ∪ {a'}) (cond : a'' ≠ a') : a'' ∈ t.schema
+  := Or.elim prop (λ h => h.left) (λ h => False.elim (cond h))
+
+def renameSchema (schema : RelationSchema) (a a' : Attribute) (_ : a ∈ schema) (_ : a' ∉ (schema \ {a})) : RelationSchema := schema \ {a} ∪ {a'}
 
 @[simp]
-theorem rename_id {s : RelationSchema} (inst : RelationInstance s):
-  rename inst id = inst := by simp only [rename, Function.comp_id, exists_eq_right', Set.setOf_mem_eq]
+theorem rename_schema_id (schema : RelationSchema) (a : Attribute) (h : a ∈ schema) (h' : a ∉ (schema \ {a})) :
+  renameSchema schema a a h h' = schema := by
+    ext x
+    simp_all only [renameSchema, Set.mem_diff, true_and, not_not, Set.diff_union_self, Set.mem_union, or_iff_left_iff_imp]
+    exact λ y => by subst y; exact h
+
+variable [DecidableEq Attribute]
+
+def renameTuple (t : Tuple) (a a' : Attribute) (h : a ∈ t.schema) (h' : a' ∉ (t.schema \ {a})) : Tuple :=
+  ⟨
+    renameSchema t.schema a a' h h',
+    λ a'' => if h_cond : a'' = a'
+      then (t.val ⟨a, h⟩)
+      else (t.val ⟨a'', rename_in_old_schema a''.prop h_cond⟩)
+  ⟩
+
+def rename (inst : RelationInstance) (a a' : Attribute) (h : a ∈ inst.schema) (h' : a' ∉ (inst.schema \ {a})) : RelationInstance := ⟨
+    renameSchema inst.schema a a' h h',
+    {
+      t' | ∃ t : inst.tuples,
+        t' = renameTuple t a a' (by rw [inst.validSchema t.val t.property]; exact h) (by rw [inst.validSchema t.val t.property]; exact h')
+    },
+    by
+      intro t a
+      simp_all only [Set.mem_diff, not_and, not_not, Subtype.exists, Set.mem_setOf_eq]
+      obtain ⟨w, w_1, h_1⟩ := a
+      simp_all only [inst.validSchema, renameTuple, renameSchema]
+  ⟩
 
 @[simp]
-theorem rename_comp {s s' s'' : RelationSchema} (inst : RelationInstance s) (f : s → s') (g : s' → s'') (h : s → s'') (c : g ∘ f = h) :
-  rename (rename inst f) g = rename inst h := by simp only [rename, exists_eq_right', Set.mem_setOf_eq, Function.comp_assoc, c]
+theorem rename_tuple_id (t : Tuple) (a : Attribute) (h : a ∈ t.schema) (h' : a ∉ (t.schema \ {a})) :
+  renameTuple t a a h h' = t :=
+    by unfold renameTuple; simp_all only
+
+
+@[simp]
+theorem rename_inst_id (inst : RelationInstance) (a : Attribute) (h : a ∈ inst.schema) (h' : a ∉ (inst.schema \ {a})):
+  rename inst a a h h' = inst := by
+    unfold rename
+    -- Schema equality proof for singleton union
+    have h1 : inst.schema ∪ {a} = inst.schema :=
+      Set.ext λ y => ⟨
+        (λ hy =>
+          hy.elim id
+          (λ hr => by
+            subst hr
+            simp_all only [true_and, not_not, Set.mem_union, or_true]
+          )
+        ),
+        (λ hy => Or.inl hy)
+      ⟩
+
+    have h2 : (rename inst a a h h').tuples = inst.tuples := sorry
+
+    simp [h1, h2]
+
+@[simp]
+theorem rename_comp {a a' a'' : Attribute} (inst : RelationInstance) (h1 : a ∈ inst.schema) (h1' : a' ∉ (inst.schema \ {a}))
+  (h2 : a' ∈ (rename inst a a' h1 h1').schema) (h2' : a'' ∉ (rename inst a a' h1 h1').schema \ {a'}) (h3 : a ∈ inst.schema) (h3' : a'' ∉ inst.schema \ {a}) :
+    rename (rename inst a a' h1 h1') a' a'' h2 h2' = rename inst a a'' h3 h3' := by
+      unfold rename
+      simp_all
+      apply And.intro
+      · sorry
+      · sorry
+      aesop?
 
 @[simp]
 theorem rename_inv {s s' : RelationSchema} (inst : RelationInstance s) (f : s → s') (g : s' → s) (c : g ∘ f = id) :
