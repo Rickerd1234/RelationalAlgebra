@@ -1,4 +1,5 @@
 import Mathlib.Data.Set.Basic
+import Mathlib.Data.PFun
 
 namespace RM
 
@@ -12,7 +13,8 @@ abbrev RelationSchema := Set Attribute
 
 structure Tuple where
     schema : RelationSchema
-    val : schema → Value
+    val : Attribute →. Value
+    dom : val.Dom = schema
 
 structure RelationInstance where
     schema : RelationSchema

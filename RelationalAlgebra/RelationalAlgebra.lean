@@ -1,6 +1,8 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Equiv
 import RelationalAlgebra.Util
+import Mathlib.Data.PFun
+import Mathlib.Data.Part
 
 open RM
 
@@ -48,14 +50,45 @@ theorem rename_schema_id (schema : RelationSchema) (a : Attribute) (h : a ∈ sc
     simp_all only [renameSchema, Set.mem_diff, true_and, not_not, Set.diff_union_self, Set.mem_union, or_iff_left_iff_imp]
     exact λ y => by subst y; exact h
 
-variable [DecidableEq Attribute]
+variable [DecidableEq Attribute, RelationSchema.Mem]
 
 def renameTuple (t : Tuple) (a a' : Attribute) (h : a ∈ t.schema) (h' : a' ∉ (t.schema \ {a})) : Tuple :=
   ⟨
     renameSchema t.schema a a' h h',
-    λ a'' => if h_cond : a'' = a'
-      then (t.val ⟨a, h⟩)
-      else (t.val ⟨a'', rename_in_old_schema a''.prop h_cond⟩)
+    λ a'' => if a'' = a'
+      then t.val a
+      else t.val a'',
+    by
+      ext a''
+      simp_all only [PFun.dom_mk, Set.mem_setOf_eq]
+      apply Iff.intro
+      · intro h_left
+        split at h_left
+        next h_cond =>
+          subst h_cond
+          exact Or.inr (Set.mem_singleton a'')
+        next h_cond =>
+          unfold renameSchema;
+          simp_all only [Set.mem_diff, Set.mem_singleton_iff, not_and, Decidable.not_not, Set.union_singleton,
+            Set.mem_insert_iff, false_or]
+          rw [← t.dom]
+          apply And.intro h_left
+          by_contra h_cont
+          subst h_cont
+          simp_all [← t.dom]
+          sorry
+      · intro h_right
+        split
+        next h_1 =>
+          subst h_1
+          rw [← t.dom] at h
+          exact h
+        next h_1 =>
+          simp [renameSchema] at h_right
+          simp_all only [Set.mem_diff, Set.mem_singleton_iff, not_and, Decidable.not_not, false_or]
+          obtain ⟨left, right⟩ := h_right
+          rw [← t.dom] at left
+          exact left
   ⟩
 
 def rename (inst : RelationInstance) (a a' : Attribute) (h : a ∈ inst.schema) (h' : a' ∉ (inst.schema \ {a})) : RelationInstance := ⟨
