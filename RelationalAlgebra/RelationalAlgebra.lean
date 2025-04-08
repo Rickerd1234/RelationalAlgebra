@@ -38,10 +38,10 @@ end union
 section rename
 
 @[simp]
-theorem rename_in_old_schema {t : Tuple} {a a' a'' : Attribute} (prop : a'' ∈ t.schema \ {a} ∪ {a'}) (cond : a'' ≠ a') : a'' ∈ t.schema
+theorem rename_in_old_schema {t : Tuple} {a a' a'' : Attribute} (prop : a'' ∈ t.Dom \ {a} ∪ {a'}) (cond : a'' ≠ a') : a'' ∈ t.Dom
   := Or.elim prop (λ h => h.left) (λ h => False.elim (cond h))
 
-def renameSchema (schema : RelationSchema) (a a' : Attribute) (_ : a ∈ schema) (_ : a' ∉ (schema \ {a})) : RelationSchema := schema \ {a} ∪ {a'}
+def renameSchema (schema : RelationSchema) (a a' : Attribute) (_ : a ∈ schema) (_ : a' ∉ (schema \ {a})) : RelationSchema := (schema \ {a}) ∪ {a'}
 
 @[simp]
 theorem rename_schema_id (schema : RelationSchema) (a : Attribute) (h : a ∈ schema) (h' : a ∉ (schema \ {a})) :
@@ -50,64 +50,97 @@ theorem rename_schema_id (schema : RelationSchema) (a : Attribute) (h : a ∈ sc
     simp_all only [renameSchema, Set.mem_diff, true_and, not_not, Set.diff_union_self, Set.mem_union, or_iff_left_iff_imp]
     exact λ y => by subst y; exact h
 
-variable [DecidableEq Attribute, RelationSchema.Mem]
+variable [DecidableEq Attribute]
 
-def renameTuple (t : Tuple) (a a' : Attribute) (h : a ∈ t.schema) (h' : a' ∉ (t.schema \ {a})) : Tuple :=
-  ⟨
-    renameSchema t.schema a a' h h',
-    λ a'' => if a'' = a'
-      then t.val a
-      else t.val a'',
-    by
-      ext a''
-      simp_all only [PFun.dom_mk, Set.mem_setOf_eq]
-      apply Iff.intro
-      · intro h_left
-        split at h_left
-        next h_cond =>
-          subst h_cond
-          exact Or.inr (Set.mem_singleton a'')
-        next h_cond =>
-          unfold renameSchema;
-          simp_all only [Set.mem_diff, Set.mem_singleton_iff, not_and, Decidable.not_not, Set.union_singleton,
-            Set.mem_insert_iff, false_or]
-          rw [← t.dom]
-          apply And.intro h_left
-          by_contra h_cont
-          subst h_cont
-          simp_all [← t.dom]
-          sorry
-      · intro h_right
-        split
-        next h_1 =>
-          subst h_1
-          rw [← t.dom] at h
-          exact h
-        next h_1 =>
-          simp [renameSchema] at h_right
-          simp_all only [Set.mem_diff, Set.mem_singleton_iff, not_and, Decidable.not_not, false_or]
-          obtain ⟨left, right⟩ := h_right
-          rw [← t.dom] at left
-          exact left
-  ⟩
+def renameTuple (t : Tuple) (a a' : Attribute) : Tuple := --(_ : a ∈ t.Dom) (_ : a' ∉ (t.Dom \ {a}))
+  λ a'' =>
+    if a'' = a then Part.none else (
+      if a'' = a' then t a
+        else t a''
+    )
 
 def rename (inst : RelationInstance) (a a' : Attribute) (h : a ∈ inst.schema) (h' : a' ∉ (inst.schema \ {a})) : RelationInstance := ⟨
     renameSchema inst.schema a a' h h',
-    {
-      t' | ∃ t : inst.tuples,
-        t' = renameTuple t a a' (by rw [inst.validSchema t.val t.property]; exact h) (by rw [inst.validSchema t.val t.property]; exact h')
-    },
+    -- {t' | ∃ t : Tuple,
+    --   (ht : t ∈ inst.tuples) → t' = renameTuple t a a' (by rw [inst.validSchema t ht]; exact h) (by rw [inst.validSchema t ht]; exact h')
+    -- },
+    inst.tuples.image (λ t => renameTuple t a a'),
     by
-      intro t a
-      simp_all only [Set.mem_diff, not_and, not_not, Subtype.exists, Set.mem_setOf_eq]
-      obtain ⟨w, w_1, h_1⟩ := a
-      simp_all only [inst.validSchema, renameTuple, renameSchema]
+      intro t' t'_def
+      -- rw [inst.validSchema]
+      unfold renameSchema renameTuple at *
+      ext a''
+      simp_all only [Set.mem_diff, Set.mem_singleton_iff, not_and, Decidable.not_not, Set.mem_image, PFun.mem_dom,
+        Set.union_singleton, Set.mem_insert_iff]
+      obtain ⟨w, h_1⟩ := t'_def
+      obtain ⟨left, right⟩ := h_1
+      subst right
+      simp_all only
+      apply Iff.intro
+      · intro a_1
+        obtain ⟨w_1, h_1⟩ := a_1
+        split at h_1
+        next h_2 =>
+          subst h_2
+          simp_all only [Part.not_mem_none]
+        next h_2 =>
+          split at h_1
+          next h_3 =>
+            subst h_3
+            simp_all only [imp_false, not_false_eq_true, and_true, or_false]
+          next h_3 =>
+            simp_all only [not_false_eq_true, and_true, false_or]
+            rw [← inst.validSchema w]
+            . simp_all only [PFun.mem_dom]
+              exact Exists.intro w_1 h_1
+            . simp_all only
+      · intro a_1
+        cases a_1 with
+        | inl h_1 =>
+          subst h_1
+          simp_all only [↓reduceIte]
+          split
+          next h_1 =>
+            subst h_1
+            simp_all only [imp_self, Part.not_mem_none, exists_const]
+            sorry
+          next h_1 =>
+            simp_all only [imp_false]
+            sorry
+        | inr h_2 =>
+          simp_all only [↓reduceIte]
+          obtain ⟨left_1, right⟩ := h_2
+          split
+          next h_1 =>
+            subst h_1
+            simp_all only [not_true_eq_false]
+          next h_1 => sorry
   ⟩
 
 @[simp]
-theorem rename_tuple_id (t : Tuple) (a : Attribute) (h : a ∈ t.schema) (h' : a ∉ (t.schema \ {a})) :
-  renameTuple t a a h h' = t :=
-    by unfold renameTuple; simp_all only
+theorem rename_tuple_id (t : Tuple) (a : Attribute) (h : a ∈ t.Dom) (h' : a ∉ (t.Dom \ {a})) :
+  renameTuple t a a = t := by
+    unfold renameTuple;
+    simp_all only [PFun.mem_dom, Set.mem_diff, Set.mem_singleton_iff, not_true_eq_false, and_false, not_false_eq_true,
+      ↓reduceIte]
+    obtain ⟨w, h⟩ := h
+    refine PFun.ext' ?_ ?_
+    intro a_1
+    simp_all only [PFun.dom_mk, Set.mem_setOf_eq, PFun.mem_dom]
+    apply Iff.intro
+    · intro a_2
+      split at a_2
+      next h_1 =>
+        subst h_1
+        use w
+      next h_1 => sorry
+    · intro a_2
+      obtain ⟨w_1, h_1⟩ := a_2
+      split
+      next h_2 =>
+        subst h_2
+        sorry
+      next h_2 => sorry
 
 
 @[simp]

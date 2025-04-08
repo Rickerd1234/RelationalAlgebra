@@ -11,15 +11,12 @@ abbrev Value := Type
 
 abbrev RelationSchema := Set Attribute
 
-structure Tuple where
-    schema : RelationSchema
-    val : Attribute →. Value
-    dom : val.Dom = schema
+abbrev Tuple := Attribute →. Value
 
 structure RelationInstance where
     schema : RelationSchema
     tuples : Set Tuple
-    validSchema : ∀ t ∈ tuples, t.schema = schema
+    validSchema : ∀ t : Tuple, t ∈ tuples → t.Dom = schema
 
 abbrev DatabaseSchema := RelationName → RelationSchema
 

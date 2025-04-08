@@ -2,6 +2,12 @@ import RelationalAlgebra.RelationalModel
 
 open RM
 
+@[simp]
+theorem tuple_valid_schema {a : Attribute} {inst : RelationInstance} {t : Tuple} (ha : a ∈ inst.schema) (ht : t ∈ inst.tuples) : PFun.Dom t a := by
+  rw [← inst.validSchema t ht] at *;
+  . rw [PFun.mem_dom] at ha
+    exact Part.dom_iff_mem.mpr ha
+
 -- @[simp]
 -- noncomputable def schema_union_comm {s1 s2 : RelationSchema} : {a // a ∈ s1 ∪ s2} ≃ {a // a ∈ s2 ∪ s1} where
 --   toFun a := ⟨a.val, Or.symm a.prop⟩
