@@ -1,1 +1,7 @@
+# Lean
 /.lake
+
+# Widget
+widget/package-lock.json
+widget/node_modules
+widget/dist
