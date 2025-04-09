@@ -184,49 +184,75 @@ def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.
   ⟨
     s',
     { t' | ∃ t ∈ inst.tuples,
-      (∀ a ∈ s', t' a = t a) ∧ (s' = t'.Dom) ∧ (t.Dom ≠ ∅ → t'.Dom ≠ ∅)
+      (∀ a, (a ∈ s' → t' a = t a) ∧ (a ∉ s'→ t' a = Part.none))
     },
-    λ t' ⟨t, t_in_old_tuples, t_left', t_mid', t_right'⟩ => id (Eq.symm t_mid')
+    by
+      intro t ⟨w, left, right⟩
+      ext a
+      simp_all only [PFun.mem_dom]
+      apply Iff.intro
+      · intro ⟨w_1, h_1⟩
+        have z := right a
+        by_cases h : a ∈ s'
+        . simp_all only [imp_self, not_true_eq_false, IsEmpty.forall_iff, and_self]
+        . simp_all only [not_false_eq_true, Part.not_mem_none]
+      · intro a_1
+        rw [← inst.validSchema w left] at h
+        have z := Set.mem_of_subset_of_mem h a_1
+        simp_all only [PFun.mem_dom]
   ⟩
 
-theorem projection_empty {s' : RelationSchema} (inst : RelationInstance) : projection inst ∅ (by simp_all only [Set.empty_subset]) = ⟨∅, ∅, λ _ a => False.elim a⟩
+theorem projection_empty {s' : RelationSchema} (inst : RelationInstance) : projection inst ∅ (by simp_all only [Set.empty_subset]) = ⟨∅, {t | ∀a, t a = Part.none}, (by
+    intro t a
+    simp_all only [Set.mem_setOf_eq]
+    ext x : 1
+    simp_all only [PFun.mem_dom, Part.not_mem_none, exists_const, Set.mem_empty_iff_false]
+  )⟩
   := by
     unfold projection
-    simp_all only [Set.mem_empty_iff_false, IsEmpty.forall_iff, implies_true, true_and, exists_and_right, RelationInstance.mk.injEq]
-    ext t'
-    apply Iff.intro
-    .
-      intro a
-      simp_all only [ne_eq, Set.mem_setOf_eq, Set.mem_empty_iff_false]
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      obtain ⟨left_1, right⟩ := right
-      simp_all only [not_true_eq_false, imp_false, not_not]
-      sorry
-    . intro a
-      simp_all only [Set.mem_empty_iff_false]
+    simp_all only [Set.mem_empty_iff_false, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and,
+      exists_and_right, RelationInstance.mk.injEq]
+    ext x
+    simp_all only [Set.mem_setOf_eq, and_iff_right_iff_imp]
+    intro a
+    use x
+    sorry
 
 theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = inst.schema) : projection inst s' (by subst h; simp_all only [subset_refl]) = inst
   := by
-    -- subst h
     unfold projection
-    apply RelationInstance.eq
-    . subst h
-      simp_all only
-    . subst h
-      simp_all only
-      ext t'
+    apply RelationInstance.eq.mp
+    subst h
+    simp_all only
+    apply And.intro (trivial)
+    . ext t'
       simp_all only [Set.mem_setOf_eq]
       apply Iff.intro
-      · intro ⟨t, t_in_tuples, t_left', t_mid', t_right'⟩
-        simp_all only [PFun.mem_dom, forall_exists_index]
-        rw [← inst.validSchema t t_in_tuples] at t_mid'
-        simp_all only [ne_eq]
-        sorry
-      · intro a
+      · intro ⟨t, t_in_tuples, t_prop'⟩
+        rw [← inst.validSchema t t_in_tuples] at t_prop'
+        simp_all only [RelationInstance.eq, PFun.mem_dom, forall_exists_index, not_exists]
+        have z : t = t' := by
+          ext a v
+          have ⟨h1, h2⟩ := t_prop' a
+          apply Iff.intro
+          · intro a_1
+            simp_all only [RelationInstance.eq, not_false_eq_true, implies_true]
+            have h' := h1 v a_1
+            rw [h']
+            exact a_1
+          · intro a_1
+            by_contra h'
+            simp_all only [RelationInstance.eq, not_false_eq_true, implies_true]
+            sorry
+        subst z
+        exact t_in_tuples
+      . intro t'_in_tuples
         use t'
-        simp_all only [implies_true, true_and]
-        rw [inst.validSchema t' a]
+        simp_all only [RelationInstance.eq, implies_true, true_and]
+        intro a a_1
+        rw [← inst.validSchema t' t'_in_tuples] at *
+        ext v
+        simp_all only [RelationInstance.eq, PFun.mem_dom, not_exists, Part.not_mem_none]
 
 theorem projection_cascade {s1 s2 s3 : RelationSchema} (inst1 : RelationInstance s1) (h1 : s2 ⊆ s1) (h2 : s3 ⊆ s2) :
   projection (projection inst1 s2 h1) s3 h2 = projection inst1 s3 (subset_trans h2 h1) :=
