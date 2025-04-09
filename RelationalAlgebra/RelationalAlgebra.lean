@@ -56,25 +56,19 @@ def rename (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Su
       simp_all only [PFun.mem_dom, Set.mem_image]
       apply Iff.intro
       -- value in new tuple → attribute in new schema
-      · intro a_1
-        obtain ⟨w, h⟩ := a_1
+      · intro ⟨w, w_ta⟩
         rw [← inst.validSchema (t' ∘ f)]
         . simp_all only [PFun.mem_dom, Function.comp_apply]
           have ⟨a', ha'⟩ := f_sur a
-          subst ha'
-          exact Exists.intro a' (And.intro (Exists.intro w h) rfl)
+          rw [← ha'] at w_ta ⊢
+          exact Exists.intro a' (And.intro (Exists.intro w w_ta) rfl)
         . exact t_cond'
       -- attribute in new schema → value in new tuple
-      · intro a_1
-        obtain ⟨w, h⟩ := a_1
-        obtain ⟨left, right⟩ := h
-        subst right
-        rw [← inst.validSchema (t' ∘ f)] at left
-        . simp only [PFun.mem_dom, Function.comp_apply] at left
-          exact left
-        . exact t_cond'
+      · intro ⟨w, w_in_schema, fw_a⟩
+        rw [← fw_a]
+        rw [← inst.validSchema (t' ∘ f) t_cond'] at w_in_schema
+        exact Part.dom_iff_mem.mp w_in_schema
   ⟩
-
 
 @[simp]
 theorem rename_inst_id (inst : RelationInstance) : rename inst id Function.surjective_id = inst := by
@@ -104,7 +98,7 @@ section join
 def join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
   RelationInstance (s1 ∪ s2) :=
     { t | ∃ t1 ∈ inst1, ∃ t2 ∈ inst2,
-      -- Attributes in both s1 and s2
+      -- Attributes in both s1 and s2 (*REDUNDANT*)
       (∀ a : ↑(s1 ∩ s2), t1 ⟨a, Set.mem_of_mem_inter_left a.prop⟩ = t2 ⟨a, Set.mem_of_mem_inter_right a.prop⟩) ∧
       -- Attributes in s1
       (∀ a : s1, t ⟨a, Or.inl a.prop⟩  = t1 a) ∧
