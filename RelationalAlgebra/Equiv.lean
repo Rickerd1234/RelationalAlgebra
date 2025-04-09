@@ -3,6 +3,10 @@ import RelationalAlgebra.RelationalModel
 open RM
 
 @[simp]
+protected theorem RelationInstance.eq : ∀ {a b : RelationInstance}, a.schema = b.schema → a.tuples = b.tuples → a = b
+  | ⟨_,_,_⟩, ⟨_,_,_⟩, rfl, rfl => rfl
+
+@[simp]
 theorem tuple_valid_schema {a : Attribute} {inst : RelationInstance} {t : Tuple} (ha : a ∈ inst.schema) (ht : t ∈ inst.tuples) : PFun.Dom t a := by
   rw [← inst.validSchema t ht] at *;
   . rw [PFun.mem_dom] at ha
