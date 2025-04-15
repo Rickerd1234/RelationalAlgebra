@@ -95,77 +95,77 @@ end rename
 -- Join
 section join
 
-def join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
-  RelationInstance (s1 ∪ s2) :=
-    { t | ∃ t1 ∈ inst1, ∃ t2 ∈ inst2,
-      -- Attributes in both s1 and s2 (*REDUNDANT*)
-      (∀ a : ↑(s1 ∩ s2), t1 ⟨a, Set.mem_of_mem_inter_left a.prop⟩ = t2 ⟨a, Set.mem_of_mem_inter_right a.prop⟩) ∧
-      -- Attributes in s1
-      (∀ a : s1, t ⟨a, Or.inl a.prop⟩  = t1 a) ∧
-      -- Attributes in s2
-      (∀ a : s2, t ⟨a, Or.inr a.prop⟩  = t2 a)
-    }
+-- def join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
+--   RelationInstance (s1 ∪ s2) :=
+--     { t | ∃ t1 ∈ inst1, ∃ t2 ∈ inst2,
+--       -- Attributes in both s1 and s2 (*REDUNDANT*)
+--       (∀ a : ↑(s1 ∩ s2), t1 ⟨a, Set.mem_of_mem_inter_left a.prop⟩ = t2 ⟨a, Set.mem_of_mem_inter_right a.prop⟩) ∧
+--       -- Attributes in s1
+--       (∀ a : s1, t ⟨a, Or.inl a.prop⟩  = t1 a) ∧
+--       -- Attributes in s2
+--       (∀ a : s2, t ⟨a, Or.inr a.prop⟩  = t2 a)
+--     }
 
-theorem join_empty {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
-  join inst1 (∅ : RelationInstance s2) = (∅ : RelationInstance (s1 ∪ s2)) := by
-    simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
+-- theorem join_empty {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
+--   join inst1 (∅ : RelationInstance s2) = (∅ : RelationInstance (s1 ∪ s2)) := by
+--     simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
 
-theorem empty_join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
-  join (∅ : RelationInstance s2) inst1 = (∅ : RelationInstance (s2 ∪ s1)) := by
-    simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
+-- theorem empty_join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
+--   join (∅ : RelationInstance s2) inst1 = (∅ : RelationInstance (s2 ∪ s1)) := by
+--     simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
 
-theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
-  join inst1 inst2 = (instance_equiv schema_union_comm) (join inst2 inst1) :=
-    Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
-      -- t ∈ join inst1 inst2 → t ∈ (instance_equiv schema_union_comm) (join inst2 inst1)
-      (
-        λ ⟨l, l_in_1, r, r_in_2, both, t_in_l, t_in_r⟩ =>
-          ⟨
-            tuple_equiv schema_union_comm t,
-            ⟨r, r_in_2, l, l_in_1,
-              by
-                simp [join];
-                intro a b
-                simp_all only [Subtype.forall, Set.mem_inter_iff, and_self],
-              t_in_r,
-              t_in_l
-            ⟩,
-            rfl
-          ⟩
-      ),
-      -- t ∈ (instance_equiv schema_union_comm) (join inst2 inst1) → t ∈ join inst1 inst2
-      (by
-        intro ⟨s, ⟨l, l_in_2, r, r_in_1, both, s_in_l, s_in_r⟩, s_t⟩
-        simp [join] at *
-        subst s_t
-        exact ⟨r, r_in_1, l, l_in_2,
-          by simp_all only [and_self, implies_true],
-        ⟩
-      )
-    ⟩
+-- theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
+--   join inst1 inst2 = (instance_equiv schema_union_comm) (join inst2 inst1) :=
+--     Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
+--       -- t ∈ join inst1 inst2 → t ∈ (instance_equiv schema_union_comm) (join inst2 inst1)
+--       (
+--         λ ⟨l, l_in_1, r, r_in_2, both, t_in_l, t_in_r⟩ =>
+--           ⟨
+--             tuple_equiv schema_union_comm t,
+--             ⟨r, r_in_2, l, l_in_1,
+--               by
+--                 simp [join];
+--                 intro a b
+--                 simp_all only [Subtype.forall, Set.mem_inter_iff, and_self],
+--               t_in_r,
+--               t_in_l
+--             ⟩,
+--             rfl
+--           ⟩
+--       ),
+--       -- t ∈ (instance_equiv schema_union_comm) (join inst2 inst1) → t ∈ join inst1 inst2
+--       (by
+--         intro ⟨s, ⟨l, l_in_2, r, r_in_1, both, s_in_l, s_in_r⟩, s_t⟩
+--         simp [join] at *
+--         subst s_t
+--         exact ⟨r, r_in_1, l, l_in_2,
+--           by simp_all only [and_self, implies_true],
+--         ⟩
+--       )
+--     ⟩
 
-theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
-  join inst1 inst1 = (instance_equiv schema_union_self) inst1 :=
-    Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
-      -- t ∈ join inst1 inst1 → t ∈ (instance_equiv schema_union_self) inst1
-      (λ ⟨l, l_in_1, r, r_in_1, both, t_in_l, t_in_r⟩ =>
-        ⟨tuple_equiv schema_union_self.symm t,
-          ⟨
-            by
-              simp [tuple_equiv, schema_union_self]
-              simp_all only [Subtype.coe_prop, Subtype.coe_eta],
-            rfl
-          ⟩
-        ⟩
-      ),
-      -- t ∈ (instance_equiv schema_union_self) inst1 → t ∈ join inst1 inst
-      (by
-        intro ⟨w, w_in_1, w_t⟩
-        simp only [join, Subtype.forall]
-        subst w_t
-        exact ⟨w, w_in_1, w, w_in_1, λ _ _ => rfl, λ _ _ => rfl, λ _ _ => rfl⟩
-      )
-    ⟩
+-- theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
+--   join inst1 inst1 = (instance_equiv schema_union_self) inst1 :=
+--     Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
+--       -- t ∈ join inst1 inst1 → t ∈ (instance_equiv schema_union_self) inst1
+--       (λ ⟨l, l_in_1, r, r_in_1, both, t_in_l, t_in_r⟩ =>
+--         ⟨tuple_equiv schema_union_self.symm t,
+--           ⟨
+--             by
+--               simp [tuple_equiv, schema_union_self]
+--               simp_all only [Subtype.coe_prop, Subtype.coe_eta],
+--             rfl
+--           ⟩
+--         ⟩
+--       ),
+--       -- t ∈ (instance_equiv schema_union_self) inst1 → t ∈ join inst1 inst
+--       (by
+--         intro ⟨w, w_in_1, w_t⟩
+--         simp only [join, Subtype.forall]
+--         subst w_t
+--         exact ⟨w, w_in_1, w, w_in_1, λ _ _ => rfl, λ _ _ => rfl, λ _ _ => rfl⟩
+--       )
+--     ⟩
 
 end join
 
@@ -178,8 +178,6 @@ theorem a_in_dom {a : Attribute} {t : Tuple} {v : Value} (h : v ∈ t a) : t.Dom
   rw [PFun.dom_eq]
   rw [@Set.setOf_app_iff]
   exact Exists.intro v h
-
-variable [Hdecp : ∀ a : Attribute, ∀ s : RelationSchema, Decidable (a ∈ s)]
 
 def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.schema) :
   RelationInstance :=
@@ -247,6 +245,8 @@ theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = 
       simp_all only [PFun.mem_dom, not_exists]
       ext a_3 : 1
       simp_all only [Part.not_mem_none]
+
+variable [Hdecp : ∀ a : Attribute, ∀ s : RelationSchema, Decidable (a ∈ s)]
 
 theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h1 : s1 ⊆ inst.schema) (h2 : s2 ⊆ s1) :
   projection (projection inst s1 h1) s2 h2 = projection inst s2 (subset_trans h2 h1) := by

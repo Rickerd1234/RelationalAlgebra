@@ -2,12 +2,61 @@ import RelationalAlgebra.RelationalAlgebra
 
 open RM
 
+variable [Hdecp : ∀ a : Attribute, ∀ s : RelationSchema, Decidable (a ∈ s)]
+
 @[simp ←]
-theorem projection_union {s1 s2 : RelationSchema} (inst1 inst2 : RelationInstance s1) (h : s2 ⊆ s1):
-  projection (union inst1 inst2) s2 h = union (projection inst1 s2 h) (projection inst2 s2 h) :=
-    Set.ext λ _ => ⟨ -- Proof by extensionality
-      -- w ∈ projection (union inst1 inst2) s2 h → w ∈ union (projection inst1 s2 h) (projection inst2 s2 h)
-      (λ ⟨w, hw_union, hw_project⟩ => Or.elim hw_union (λ w_in_1 => Or.inl ⟨w, w_in_1, hw_project⟩) (λ w_in_2 => Or.inr ⟨w, w_in_2, hw_project⟩)),
-      -- w ∈ union (projection inst1 s2 h) (projection inst2 s2 h) → w ∈ projection (union inst1 inst2) s2 h
-      (λ hx => Or.elim hx (λ ⟨w, w_in_1, w_project⟩ => ⟨w, Or.inl w_in_1, w_project⟩) (λ ⟨w, w_in_2, w_project⟩ => ⟨w, Or.inr w_in_2, w_project⟩))
-    ⟩
+theorem projection_union {s' : RelationSchema} (inst1 inst2 : RelationInstance) (h_pr : s' ⊆ inst1.schema) (h_un : inst1.schema = inst2.schema):
+  projection (union inst1 inst2 h_un) s' h_pr = union (projection inst1 s' h_pr) (projection inst2 s' (by rw [←h_un]; exact h_pr)) rfl := by
+    unfold projection union
+    simp_all only [Set.mem_union, RelationInstance.mk.injEq, true_and]
+    simp_all only
+    ext x : 1
+    simp_all only [Set.mem_setOf_eq, Set.mem_union]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      simp_all only [not_false_eq_true, implies_true, and_true]
+      cases left with
+      | inl h =>
+        apply Or.inl
+        apply Exists.intro
+        · apply And.intro
+          on_goal 2 => {
+            intro a a_1
+            rfl
+          }
+          · simp_all only
+      | inr h_1 =>
+        apply Or.inr
+        apply Exists.intro
+        · apply And.intro
+          on_goal 2 => {
+            intro a a_1
+            rfl
+          }
+          · simp_all only
+    · intro a
+      cases a with
+      | inl h =>
+        obtain ⟨w, h⟩ := h
+        obtain ⟨left, right⟩ := h
+        simp_all only [not_false_eq_true, implies_true, and_true]
+        apply Exists.intro
+        · apply And.intro
+          on_goal 2 => {
+            intro a a_1
+            rfl
+          }
+          · simp_all only [true_or]
+      | inr h_1 =>
+        obtain ⟨w, h⟩ := h_1
+        obtain ⟨left, right⟩ := h
+        simp_all only [not_false_eq_true, implies_true, and_true]
+        apply Exists.intro
+        · apply And.intro
+          on_goal 2 => {
+            intro a a_1
+            rfl
+          }
+          · simp_all only [or_true]
