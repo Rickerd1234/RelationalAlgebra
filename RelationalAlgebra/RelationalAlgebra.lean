@@ -153,66 +153,92 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
             simp_all only [Set.mem_union, PFun.mem_dom, not_true_eq_false]
     ⟩
 
--- theorem join_empty {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
---   join inst1 (∅ : RelationInstance s2) = (∅ : RelationInstance (s1 ∪ s2)) := by
---     simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
+@[simp]
+theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join inst2 inst1 := by
+  simp_all only [join, Set.mem_union, not_or, and_imp, RelationInstance.mk.injEq]
+  apply And.intro
+  · ext x : 1
+    simp_all only [Set.mem_union]
+    apply Iff.intro
+    · intro a
+      cases a with
+      | inl h => simp_all only [or_true]
+      | inr h_1 => simp_all only [true_or]
+    · intro a
+      cases a with
+      | inl h => simp_all only [or_true]
+      | inr h_1 => simp_all only [true_or]
+  · ext x : 1
+    simp_all only [Set.mem_setOf_eq]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      obtain ⟨w_1, h⟩ := right
+      obtain ⟨left_1, right⟩ := h
+      simp_all only [not_false_eq_true, implies_true, and_true]
+      apply Exists.intro
+      · apply And.intro
+        · exact left_1
+        · simp_all only [implies_true, true_and]
+          apply Exists.intro
+          · apply And.intro
+            on_goal 2 => {
+              intro a a_1
+              rfl
+            }
+            · simp_all only
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      obtain ⟨w_1, h⟩ := right
+      obtain ⟨left_1, right⟩ := h
+      simp_all only [not_false_eq_true, implies_true, and_true]
+      apply Exists.intro
+      · apply And.intro
+        · exact left_1
+        · simp_all only [implies_true, true_and]
+          apply Exists.intro
+          · apply And.intro
+            on_goal 2 => {
+              intro a a_1
+              rfl
+            }
+            · simp_all only
 
--- theorem empty_join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
---   join (∅ : RelationInstance s2) inst1 = (∅ : RelationInstance (s2 ∪ s1)) := by
---     simp only [join, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
+@[simp]
+theorem join_empty (inst1 : RelationInstance) :
+  join inst1 ⟨inst1.schema, ∅, by simp⟩  = ⟨inst1.schema, ∅, by simp⟩ := by
+    simp_all only [join, Set.union_self, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
 
--- theorem join_comm {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
---   join inst1 inst2 = (instance_equiv schema_union_comm) (join inst2 inst1) :=
---     Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
---       -- t ∈ join inst1 inst2 → t ∈ (instance_equiv schema_union_comm) (join inst2 inst1)
---       (
---         λ ⟨l, l_in_1, r, r_in_2, both, t_in_l, t_in_r⟩ =>
---           ⟨
---             tuple_equiv schema_union_comm t,
---             ⟨r, r_in_2, l, l_in_1,
---               by
---                 simp [join];
---                 intro a b
---                 simp_all only [Subtype.forall, Set.mem_inter_iff, and_self],
---               t_in_r,
---               t_in_l
---             ⟩,
---             rfl
---           ⟩
---       ),
---       -- t ∈ (instance_equiv schema_union_comm) (join inst2 inst1) → t ∈ join inst1 inst2
---       (by
---         intro ⟨s, ⟨l, l_in_2, r, r_in_1, both, s_in_l, s_in_r⟩, s_t⟩
---         simp [join] at *
---         subst s_t
---         exact ⟨r, r_in_1, l, l_in_2,
---           by simp_all only [and_self, implies_true],
---         ⟩
---       )
---     ⟩
+@[simp]
+theorem empty_join (inst1 : RelationInstance) :
+  join ⟨inst1.schema, ∅, (by simp)⟩ inst1 = ⟨inst1.schema, ∅, (by simp)⟩ := by simp_all only [join_comm,join_empty]
 
--- theorem join_self {s1 : RelationSchema} (inst1 : RelationInstance s1) :
---   join inst1 inst1 = (instance_equiv schema_union_self) inst1 :=
---     Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
---       -- t ∈ join inst1 inst1 → t ∈ (instance_equiv schema_union_self) inst1
---       (λ ⟨l, l_in_1, r, r_in_1, both, t_in_l, t_in_r⟩ =>
---         ⟨tuple_equiv schema_union_self.symm t,
---           ⟨
---             by
---               simp [tuple_equiv, schema_union_self]
---               simp_all only [Subtype.coe_prop, Subtype.coe_eta],
---             rfl
---           ⟩
---         ⟩
---       ),
---       -- t ∈ (instance_equiv schema_union_self) inst1 → t ∈ join inst1 inst
---       (by
---         intro ⟨w, w_in_1, w_t⟩
---         simp only [join, Subtype.forall]
---         subst w_t
---         exact ⟨w, w_in_1, w, w_in_1, λ _ _ => rfl, λ _ _ => rfl, λ _ _ => rfl⟩
---       )
---     ⟩
+@[simp]
+theorem join_self (inst1 : RelationInstance) : join inst1 inst1 = inst1 := by
+    simp only [join, Set.union_self, ← RelationInstance.eq, true_and]
+    ext t
+    simp only [Set.mem_setOf_eq]
+    apply Iff.intro
+    . intro ⟨ht1, ht2, _, _, ht5⟩
+      have h : t = ht1 := by
+        ext a v
+        by_cases h : a ∈ inst1.schema
+        . simp_all only
+        . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
+          apply Aesop.BuiltinRules.not_intro
+          intro a_1
+          simp_all only [← inst1.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
+      rw [h]
+      exact ht2
+    . intro h
+      have g : ∀a : Attribute, (a ∉ inst1.schema → t a = Part.none) := by
+          simp_all [← inst1.validSchema t h]
+          intro a a_1
+          ext a_2 : 1
+          simp_all only [Part.not_mem_none]
+      exact Exists.intro t (And.intro h (Exists.intro t (And.intro h (λ a => And.intro (λ _ => rfl) (And.intro (λ _ => rfl) (λ h' => g a h'))))))
 
 end join
 
