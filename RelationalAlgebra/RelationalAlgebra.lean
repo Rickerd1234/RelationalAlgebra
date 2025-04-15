@@ -95,16 +95,63 @@ end rename
 -- Join
 section join
 
--- def join {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) (inst2 : RelationInstance s2) :
---   RelationInstance (s1 ∪ s2) :=
---     { t | ∃ t1 ∈ inst1, ∃ t2 ∈ inst2,
---       -- Attributes in both s1 and s2 (*REDUNDANT*)
---       (∀ a : ↑(s1 ∩ s2), t1 ⟨a, Set.mem_of_mem_inter_left a.prop⟩ = t2 ⟨a, Set.mem_of_mem_inter_right a.prop⟩) ∧
---       -- Attributes in s1
---       (∀ a : s1, t ⟨a, Or.inl a.prop⟩  = t1 a) ∧
---       -- Attributes in s2
---       (∀ a : s2, t ⟨a, Or.inr a.prop⟩  = t2 a)
---     }
+def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstance :=
+    ⟨
+      inst1.schema ∪ inst2.schema,
+      { t | ∃ t1 ∈ inst1.tuples, ∃ t2 ∈ inst2.tuples,
+        (∀ a : Attribute, (a ∈ inst1.schema → t a = t1 a) ∧ (a ∈ inst2.schema → t a = t2 a) ∧ (a ∉ inst1.schema ∪ inst2.schema → t a = Part.none))
+      },
+      by
+        intro t a
+        simp_all only [and_imp, Set.mem_setOf_eq]
+        obtain ⟨w, h⟩ := a
+        obtain ⟨left, right⟩ := h
+        obtain ⟨w_1, h⟩ := right
+        obtain ⟨left_1, right⟩ := h
+        ext a
+        simp_all only [PFun.mem_dom, Set.mem_union]
+        rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1]
+        simp_all only [not_or, and_imp, PFun.mem_dom]
+        apply Iff.intro
+        · intro a_1
+          obtain ⟨w_2, h⟩ := a_1
+          by_cases g : a ∈ inst1.schema ∪ inst2.schema
+          . simp_all only [Set.mem_union]
+            cases g with
+            | inl h_1 =>
+              simp_all only
+              apply Or.inl
+              apply Exists.intro
+              · exact h
+            | inr h_2 =>
+              simp_all only
+              apply Or.inr
+              apply Exists.intro
+              · exact h
+          . simp_all only [Set.mem_union, not_or, not_false_eq_true, Part.not_mem_none]
+        · intro a_1
+          by_cases g : a ∈ inst1.schema ∪ inst2.schema
+          . simp_all only [Set.mem_union]
+            cases a_1 with
+            | inl h =>
+              cases g with
+              | inl h_1 => simp_all only
+              | inr h_2 =>
+                simp_all only
+                obtain ⟨w_2, h⟩ := h
+                rw [← inst2.validSchema w_1 left_1] at h_2
+                simp_all only [PFun.mem_dom]
+            | inr h_1 =>
+              cases g with
+              | inl h =>
+                simp_all only
+                obtain ⟨w_2, h_1⟩ := h_1
+                rw [← inst1.validSchema w left] at h
+                simp_all only [PFun.mem_dom]
+              | inr h_2 => simp_all only
+          . rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1] at g
+            simp_all only [Set.mem_union, PFun.mem_dom, not_true_eq_false]
+    ⟩
 
 -- theorem join_empty {s1 s2 : RelationSchema} (inst1 : RelationInstance s1) :
 --   join inst1 (∅ : RelationInstance s2) = (∅ : RelationInstance (s1 ∪ s2)) := by
