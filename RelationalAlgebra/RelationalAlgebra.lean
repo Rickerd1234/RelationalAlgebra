@@ -246,8 +246,6 @@ theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = 
       ext a_3 : 1
       simp_all only [Part.not_mem_none]
 
-variable [Hdecp : ∀ a : Attribute, ∀ s : RelationSchema, Decidable (a ∈ s)]
-
 theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h1 : s1 ⊆ inst.schema) (h2 : s2 ⊆ s1) :
   projection (projection inst s1 h1) s2 h2 = projection inst s2 (subset_trans h2 h1) := by
     simp [projection]
@@ -268,16 +266,24 @@ theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h
       obtain ⟨w, h⟩ := a
       obtain ⟨left, right⟩ := h
       simp_all only [not_false_eq_true, implies_true, and_true]
-      use λ a => ite (a ∈ s1) (w a) Part.none
-      simp_all only [↓reduceIte, implies_true, and_true]
+      rw [← inst.validSchema w left] at h1
+      use PFun.restrict w h1
       apply And.intro
       · use w
-        simp_all only [implies_true, and_self]
+        simp_all only [true_and]
+        intro a
+        apply And.intro
+        · intro a_1
+          ext a_2 : 1
+          simp_all only [PFun.mem_restrict, true_and]
+        · intro a_1
+          ext a_2 : 1
+          simp_all only [PFun.mem_restrict, false_and, Part.not_mem_none]
       · intro a a_1
-        split
-        next h => simp_all only
-        next h =>
-          have g : a ∈ s1 := Set.mem_of_subset_of_mem h2 a_1
-          simp_all only [not_true_eq_false]
+        ext a_2 : 1
+        simp_all only [PFun.mem_restrict, iff_and_self]
+        intro a_3
+        apply h2
+        simp_all only
 
 end projection
