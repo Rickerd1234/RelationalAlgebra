@@ -183,21 +183,19 @@ def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.
   RelationInstance :=
   ⟨
     s',
-    { t' | ∃ t ∈ inst.tuples,
-      (∀ a, (a ∈ s' → t' a = t a) ∧ (a ∉ s'→ t' a = Part.none))
-    },
+    { t' | ∃ t ∈ inst.tuples, (∀ a, (a ∈ s' → t' a = t a) ∧ (a ∉ s' → t' a = Part.none)) },
     by
-      intro t ⟨w, left, right⟩
+      intro t' ⟨t, t_in_tuples, t_def'⟩
       ext a
       simp_all only [PFun.mem_dom]
       apply Iff.intro
-      · intro ⟨w_1, h_1⟩
-        have z := right a
+      · intro ⟨w, w_ta'⟩
+        have z := t_def' a
         by_cases h : a ∈ s'
         . simp_all only [imp_self, not_true_eq_false, IsEmpty.forall_iff, and_self]
         . simp_all only [not_false_eq_true, Part.not_mem_none]
       · intro a_1
-        rw [← inst.validSchema w left] at h
+        rw [← inst.validSchema t t_in_tuples] at h
         have z := Set.mem_of_subset_of_mem h a_1
         simp_all only [PFun.mem_dom]
   ⟩
@@ -223,36 +221,29 @@ theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = 
     unfold projection
     apply RelationInstance.eq.mp
     subst h
-    simp_all only
-    apply And.intro (trivial)
-    . ext t'
-      simp_all only [Set.mem_setOf_eq]
-      apply Iff.intro
-      · intro ⟨t, t_in_tuples, t_prop'⟩
-        rw [← inst.validSchema t t_in_tuples] at t_prop'
-        simp_all only [RelationInstance.eq, PFun.mem_dom, forall_exists_index, not_exists]
-        have z : t = t' := by
-          ext a v
-          have ⟨h1, h2⟩ := t_prop' a
-          apply Iff.intro
-          · intro a_1
-            simp_all only [RelationInstance.eq, not_false_eq_true, implies_true]
-            have h' := h1 v a_1
-            rw [h']
-            exact a_1
-          · intro a_1
-            by_contra h'
-            simp_all only [RelationInstance.eq, not_false_eq_true, implies_true]
-            sorry
-        subst z
-        exact t_in_tuples
-      . intro t'_in_tuples
-        use t'
-        simp_all only [RelationInstance.eq, implies_true, true_and]
-        intro a a_1
-        rw [← inst.validSchema t' t'_in_tuples] at *
-        ext v
-        simp_all only [RelationInstance.eq, PFun.mem_dom, not_exists, Part.not_mem_none]
+    simp_all only [true_and]
+    ext t'
+    simp_all only [Set.mem_setOf_eq]
+    apply Iff.intro
+    · intro ⟨w, left, right⟩
+      have z : w = t' := by
+        ext a v
+        by_cases h : a ∈ inst.schema
+        . simp_all only
+        . simp_all only [not_false_eq_true, Part.not_mem_none, iff_false]
+          apply Aesop.BuiltinRules.not_intro
+          intro a_1
+          simp_all [← inst.validSchema w left]
+      rw [z] at left
+      exact left
+    · intro a
+      apply Exists.intro t'
+      simp_all only [implies_true, true_and]
+      intro a_1 a_2
+      rw [← inst.validSchema t' a] at a_2
+      simp_all only [PFun.mem_dom, not_exists]
+      ext a_3 : 1
+      simp_all only [Part.not_mem_none]
 
 theorem projection_cascade {s1 s2 s3 : RelationSchema} (inst1 : RelationInstance s1) (h1 : s2 ⊆ s1) (h2 : s3 ⊆ s2) :
   projection (projection inst1 s2 h1) s3 h2 = projection inst1 s3 (subset_trans h2 h1) :=

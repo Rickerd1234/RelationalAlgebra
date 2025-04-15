@@ -10,7 +10,6 @@ protected theorem RelationInstance.eq.mp : ∀ {a b : RelationInstance}, (a.sche
 protected theorem RelationInstance.eq.mpr : ∀ {a b : RelationInstance}, a = b → a.schema = b.schema ∧ a.tuples = b.tuples
   := λ a_b => ⟨congrArg RelationInstance.schema a_b, congrArg RelationInstance.tuples a_b⟩
 
-@[simp]
 theorem RelationInstance.eq : ∀ {a b : RelationInstance}, (a.schema = b.schema ∧ a.tuples = b.tuples) ↔ a = b :=
   Iff.intro (RelationInstance.eq.mp) (RelationInstance.eq.mpr)
 
