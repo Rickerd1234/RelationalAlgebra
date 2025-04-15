@@ -179,6 +179,8 @@ theorem a_in_dom {a : Attribute} {t : Tuple} {v : Value} (h : v ∈ t a) : t.Dom
   rw [@Set.setOf_app_iff]
   exact Exists.intro v h
 
+variable [Hdecp : ∀ a : Attribute, ∀ s : RelationSchema, Decidable (a ∈ s)]
+
 def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.schema) :
   RelationInstance :=
   ⟨
@@ -200,6 +202,7 @@ def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.
         simp_all only [PFun.mem_dom]
   ⟩
 
+-- This behavior is undefined in (most?) theory, so maybe should just leave it out
 theorem projection_empty {s' : RelationSchema} (inst : RelationInstance) : projection inst ∅ (by simp_all only [Set.empty_subset]) = ⟨∅, {t | ∀a, t a = Part.none}, (by
     intro t a
     simp_all only [Set.mem_setOf_eq]
@@ -265,18 +268,16 @@ theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h
       obtain ⟨w, h⟩ := a
       obtain ⟨left, right⟩ := h
       simp_all only [not_false_eq_true, implies_true, and_true]
-      use w
+      use λ a => ite (a ∈ s1) (w a) Part.none
+      simp_all only [↓reduceIte, implies_true, and_true]
       apply And.intro
-      . use w
-        simp_all only [implies_true, true_and]
-        intro a a_1
-        have a_2 : a ∉ s2 := by
-          apply Aesop.BuiltinRules.not_intro
-          intro a_2
-          have g := Set.mem_of_subset_of_mem h2 a_2
+      · use w
+        simp_all only [implies_true, and_self]
+      · intro a a_1
+        split
+        next h => simp_all only
+        next h =>
+          have g : a ∈ s1 := Set.mem_of_subset_of_mem h2 a_1
           simp_all only [not_true_eq_false]
-        sorry
-      . intro a a_1
-        simp_all only
 
 end projection
