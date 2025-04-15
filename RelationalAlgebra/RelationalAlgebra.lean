@@ -245,23 +245,38 @@ theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = 
       ext a_3 : 1
       simp_all only [Part.not_mem_none]
 
-theorem projection_cascade {s1 s2 s3 : RelationSchema} (inst1 : RelationInstance s1) (h1 : s2 ⊆ s1) (h2 : s3 ⊆ s2) :
-  projection (projection inst1 s2 h1) s3 h2 = projection inst1 s3 (subset_trans h2 h1) :=
-    Set.ext λ t => ⟨ -- Proof by extensionality using tuple t
-      (
-        -- x ∈ projection (projection inst1 s2 h1) s3 h2 → x ∈ projection inst1 s3 ⋯
-        λ ⟨_, ⟨⟨w, w_in_1, project_1⟩, project_2⟩⟩ =>
-          ⟨w, w_in_1, λ _ => by simp only [project_2, project_1]⟩
-      ),
-        -- x ∈ projection inst1 s3 ⋯ → x ∈ projection (projection inst1 s2 h1) s3 h2
-      (
-        λ ⟨w, w_in_1, w_project⟩ =>
-          ⟨
-            λ a => w ⟨a, Set.mem_of_mem_of_subset a.prop h1⟩,
-            ⟨w, w_in_1, λ _ => rfl⟩,
-            λ _ => by simp only [w_project]
-          ⟩
-      )
-    ⟩
+theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h1 : s1 ⊆ inst.schema) (h2 : s2 ⊆ s1) :
+  projection (projection inst s1 h1) s2 h2 = projection inst s2 (subset_trans h2 h1) := by
+    simp [projection]
+    ext t'
+    simp_all only [Set.mem_setOf_eq]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      obtain ⟨w_1, h⟩ := left
+      obtain ⟨left, right_1⟩ := h
+      simp_all only [not_false_eq_true, implies_true, and_true]
+      use w_1
+      simp_all only [true_and]
+      intro a a_1
+      exact (right_1 a).1 (Set.mem_of_subset_of_mem h2 a_1)
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      simp_all only [not_false_eq_true, implies_true, and_true]
+      use w
+      apply And.intro
+      . use w
+        simp_all only [implies_true, true_and]
+        intro a a_1
+        have a_2 : a ∉ s2 := by
+          apply Aesop.BuiltinRules.not_intro
+          intro a_2
+          have g := Set.mem_of_subset_of_mem h2 a_2
+          simp_all only [not_true_eq_false]
+        sorry
+      . intro a a_1
+        simp_all only
 
 end projection
