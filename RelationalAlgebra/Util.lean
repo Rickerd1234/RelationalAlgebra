@@ -18,14 +18,14 @@ end empty
 
 section rename
 
-def renameFunc [DecidableEq Attribute] (a a' : Attribute) : Attribute → Attribute :=
-  (λ a'' => if (a'' = a') then a else if (a'' = a) then a' else a'')
+def renameFunc [DecidableEq Attribute] (old new : Attribute) : Attribute → Attribute :=
+  (λ a'' => if (a'' = new) then old else if (a'' = old) then new else a'')
 
-theorem rename_func_surjective [DecidableEq Attribute] (a a' : Attribute) (h : a ≠ a') : (renameFunc a a').Surjective := by
+theorem rename_func_surjective [DecidableEq Attribute] (old new : Attribute) (h : old ≠ new) : (renameFunc old new).Surjective := by
   simp only [renameFunc, Function.Surjective]
   intro a''
   simp_all only [ne_eq]
-  by_cases h_a' : a'' = a'
+  by_cases h_a' : a'' = new
   . subst h_a'
     apply Exists.intro
     · split
@@ -37,7 +37,7 @@ theorem rename_func_surjective [DecidableEq Attribute] (a a' : Attribute) (h : a
       rename_i h_1
       subst h_1
       simp_all only [not_true_eq_false]
-  . by_cases h_a : a'' = a
+  . by_cases h_a : a'' = old
     . subst h_a
       simp_all only [not_false_eq_true, ite_eq_left_iff]
       apply Exists.intro
