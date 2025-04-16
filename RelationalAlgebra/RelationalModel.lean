@@ -3,11 +3,15 @@ import Mathlib.Data.PFun
 
 namespace RM
 
-abbrev Attribute := Type
+inductive Attribute
+| Name | Age | Salary
+deriving DecidableEq
 
-abbrev RelationName := Type
+inductive RelationName
+| Employee | Department
+deriving DecidableEq
 
-abbrev Value := Type
+abbrev Value := String
 
 abbrev RelationSchema := Set Attribute
 

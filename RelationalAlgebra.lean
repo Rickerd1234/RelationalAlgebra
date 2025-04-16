@@ -3,3 +3,4 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.RelationalAlgebra
 import RelationalAlgebra.Equiv
+import RelationalAlgebra.Tactics
