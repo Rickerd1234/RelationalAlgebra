@@ -14,6 +14,12 @@ theorem RelationInstance.eq : ∀ {a b : RelationInstance}, (a.schema = b.schema
   Iff.intro (RelationInstance.eq.mp) (RelationInstance.eq.mpr)
 
 @[simp]
+theorem value_mem_tuple_attr {a : Attribute} {t : Tuple} {v : Value} (h : v ∈ t a) : PFun.Dom t a := by
+  rw [PFun.dom_eq]
+  rw [@Set.setOf_app_iff]
+  exact Exists.intro v h
+
+@[simp]
 theorem tuple_valid_schema {a : Attribute} {inst : RelationInstance} {t : Tuple} (ha : a ∈ inst.schema) (ht : t ∈ inst.tuples) : PFun.Dom t a := by
   rw [← inst.validSchema t ht] at *
   rw [PFun.mem_dom] at ha

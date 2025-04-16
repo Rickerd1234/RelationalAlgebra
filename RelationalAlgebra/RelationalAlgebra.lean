@@ -20,8 +20,8 @@ def union (inst inst' : RelationInstance) (h: inst.schema = inst'.schema): Relat
   ⟩
 
 @[simp]
-theorem union_empty (inst : RelationInstance) : union inst emptyInst rfl = inst :=
-  by unfold union; simp_all only [emptyInst, Set.union_empty]
+theorem union_empty (inst : RelationInstance) : union inst (∅r inst.schema) rfl = inst :=
+  by unfold union; simp_all only [RelationInstance.empty, Set.union_empty]
 
 @[simp]
 theorem union_comm (inst inst' : RelationInstance) (h : inst.schema = inst'.schema) : union inst inst' h = union inst' inst h.symm :=
@@ -207,16 +207,16 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
             · simp_all only
 
 @[simp]
-theorem join_empty (inst1 : RelationInstance) :
-  join inst1 ⟨inst1.schema, ∅, by simp⟩  = ⟨inst1.schema, ∅, by simp⟩ := by
-    simp_all only [join, Set.union_self, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
+theorem join_empty (inst : RelationInstance) :
+  join inst (∅r inst.schema)  = ∅r inst.schema := by
+    simp_all only [RelationInstance.empty, join, Set.union_self, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
 
 @[simp]
-theorem empty_join (inst1 : RelationInstance) :
-  join ⟨inst1.schema, ∅, (by simp)⟩ inst1 = ⟨inst1.schema, ∅, (by simp)⟩ := by simp_all only [join_comm,join_empty]
+theorem empty_join (inst : RelationInstance) :
+  join (∅r inst.schema) inst = ∅r inst.schema := by simp_all only [join_comm, join_empty]
 
 @[simp]
-theorem join_self (inst1 : RelationInstance) : join inst1 inst1 = inst1 := by
+theorem join_self (inst : RelationInstance) : join inst inst = inst := by
     simp only [join, Set.union_self, ← RelationInstance.eq, true_and]
     ext t
     simp only [Set.mem_setOf_eq]
@@ -224,17 +224,17 @@ theorem join_self (inst1 : RelationInstance) : join inst1 inst1 = inst1 := by
     . intro ⟨ht1, ht2, _, _, ht5⟩
       have h : t = ht1 := by
         ext a v
-        by_cases h : a ∈ inst1.schema
+        by_cases h : a ∈ inst.schema
         . simp_all only
         . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
           apply Aesop.BuiltinRules.not_intro
           intro a_1
-          simp_all only [← inst1.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
+          simp_all only [← inst.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
       rw [h]
       exact ht2
     . intro h
-      have g : ∀a : Attribute, (a ∉ inst1.schema → t a = Part.none) := by
-          simp_all [← inst1.validSchema t h]
+      have g : ∀a : Attribute, (a ∉ inst.schema → t a = Part.none) := by
+          simp_all [← inst.validSchema t h]
           intro a a_1
           ext a_2 : 1
           simp_all only [Part.not_mem_none]
@@ -245,12 +245,6 @@ end join
 
 -- Projection
 section projection
-
-@[simp]
-theorem a_in_dom {a : Attribute} {t : Tuple} {v : Value} (h : v ∈ t a) : t.Dom a := by
-  rw [PFun.dom_eq]
-  rw [@Set.setOf_app_iff]
-  exact Exists.intro v h
 
 def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.schema) :
   RelationInstance :=
@@ -273,22 +267,40 @@ def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.
         simp_all only [PFun.mem_dom]
   ⟩
 
+abbrev emptyProjection (inst : RelationInstance) : RelationInstance := ⟨
+  ∅,
+  {t' | ∃t ∈ inst.tuples, t.restrict t.Dom.empty_subset = t'},
+  by
+    intro _ ⟨_, _, right⟩
+    subst right
+    exact rfl
+⟩
+
 -- This behavior is undefined in (most?) theory, so maybe should just leave it out
-theorem projection_empty {s' : RelationSchema} (inst : RelationInstance) : projection inst ∅ (by simp_all only [Set.empty_subset]) = ⟨∅, {t | ∀a, t a = Part.none}, (by
-    intro t a
-    simp_all only [Set.mem_setOf_eq]
-    ext x : 1
-    simp_all only [PFun.mem_dom, Part.not_mem_none, exists_const, Set.mem_empty_iff_false]
-  )⟩
-  := by
-    unfold projection
-    simp_all only [Set.mem_empty_iff_false, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and,
-      exists_and_right, RelationInstance.mk.injEq]
-    ext x
-    simp_all only [Set.mem_setOf_eq, and_iff_right_iff_imp]
-    intro a
-    use x
-    sorry
+theorem projection_empty (inst : RelationInstance) : projection inst ∅ inst.schema.empty_subset = emptyProjection inst := by
+      simp_all only [projection, Set.mem_empty_iff_false, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and,
+        exists_and_right, RelationInstance.mk.injEq]
+      ext x : 1
+      simp_all only [Set.mem_setOf_eq]
+      apply Iff.intro
+      · intro a
+        obtain ⟨left, right⟩ := a
+        obtain ⟨w, h⟩ := left
+        apply Exists.intro
+        · apply And.intro
+          · exact h
+          · ext a b : 1
+            simp_all only [PFun.mem_restrict, Set.mem_empty_iff_false, false_and, Part.not_mem_none]
+      · intro a
+        obtain ⟨w, h⟩ := a
+        obtain ⟨left, right⟩ := h
+        subst right
+        apply And.intro
+        · apply Exists.intro
+          · exact left
+        · intro a
+          ext a_1 : 1
+          simp_all only [PFun.mem_restrict, Set.mem_empty_iff_false, false_and, Part.not_mem_none]
 
 theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = inst.schema) : projection inst s' (by subst h; simp_all only [subset_refl]) = inst
   := by
