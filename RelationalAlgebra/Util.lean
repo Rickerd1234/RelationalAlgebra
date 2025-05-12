@@ -4,6 +4,7 @@ open RM
 
 section empty
 
+-- Utility to create empty RelationInstances
 @[simp]
 abbrev RelationInstance.empty (schema : RelationSchema) : RelationInstance := ⟨
   schema,
@@ -18,9 +19,11 @@ end empty
 
 section rename
 
+-- Function for renaming a single attribute
 def renameFunc [DecidableEq Attribute] (old new : Attribute) : Attribute → Attribute :=
   (λ a'' => if (a'' = new) then old else if (a'' = old) then new else a'')
 
+-- Theorem proving that renameFunc is surjective
 theorem rename_func_surjective [DecidableEq Attribute] (old new : Attribute) (h : old ≠ new) : (renameFunc old new).Surjective := by
   simp only [renameFunc, Function.Surjective]
   intro a''

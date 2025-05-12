@@ -2,6 +2,7 @@ import RelationalAlgebra.RelationalAlgebra
 
 open RM
 
+-- Projection over union
 @[simp ←]
 theorem projection_union {s' : RelationSchema} (inst1 inst2 : RelationInstance) (h_pr : s' ⊆ inst1.schema) (h_un : inst1.schema = inst2.schema):
   projection (union inst1 inst2 h_un) s' h_pr = union (projection inst1 s' h_pr) (projection inst2 s' (by rw [←h_un]; exact h_pr)) rfl := by
