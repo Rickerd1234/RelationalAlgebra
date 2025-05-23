@@ -94,8 +94,8 @@ def getResultVariables : Formula → List Variable
   | _       => []
 
 def hasDoubleVariables : Formula → List Variable → Prop
-  | .Ex v f,  vs => hasDoubleVariables f (v :: vs) ∧ v ∈ vs
-  -- | .All v f, vs => hasDoubleVariables f (v :: vs) ∧ v ∈ vs
+  | .Ex v f,  vs => hasDoubleVariables f (v :: vs) ∨ v ∈ vs
+  -- | .All v f, vs => hasDoubleVariables f (v :: vs) ∨ v ∈ vs
   | _,        _ => False
 
 -- def Evaluate : Formula → DatabaseInstance → VariableProjection → RelationInstance
