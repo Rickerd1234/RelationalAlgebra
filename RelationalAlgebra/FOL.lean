@@ -34,6 +34,8 @@ section evaluate
 
 abbrev VariableAssignment := Variable →. Value
 
+abbrev VariableProjection := Variable →. Attribute
+
 -- Active domain restriction for the database instance
 def Dom (DB : DatabaseInstance) : Set Value :=
   {v |                              -- All values for which
@@ -49,19 +51,24 @@ def getTerm : VariableAssignment → Term →. Value
   | _,  .const c => c
   | VA, .var v   => VA v
 
--- Verify whether a Formula.R is satisfied
-def satisfies_rel : VariableAssignment → RelationName → AttributeAssignment → DatabaseInstance → Prop
-  | VA, RN, AA, DB =>
-      ∃ tpl ∈ (DB.relations RN).tuples, -- There exists a tuple in the relation
-      ∀ att ∈ (DB.relations RN).schema, -- Where for all attributes in the schema
+-- Verify whether a VariableAssignment and AttributeAssignment is satisfied by the Tuple
+def satisfies_tpl : VariableAssignment → AttributeAssignment → Tuple → Prop
+  | VA, AA, T =>
+      ∀ att ∈ T.Dom,                    -- Where for all attributes in the schema
       ∃ trm : Term,                     -- There exists a term
         AA.Dom att →                    -- If attribute is assigned in the formula
           AA att = some trm ∧           -- Then this assigned term
-          getTerm VA trm = tpl att      -- Should match the value for this attribute in the tuple
+          getTerm VA trm = T att        -- Should match the value for this attribute in the tuple
+
+-- Verify whether a Formula.R (VariableAssignment and AttributeAssignment) is satisfied by the DatabaseInstance
+def satisfies_rel : VariableAssignment → RelationInstance → AttributeAssignment → Prop
+  | VA, R, AA =>
+      ∃ tpl ∈ R.tuples,                 -- There exists a tuple in the relation
+        satisfies_tpl VA AA tpl         -- Which satisfies the formula for the variable and attribute assignment
 
 -- Verify whether a Formula.Op is satisfied
-def satisfies_op : VariableAssignment → Atom → DatabaseInstance → Prop
-  | VA, .Eq t1 t2, _ => getTerm VA t1 = getTerm VA t2
+def satisfies_op : VariableAssignment → Atom → Prop
+  | VA, .Eq t1 t2 => getTerm VA t1 = getTerm VA t2
 
 -- Assign a variable
 def VarAssign : VariableAssignment → Variable → Value → VariableAssignment
@@ -69,8 +76,8 @@ def VarAssign : VariableAssignment → Variable → Value → VariableAssignment
 
 -- Check whether a VariableAssignment satisfies a Formula for specified DatabaseInstance
 def SatisfiesRec : VariableAssignment → Formula → DatabaseInstance → Prop
-  | VA, .R rn aa,   DB => satisfies_rel VA rn aa DB
-  | VA, .Op a,      DB => satisfies_op VA a DB
+  | VA, .R rn aa,   DB => satisfies_rel VA (DB.relations rn) aa
+  | VA, .Op a,      _  => satisfies_op VA a
   | VA, .And l r,   DB => SatisfiesRec VA l DB ∧ SatisfiesRec VA r DB
   -- | VA, .Or l r,    DB => SatisfiesRec VA l DB ∨ SatisfiesRec VA r DB
   -- | VA, .Not f,     DB => SatisfiesRec VA f DB
@@ -81,27 +88,33 @@ def SatisfiesRec : VariableAssignment → Formula → DatabaseInstance → Prop
 def Satisfies : Formula → DatabaseInstance → Prop :=
   SatisfiesRec (λ _ ↦ .none)
 
--- def Evaluate : Formula → DatabaseInstance → (Variable →. Attribute) → RelationInstance
---   | φ, DB, VA => RelationInstance.mk
---       {a |            -- Attributes for which
---         ∃ v ∈ VA.Dom, -- Exists a variable in the partial function domain
---         VA v = a      -- That maps to the attribute
+-- Get the variables defined in the outermost .Ex formulae
+def getResultVariables : Formula → List Variable
+  | .Ex v f => getResultVariables f ++ [v]
+  | _       => []
+
+def hasDoubleVariables : Formula → List Variable → Prop
+  | .Ex v f,  vs => hasDoubleVariables f (v :: vs) ∧ v ∈ vs
+  -- | .All v f, vs => hasDoubleVariables f (v :: vs) ∧ v ∈ vs
+  | _,        _ => False
+
+-- def Evaluate : Formula → DatabaseInstance → VariableProjection → RelationInstance
+--   | φ, DB, VP => RelationInstance.mk
+--       {a |                          -- Attributes for which
+--         ∃ v ∈ getResultVariables φ, -- Exists a variable in the result variable space
+--         VP v = a                    -- That maps to the attribute
 --       }
---       {t |                          -- Tuples for which
---         ∃ s : VariableAssignment,   -- Exists a variable assignment
---           Satisfies φ DB s ∧        -- The variable assignment satisifies the formula on this database
---           ∀ a : Attribute,          -- AND For each attribute
---           ∃ v : Variable,           -- There exists a variable
---             (VA.Dom v ∧ VA v = a) → -- If the variable is mapped to the attribute
---               t a = s v ∧           -- Then the tuple maps the attribute to the variable assigned value
---             ¬(VA.Dom v ∧ VA v = a) →
---               t a = .none
+--       {t |                            -- Tuples for which
+--         ∃ va : VariableAssignment,    -- Exists a variable assignment
+--           SatisfiesRec va φ DB ∧      -- The variable assignment satisifies the formula on this database
+--           ∀ v ∈ getResultVariables φ, -- For all result variables
+--           ∀ a : Attribute,            -- AND For each attribute
+--             (va.Dom v ∧ VP v = a) →   -- If variable is in the variable assignment AND the variable is projected to the attribute
+--               t a = va v ∧            -- Then the tuple maps the attribute to the variable assigned value
+--             ¬(va.Dom v ∧ VP v = a) →  -- Else
+--               t a = .none             -- The attribute should be none
 --       }
 --       (by
---         intro t a
---         simp_all only [Part.coe_some, and_self, not_true_eq_false, and_false, IsEmpty.forall_iff, implies_true,
---           exists_const, and_true, Set.mem_setOf_eq, PFun.mem_dom]
---         obtain ⟨w, h⟩ := a
 --         sorry
 --       )
 
@@ -165,7 +178,8 @@ def f : Formula := .Ex "x" (.Ex "y" (
 
 -- Verify whether the examples work
 example : Satisfies f db := by
-  simp_all only [Satisfies, SatisfiesRec, f, db, R, VarAssign, RSchema, satisfies_rel, Dom, satisfies_op, Part.coe_some, getTerm]
+  simp_all only [Satisfies, f, Part.coe_some, db, RSchema, R, SatisfiesRec, Dom, satisfies_rel,
+    satisfies_tpl, getTerm, VarAssign, satisfies_op]
   simp_all
   -- Prove active domain containment for "x"
   -- When no equality restriction is put on "x", we need to help out a little
