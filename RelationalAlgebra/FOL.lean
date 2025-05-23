@@ -72,7 +72,7 @@ def satisfies_op : VariableAssignment → Atom → Prop
 
 -- Assign a variable
 def VarAssign : VariableAssignment → Variable → Value → VariableAssignment
-  | VA, var, val => λ x => ite (var == x) val (VA x)
+  | VA, var, val => λ x => ite (x = var) val (VA x)
 
 -- Check whether a VariableAssignment satisfies a Formula for specified DatabaseInstance
 def SatisfiesRec : VariableAssignment → Formula → DatabaseInstance → Prop
