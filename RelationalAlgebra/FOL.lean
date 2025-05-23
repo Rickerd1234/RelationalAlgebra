@@ -32,7 +32,7 @@ end types
 -- Definitions for evaluating FOL queries
 section evaluate
 
-abbrev VariableAssignment := Variable → Value
+abbrev VariableAssignment := Variable →. Value
 
 -- Active domain restriction for the database instance
 def Dom (DB : DatabaseInstance) : Set Value :=
@@ -45,13 +45,13 @@ def Dom (DB : DatabaseInstance) : Set Value :=
   }
 
 -- Extract values from Term, based on VariableAssignment
-def getTerm : VariableAssignment → Term → Value
+def getTerm : VariableAssignment → Term →. Value
   | _,  .const c => c
   | VA, .var v   => VA v
 
 -- Verify whether a Formula.R is satisfied
-def satisfies_rel : RelationName → AttributeAssignment → DatabaseInstance → VariableAssignment → Prop
-  | RN, AA, DB, VA =>
+def satisfies_rel : VariableAssignment → RelationName → AttributeAssignment → DatabaseInstance → Prop
+  | VA, RN, AA, DB =>
       ∃ tpl ∈ (DB.relations RN).tuples, -- There exists a tuple in the relation
       ∀ att ∈ (DB.relations RN).schema, -- Where for all attributes in the schema
       ∃ trm : Term,                     -- There exists a term
@@ -60,18 +60,26 @@ def satisfies_rel : RelationName → AttributeAssignment → DatabaseInstance �
           getTerm VA trm = tpl att      -- Should match the value for this attribute in the tuple
 
 -- Verify whether a Formula.Op is satisfied
-def satisfies_op : Atom →  DatabaseInstance → VariableAssignment → Prop
-  | .Eq t1 t2, _, VA => getTerm VA t1 = getTerm VA t2
+def satisfies_op : VariableAssignment → Atom → DatabaseInstance → Prop
+  | VA, .Eq t1 t2, _ => getTerm VA t1 = getTerm VA t2
+
+-- Assign a variable
+def VarAssign : VariableAssignment → Variable → Value → VariableAssignment
+  | VA, var, val => λ x => ite (var == x) val (VA x)
 
 -- Check whether a VariableAssignment satisfies a Formula for specified DatabaseInstance
-def Satisfies : Formula → DatabaseInstance → VariableAssignment → Prop
-  | .R rn aa,   DB, VA => satisfies_rel rn aa DB VA
-  | .Op a,      DB, VA => satisfies_op a DB VA
-  | .And l r,   DB, VA => Satisfies l DB VA ∧ Satisfies r DB VA
-  -- | .Or l r,    DB, VA => Satisfies l DB VA ∨ Satisfies r DB VA
-  -- | .Not f,     DB, VA => ¬Satisfies f DB vA
-  | .Ex v f,    DB, VA => (∃z ∈ Dom DB, VA v = z ∧ Satisfies f DB VA)
-  -- | .All v f    DB, VA => (∀z ∈ Dom DB, VA v = z ∧ Satisfies f DB VA)
+def SatisfiesRec : VariableAssignment → Formula → DatabaseInstance → Prop
+  | VA, .R rn aa,   DB => satisfies_rel VA rn aa DB
+  | VA, .Op a,      DB => satisfies_op VA a DB
+  | VA, .And l r,   DB => SatisfiesRec VA l DB ∧ SatisfiesRec VA r DB
+  -- | VA, .Or l r,    DB => SatisfiesRec VA l DB ∨ SatisfiesRec VA r DB
+  -- | VA, .Not f,     DB => SatisfiesRec VA f DB
+  | VA, .Ex v f,    DB => (∃z ∈ Dom DB, SatisfiesRec (VarAssign VA v z) f DB)
+  -- | VA, .All v f,   DB => (∀z ∈ Dom DB, SatisfiesRec (VarAssign VA v z) f DB)
+
+-- Check whether a Formula can be satisfied for specified DatabaseInstance
+def Satisfies : Formula → DatabaseInstance → Prop :=
+  SatisfiesRec (λ _ ↦ .none)
 
 -- def Evaluate : Formula → DatabaseInstance → (Variable →. Attribute) → RelationInstance
 --   | φ, DB, VA => RelationInstance.mk
@@ -114,7 +122,7 @@ def R : RelationInstance where
     | _ => .none,
     λ a => match a with
     | "name" => "Bob"
-    | "age" => "3"
+    | "age" => "4"
     | _ => .none,
     λ a => match a with
     | "name" => "Charlie"
@@ -141,38 +149,42 @@ def f : Formula := .Ex "x" (.Ex "y" (
         | "name" => Term.var "x"
         | "age" => Term.var "y"
         | _ => .none
-  ) (.Op (.Eq
-    (.var "y")
-    (.const "3")
-  ))
+  )
+  (.And
+    (.Op (.Eq
+      (.var "x")
+      (.const "Alice")
+    ))
+    (.Op (.Eq
+      (.var "y")
+      (.const "3")
+    ))
+  )
 ))
-
-def va : VariableAssignment
-  | "x" => "Alice"
-  | "y" => "3"
-  | _ => ""
 
 
 -- Verify whether the examples work
-example : Satisfies f db va := by
-  simp_all only [Satisfies, f, db, va, R, RSchema, satisfies_rel, Dom, satisfies_op, Part.coe_some, getTerm]
+example : Satisfies f db := by
+  simp_all only [Satisfies, SatisfiesRec, f, db, R, VarAssign, RSchema, satisfies_rel, Dom, satisfies_op, Part.coe_some, getTerm]
   simp_all
-  apply And.intro
   -- Prove active domain containment for "x"
+  -- When no equality restriction is put on "x", we need to help out a little
+  apply And.intro
   · use "R"
     simp_all only [Set.mem_insert_iff, Set.mem_singleton_iff, exists_eq_or_imp, PFun.dom_mk, exists_eq_left]
-    -- apply Or.inr
     apply Or.inl
+    -- apply Or.inr
     use "name";
     intro a; rfl
   -- Prove active domain containment for "y"
   · apply And.intro
     . use "R"
       simp_all only [Set.mem_insert_iff, Set.mem_singleton_iff, exists_eq_or_imp, PFun.dom_mk, exists_eq_left]
-      -- apply Or.inr
       apply Or.inl
+      -- apply Or.inr
       use "age";
       intro a; rfl
+    -- Prove satisfaction
     · aesop
 
 end examples
