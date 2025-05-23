@@ -3,11 +3,11 @@ import Mathlib.Data.PFun
 
 namespace RM
 
-abbrev Attribute := Type
+abbrev Attribute := String
 
-abbrev RelationName := Type
+abbrev RelationName := String
 
-abbrev Value := Type
+abbrev Value := String
 
 abbrev RelationSchema := Set Attribute
 
