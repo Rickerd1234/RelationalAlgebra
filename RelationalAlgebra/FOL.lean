@@ -154,6 +154,9 @@ def db : DatabaseInstance where
   validSchema := by aesop
 
 
+-- Ideally, formula 'f' is created using the following syntax
+-- ∃ x y, R(name : x, age : y) ∧ x = "Alice" ∧ y = "3"
+
 def f : Formula := .Ex "x" (.Ex "y" (
   .And (
     .R
