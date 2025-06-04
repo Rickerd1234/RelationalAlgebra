@@ -18,17 +18,19 @@ namespace FirstOrder
 open FirstOrder RM
 
 /-- The type of Relations in FOL -/
-inductive rel : ℕ → Type
-  | R : rel 1
+inductive relations : ℕ → Type
+  | R : relations 0
   deriving DecidableEq
 
 /-- The language of fol contains the relations -/
 def Language.fol : Language :=
   { Functions := fun _ => Empty
-    Relations := rel }
+    Relations := relations }
   deriving IsRelational
 
-open rel Language
+
+open relations Language
+
 
 -- Terms are still unclear, figure this concept out further
 def x : fol.Term (Attribute ⊕ Fin 0) := Term.var (Sum.inl "x")
@@ -36,6 +38,7 @@ def y : fol.Term (Attribute ⊕ Fin 0) := Term.var (Sum.inl "y")
 def z : fol.Term (Attribute ⊕ Fin 1) := Term.var (Sum.inr 0)
 
 
+-- Explore formula concepts
 def n_xy : fol.BoundedFormula Attribute 0 := ∼(x =' y) ⟹ ⊤
 
 def ex_n_xy_or_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
@@ -65,3 +68,17 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
   simp
   use "v1"
   simp [Term.liftAt, Fin.snoc, v]
+
+
+-- Explore relation concepts
+def getRelationTerm {n l : ℕ} : fol.Relations n → Fin l → fol.Term (Attribute ⊕ (Fin n))
+  | _, _ => Term.var (Sum.inl "x")
+
+def R_x : fol.Formula Attribute := Relations.boundedFormula R (getRelationTerm R)
+
+class folStruc (U : Type*) extends fol.Structure U where
+  RelMap_R : ∀ x, RelMap relations.R x
+
+example [struc: folStruc (Part Value)] : R_x.Realize v := by
+  simp only [Formula.Realize, R_x, x, getRelationTerm, R, v, BoundedFormula.realize_rel]
+  simp [folStruc.RelMap_R]
