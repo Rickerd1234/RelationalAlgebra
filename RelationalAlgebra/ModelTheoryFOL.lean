@@ -72,14 +72,20 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 -- Explore relation concepts
 class folStruc extends fol.Structure (Part Value) where
-  RelMap_R : ∀ n, ∀ rel : fol.Relations n, ∀ a, (∀ v : Fin n, a v = Part.some "v1") → RelMap rel a
+  RelMap_R {n} :      -- Add proof to RelMap for each Relation in the Language
+      ∀ rel : fol.Relations n,              -- Every relation (and every arity)
+      ∀ a : Fin n → Part Value,             -- Every value assignment (for this arity)
+        (∀ v : Fin n,                       -- Every column index (up to arity)
+          a v = Part.some "v1"              -- The column index is some value
+        )
+          → RelMap rel a                    -- Then the RelationMap contains the relation for this value assignment
 
-def getRelationTerm {n l : ℕ} : fol.Relations n → Fin n → fol.Term (Attribute ⊕ (Fin l))
+def getRelationTerms {n l : ℕ} : fol.Relations n → Fin n → fol.Term (Attribute ⊕ (Fin l))
   | _, _ => Term.var (Sum.inl "x")
 
-def R_x : fol.Formula Attribute := Relations.boundedFormula R (getRelationTerm R)
+def R_x : fol.Formula Attribute := Relations.boundedFormula R (getRelationTerms R)
 
 example [struc: folStruc] : R_x.Realize v := by
-  simp only [Formula.Realize, R_x, x, getRelationTerm, R, v, BoundedFormula.realize_rel]
-  simp_all only [Term.realize_var, Sum.elim_inl]
-  apply folStruc.RelMap_R 1 R (fun i ↦ v "x") (fun _ ↦ rfl)
+  simp only [Formula.Realize, R_x, BoundedFormula.realize_rel, getRelationTerms]
+  simp only [Term.realize_var, Sum.elim_inl]
+  apply folStruc.RelMap_R R (fun _ ↦ v "x") (fun _ ↦ rfl)
