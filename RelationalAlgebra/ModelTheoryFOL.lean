@@ -19,7 +19,7 @@ open FirstOrder RM
 
 /-- The type of Relations in FOL -/
 inductive relations : ℕ → Type
-  | R : relations 0
+  | R : relations 1
   deriving DecidableEq
 
 /-- The language of fol contains the relations -/
@@ -71,14 +71,15 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 
 -- Explore relation concepts
-def getRelationTerm {n l : ℕ} : fol.Relations n → Fin l → fol.Term (Attribute ⊕ (Fin n))
+class folStruc extends fol.Structure (Part Value) where
+  RelMap_R : ∀ n, ∀ rel : fol.Relations n, ∀ a, (∀ v : Fin n, a v = Part.some "v1") → RelMap rel a
+
+def getRelationTerm {n l : ℕ} : fol.Relations n → Fin n → fol.Term (Attribute ⊕ (Fin l))
   | _, _ => Term.var (Sum.inl "x")
 
 def R_x : fol.Formula Attribute := Relations.boundedFormula R (getRelationTerm R)
 
-class folStruc (U : Type*) extends fol.Structure U where
-  RelMap_R : ∀ x, RelMap relations.R x
-
-example [struc: folStruc (Part Value)] : R_x.Realize v := by
+example [struc: folStruc] : R_x.Realize v := by
   simp only [Formula.Realize, R_x, x, getRelationTerm, R, v, BoundedFormula.realize_rel]
-  simp [folStruc.RelMap_R]
+  simp_all only [Term.realize_var, Sum.elim_inl]
+  apply folStruc.RelMap_R 1 R (fun i ↦ v "x") (fun _ ↦ rfl)
