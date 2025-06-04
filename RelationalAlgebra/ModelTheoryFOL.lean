@@ -17,9 +17,11 @@ namespace FirstOrder
 
 open FirstOrder RM
 
+variable [DecidableEq RelationInstance]
+
 /-- The type of Relations in FOL -/
 inductive relations : ℕ → Type
-  | R : relations 1
+  | R : RelationInstance → relations 1 -- arity should be based on RelationSchema, which should probably be another type
   deriving DecidableEq
 
 /-- The language of fol contains the relations -/
@@ -80,12 +82,14 @@ class folStruc extends fol.Structure (Part Value) where
         )
           → RelMap rel a                    -- Then the RelationMap contains the relation for this value assignment
 
-def getRelationTerms {n l : ℕ} : fol.Relations n → Fin n → fol.Term (Attribute ⊕ (Fin l))
+-- Revise this, it should connect RI Attributes and fol variables
+def getRelationTerms {n l : ℕ} : RelationInstance → Fin n → fol.Term (Attribute ⊕ (Fin l))
   | _, _ => Term.var (Sum.inl "x")
 
-def R_x : fol.Formula Attribute := Relations.boundedFormula R (getRelationTerms R)
+-- Revise this, it should be generalized to be a type of BoundedFormula, instead of Formula
+def BoundedRelation (ri : RelationInstance) : fol.Formula Attribute := Relations.boundedFormula (R ri) (getRelationTerms ri)
 
-example [struc: folStruc] : R_x.Realize v := by
-  simp only [Formula.Realize, R_x, BoundedFormula.realize_rel, getRelationTerms]
+example {ri : RelationInstance} [struc: folStruc] : (BoundedRelation ri).Realize v := by
+  simp only [Formula.Realize, BoundedRelation, BoundedFormula.realize_rel, getRelationTerms]
   simp only [Term.realize_var, Sum.elim_inl]
-  apply folStruc.RelMap_R R (fun _ ↦ v "x") (fun _ ↦ rfl)
+  apply folStruc.RelMap_R (R ri) (fun _ ↦ v "x") (fun _ ↦ rfl)
