@@ -13,8 +13,6 @@ import Mathlib.Order.Basic
 -- IMP: ⟹
 -- BIIMP: ⇔
 
-variable {α : Type*}
-
 namespace FirstOrder
 
 open FirstOrder RM
@@ -23,13 +21,13 @@ open FirstOrder RM
 namespace RM
 -- Add ordering
 instance Attribute.instLe : IsTrans Attribute (.≤.) where
-  trans {_ _ _: Attribute} := String.le_trans
+  trans {_ _ _: Attribute} := Nat.le_trans
 
 instance Attribute.instAntisymm : IsAntisymm Attribute (.≤.) where
-  antisymm {_ _: Attribute} := String.le_antisymm
+  antisymm {_ _: Attribute} := Nat.le_antisymm
 
 instance Attribute.instTotal : IsTotal Attribute (.≤.) where
-  total := String.le_total
+  total := Nat.le_total
 
 def RelationSchema.ordering (rs : RelationSchema) : List Attribute
   := rs.sort (.≤.)
@@ -43,21 +41,21 @@ def RelationSchema.fromIndex (rs: RelationSchema) (i: Fin rs.card) : Attribute :
 end RM
 
 def tup1 : Tuple
-  | "a1" => some 11
-  | "a2" => some 12
+  | 0 => some 11
+  | 1 => some 12
   | _ => Part.none
 
 def tup2 : Tuple
-  | "a1" => some 21
-  | "a2" => some 22
+  | 0 => some 21
+  | 1 => some 22
   | _ => Part.none
 
 def tup3 : Tuple
-  | "a1" => some 31
-  | "a2" => some 32
+  | 0 => some 31
+  | 1 => some 32
   | _ => Part.none
 
-def relS : RelationSchema := {"a1", "a2"}
+def relS : RelationSchema := {0, 1}
 
 def relI : RelationInstance := ⟨
   relS,
@@ -81,23 +79,27 @@ def Language.fol : Language :=
 
 open relations Language
 
+-- Define variable indexing types
+abbrev Variable := String
+abbrev VariableTerm (n: ℕ) := fol.Term (Variable ⊕ Fin n)
+
 
 -- Terms are still unclear, figure this concept out further
-def x : fol.Term (Attribute ⊕ Fin 0) := Term.var (Sum.inl "x")
-def y : fol.Term (Attribute ⊕ Fin 0) := Term.var (Sum.inl "y")
-def z : fol.Term (Attribute ⊕ Fin 1) := Term.var (Sum.inr 0)
+def x : VariableTerm 0 := Term.var (Sum.inl "x")
+def y : VariableTerm 0 := Term.var (Sum.inl "y")
+def z : VariableTerm 1 := Term.var (Sum.inr 0)
 
 
 -- Explore formula concepts
-def n_xy : fol.BoundedFormula Attribute 0 := ∼(x =' y) ⟹ ⊤
+def n_xy : fol.BoundedFormula Variable 0 := ∼(x =' y) ⟹ ⊤
 
-def ex_n_xy_or_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
+def ex_n_xy_or_yz : fol.Formula Variable := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
 
-def ex_n_xy_and_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊓ (y.liftAt 1 0) =' z)
+def ex_n_xy_and_yz : fol.Formula Variable := .ex ((n_xy.liftAt 1 0) ⊓ (y.liftAt 1 0) =' z)
 
-def all_xz_or_yz : fol.Formula Attribute := .ex ((y.liftAt 1 0) =' z ⟹ ∼((x.liftAt 1 0) =' z))
+def all_xz_or_yz : fol.Formula Variable := .ex ((y.liftAt 1 0) =' z ⟹ ∼((x.liftAt 1 0) =' z))
 
-def v : Attribute →. Value
+def v : Variable →. Value
   | "x" => some 21
   | "y" => some 22
   | _ => Part.none
@@ -123,29 +125,28 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 class folStruc extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
       ∀ ri : RelationInstance,                          -- Every relation (and every arity)
-      ∀ a : Fin ri.schema.card → Part Value,          -- Every value assignment (for this arity)
+      ∀ a : Fin ri.schema.card → Part Value,            -- Every value assignment (for this arity)
         (∃ t : Tuple,                                   -- Exists a tuple
-          ∀ v : Fin ri.schema.card,                   -- Every column index (up to arity)
-            a v = t (ri.schema.fromIndex v)                     -- The column index is some value
+          ∀ v : Fin ri.schema.card,                     -- Every column index (up to arity)
+            a v = t (ri.schema.fromIndex v)             -- The column index is some value
         )
           → RelMap (R ri) a                             -- Then the RelationMap contains the relation for this value assignment
 
 
 
 -- Revise this, it should connect RI Attributes and fol variables
-def RelationTermAssignment := (a: Attribute) → fol.Term (Attribute ⊕ Fin 0)
+def RelationTermAssignment (n: ℕ) := (a: Attribute) → VariableTerm n
 
-def a_t : RelationTermAssignment
-  | "a1" => Term.var (Sum.inl "x")
-  | "a2" => Term.var (Sum.inl "y")
-  | _ => Term.var (Sum.inl "x")
+def a_t (n: ℕ) : RelationTermAssignment n
+  | 0 => Term.var (Sum.inl "x")
+  | 1 => Term.var (Sum.inl "y")
+  | _ => Term.var (Sum.inl "_")
 
-def getRelationTerms : (ri: RelationInstance) → Fin ri.schema.card → fol.Term (Attribute ⊕ (Fin 0))
-  | ri, n => a_t (ri.schema.fromIndex n)
+def getRelationTerms (n: ℕ) : (ri: RelationInstance) → Fin ri.schema.card → VariableTerm n
+  | ri, i => a_t n (ri.schema.fromIndex i)
 
 -- Revise this, it should be generalized to be a type of BoundedFormula, instead of Formula
-def BoundedRelation (ri : RelationInstance) : fol.Formula Attribute := Relations.boundedFormula (R ri) (getRelationTerms ri)
-
+def BoundedRelation (ri : RelationInstance) : fol.Formula Variable := Relations.boundedFormula (R ri) (getRelationTerms 0 ri)
 
 
 example [struc: folStruc] : (BoundedRelation relI).Realize v := by
@@ -163,15 +164,3 @@ example [struc: folStruc] : (BoundedRelation relI).Realize v := by
       simp_all only [Part.coe_some, Part.some_ne_none]
 
       simp_all [relI, RM.RelationSchema.fromIndex]
-
-      -- Solve the proof by using the decide for the ordering
-      have relSOrdering : RM.RelationSchema.ordering relS = ["a1", "a2"] := by simp [relS]; native_decide
-      simp [relSOrdering] at *
-      -- sorry
-      induction i with
-      | mk val h =>
-        simp_all only
-        simp [relI, relS] at h
-        induction val with
-        | zero => aesop
-        | succ n => aesop
