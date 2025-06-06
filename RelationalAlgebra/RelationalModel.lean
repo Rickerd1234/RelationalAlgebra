@@ -1,5 +1,6 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.PFun
+import Mathlib.Data.Finset.Defs
 
 namespace RM
 
@@ -7,9 +8,9 @@ abbrev Attribute := String
 
 abbrev RelationName := String
 
-abbrev Value := String
+abbrev Value := Nat
 
-abbrev RelationSchema := Set Attribute
+abbrev RelationSchema := Finset Attribute
 
 abbrev Tuple := Attribute →. Value
 
