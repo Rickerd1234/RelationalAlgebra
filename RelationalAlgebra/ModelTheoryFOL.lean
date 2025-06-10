@@ -32,6 +32,8 @@ instance Attribute.instTotal : IsTotal Attribute (.≤.) where
 def RelationSchema.ordering (rs : RelationSchema) : List Attribute
   := rs.sort (.≤.)
 
+theorem RelationSchema.ordering_mem (a : Attribute) (rs : RelationSchema) : a ∈ rs ↔ a ∈ rs.ordering := by simp [ordering]
+
 def foldIndex (needleAtt: Attribute) (carry: (ℕ × Bool)) (a: Attribute) : ℕ × Bool := if a = needleAtt ∨ carry.2 = true then (carry.1, true) else (carry.1 + 1, false)
 
 def RelationSchema.index (rs : RelationSchema) (att: Attribute) : ℕ := (rs.ordering.foldl (foldIndex att) (0, false)).1
@@ -83,11 +85,13 @@ open relations Language
 abbrev Variable := String
 abbrev VariableTerm (n: ℕ) := fol.Term (Variable ⊕ Fin n)
 
+def var {n: ℕ} (v: Variable) : VariableTerm n := Term.var (Sum.inl v)
+def free {n: ℕ} (i: Fin n) : VariableTerm n := Term.var (Sum.inr i)
 
 -- Terms are still unclear, figure this concept out further
-def x : VariableTerm 0 := Term.var (Sum.inl "x")
-def y : VariableTerm 0 := Term.var (Sum.inl "y")
-def z : VariableTerm 1 := Term.var (Sum.inr 0)
+def x : VariableTerm 0 := var "x"
+def y : VariableTerm 0 := var "y"
+def z : VariableTerm 1 := free 0
 
 
 -- Explore formula concepts
@@ -116,7 +120,7 @@ example [struc: fol.Structure (Part Value)] : ex_n_xy_and_yz.Realize v := by
   rfl
 
 example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
-  simp only [Formula.Realize, all_xz_or_yz, x, y, z, v]
+  simp only [Formula.Realize, all_xz_or_yz, x, y, z, v, var, free]
   simp
   use Part.none
   simp [Term.liftAt, Fin.snoc, v]
@@ -136,28 +140,44 @@ class folStruc extends fol.Structure (Part Value) where
 
 
 -- Generalize this part, such that it is more intuitive
-def RelationTermAssignment (n: ℕ) := (a: Attribute) → VariableTerm n
+def AttributeTermAssignment (n: ℕ) := Attribute →. VariableTerm n
 
-def a_t (n: ℕ) : RelationTermAssignment n
-  | 0 => Term.var (Sum.inl "x")
-  | 1 => Term.var (Sum.inl "y")
-  | _ => Term.var (Sum.inl "_")
+-- Convert RM.Attribute to FOL.Variable
+def a_t {n: ℕ} : AttributeTermAssignment n
+  | 0 => .some (var "x")
+  | 1 => .some (var "y")
+  | _ => .none
 
-def getRelationTerms (n: ℕ) : (ri: RelationInstance) → Fin ri.schema.card → VariableTerm n
-  | ri, i => a_t n (ri.schema.fromIndex i)
+structure RelationTermRestriction (n: ℕ) where
+  fn : AttributeTermAssignment n
+  inst : RelationInstance
+  validSchema : fn.Dom = inst.schema
+
+theorem i_schema_mem (schema : RelationSchema) (i : Fin schema.card) : schema.fromIndex i ∈ schema := by
+  simp_all only [Fin.is_le', RM.RelationSchema.fromIndex, RM.RelationSchema.ordering,
+    List.get_eq_getElem, RM.RelationSchema.ordering_mem, List.getElem_mem]
+
+theorem atr_dom {n : ℕ} (atr : RelationTermRestriction n) : ∀ i, (atr.fn (atr.inst.schema.fromIndex i)).Dom := by
+  intro i
+  apply Part.dom_iff_mem.mpr
+  apply (PFun.mem_dom atr.fn (RM.RelationSchema.fromIndex atr.inst.schema i)).mp
+  simp [atr.validSchema] at *
+  exact i_schema_mem atr.inst.schema i
+
+def getMap {n : ℕ} (atr : RelationTermRestriction n) : Fin atr.inst.schema.card → VariableTerm n :=
+  λ i => (atr.fn (atr.inst.schema.fromIndex i)).get (atr_dom atr i)
+
+def BoundedRelation {n : ℕ} (atr : RelationTermRestriction n) : fol.BoundedFormula Variable n := Relations.boundedFormula (R atr.inst) (getMap atr)
 
 
-def BoundedRelation (n : ℕ) (ri : RelationInstance) : fol.BoundedFormula Variable n := Relations.boundedFormula (R ri) (getRelationTerms n ri)
+def F : fol.Formula Variable := BoundedRelation ⟨a_t, relI, by simp [relI, relS, a_t, PFun.Dom]; aesop⟩
 
-
-def F : fol.Formula Variable := BoundedRelation 0 relI
-
-example [struc: folStruc] : (F).Realize v := by
-  simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel, getRelationTerms, a_t]
+example [struc: folStruc] : F.Realize v := by
+  simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel, getMap, a_t]
   apply folStruc.RelMap_R relI
   . use tup2
     intro i
-    simp only [tup2, v]
+    simp only [tup2, v, Part.coe_some]
     split
     next x heq => rfl
     next x heq => rfl
@@ -166,3 +186,22 @@ example [struc: folStruc] : (F).Realize v := by
       simp_all only [Term.realize_var, Sum.elim_inl, v]
       simp_all only [Part.coe_some, Part.some_ne_none]
       simp_all [relI, RM.RelationSchema.fromIndex]
+
+
+def atr_G : RelationTermRestriction 1 := ⟨
+  λ a => match a with
+    | 0 => .some (var "x")
+    | 1 => .some (free 0)
+    | _ => .none,
+  relI,
+  by simp [relI, relS, PFun.Dom]; aesop
+⟩
+
+def G : fol.Formula Variable := .ex (BoundedRelation atr_G)
+example [struc: folStruc] : G.Realize v := by
+  simp [Formula.Realize, G, BoundedRelation, BoundedFormula.realize_rel, getMap, atr_G]
+  use .some 22
+  apply folStruc.RelMap_R relI
+  use tup2
+  intro i
+  simp_all [tup2, v, atr_dom, Term.realize_var, getMap, atr_G, Term.realize_var]
