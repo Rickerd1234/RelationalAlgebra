@@ -121,6 +121,8 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
   use Part.none
   simp [Term.liftAt, Fin.snoc, v]
 
+
+
 -- Explore relation concepts
 class folStruc extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
@@ -133,8 +135,7 @@ class folStruc extends fol.Structure (Part Value) where
           → RelMap (R ri) a                             -- Then the RelationMap contains the relation for this value assignment
 
 
-
--- Revise this, it should connect RI Attributes and fol variables
+-- Generalize this part, such that it is more intuitive
 def RelationTermAssignment (n: ℕ) := (a: Attribute) → VariableTerm n
 
 def a_t (n: ℕ) : RelationTermAssignment n
@@ -145,16 +146,18 @@ def a_t (n: ℕ) : RelationTermAssignment n
 def getRelationTerms (n: ℕ) : (ri: RelationInstance) → Fin ri.schema.card → VariableTerm n
   | ri, i => a_t n (ri.schema.fromIndex i)
 
--- Revise this, it should be generalized to be a type of BoundedFormula, instead of Formula
-def BoundedRelation (ri : RelationInstance) : fol.Formula Variable := Relations.boundedFormula (R ri) (getRelationTerms 0 ri)
+
+def BoundedRelation (n : ℕ) (ri : RelationInstance) : fol.BoundedFormula Variable n := Relations.boundedFormula (R ri) (getRelationTerms n ri)
 
 
-example [struc: folStruc] : (BoundedRelation relI).Realize v := by
-  simp only [Formula.Realize, BoundedRelation, BoundedFormula.realize_rel, getRelationTerms, a_t]
+def F : fol.Formula Variable := BoundedRelation 0 relI
+
+example [struc: folStruc] : (F).Realize v := by
+  simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel, getRelationTerms, a_t]
   apply folStruc.RelMap_R relI
   . use tup2
     intro i
-    simp_all [tup2, v]
+    simp only [tup2, v]
     split
     next x heq => rfl
     next x heq => rfl
@@ -162,5 +165,4 @@ example [struc: folStruc] : (BoundedRelation relI).Realize v := by
       simp_all only [imp_false]
       simp_all only [Term.realize_var, Sum.elim_inl, v]
       simp_all only [Part.coe_some, Part.some_ne_none]
-
       simp_all [relI, RM.RelationSchema.fromIndex]
