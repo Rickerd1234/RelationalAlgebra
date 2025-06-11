@@ -27,12 +27,12 @@ theorem value_mem_tuple_attr {a : Attribute} {t : Tuple} {v : Value} (h : v ∈ 
 -- `PFun.Dom t a` derived from `a ∈ inst.schema ∧ t ∈ inst.tuples`
 @[simp]
 theorem tuple_valid_schema {a : Attribute} {inst : RelationInstance} {t : Tuple} (ha : a ∈ inst.schema) (ht : t ∈ inst.tuples) : PFun.Dom t a := by
-  rw [← inst.validSchema t ht] at *
+  rw [← inst.schema.mem_coe, ← inst.validSchema t ht] at *
   rw [PFun.mem_dom] at ha
   exact Part.dom_iff_mem.mpr ha
 
 -- `¬PFun.Dom t a` derived from `a ∉ inst.schema ∧ t ∈ inst.tuples`
 @[simp]
 theorem not_tuple_valid_schema {a : Attribute} {inst : RelationInstance} {t : Tuple} (ha : a ∉ inst.schema) (ht : t ∈ inst.tuples) : ¬PFun.Dom t a := by
-  rw [← inst.validSchema t ht] at ha
+  rw [← inst.schema.mem_coe, ← inst.validSchema t ht] at ha
   exact ha

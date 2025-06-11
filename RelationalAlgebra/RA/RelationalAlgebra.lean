@@ -2,8 +2,9 @@ import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Util
 import RelationalAlgebra.RA.Equiv
 
-import Mathlib.Data.PFun
+import Mathlib.Data.Finset.Image
 import Mathlib.Data.Part
+import Mathlib.Data.PFun
 import Mathlib.Logic.Function.Defs
 
 open RM
@@ -17,7 +18,7 @@ section union
 def union (inst inst' : RelationInstance) (h: inst.schema = inst'.schema): RelationInstance := ⟨
     inst.schema,
     inst.tuples ∪ inst'.tuples,
-    λ v hv => Or.elim hv (λ hv_l => inst.validSchema v hv_l) (λ hv_r => Eq.trans (inst'.validSchema v hv_r) h.symm)
+    λ v hv => Or.elim hv (λ hv_l => inst.validSchema v hv_l) (λ hv_r => Eq.trans (inst'.validSchema v hv_r) (by rw [h.symm]))
   ⟩
 
 @[simp]
@@ -44,7 +45,7 @@ def renameSchema (schema : RelationSchema) (f : Attribute → Attribute) : Relat
 @[simp]
 theorem rename_schema_id (schema : RelationSchema) : renameSchema schema id = schema := by
     unfold renameSchema
-    simp_all only [id_eq, Set.image_id']
+    simp_all only [Finset.image_id]
 
 def rename (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Surjective) : RelationInstance := ⟨
     renameSchema inst.schema f,
@@ -52,12 +53,13 @@ def rename (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Su
     by
       unfold renameSchema
       intro t' t_cond'
-      simp_all only [exists_eq_right', Set.mem_setOf_eq]
       ext a
-      simp_all only [PFun.mem_dom, Set.mem_image]
+      simp_all only [exists_eq_right', Set.mem_setOf_eq, PFun.mem_dom, Finset.coe_image, Set.mem_image,
+        Finset.mem_coe]
       apply Iff.intro
       -- value in new tuple → attribute in new schema
       · intro ⟨w, w_ta⟩
+        simp [← Finset.mem_coe]
         rw [← inst.validSchema (t' ∘ f)]
         . simp_all only [PFun.mem_dom, Function.comp_apply]
           have ⟨a', ha'⟩ := f_sur a
@@ -67,6 +69,7 @@ def rename (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Su
       -- attribute in new schema → value in new tuple
       · intro ⟨w, w_in_schema, fw_a⟩
         rw [← fw_a]
+        simp [← Finset.mem_coe] at w_in_schema
         rw [← inst.validSchema (t' ∘ f) t_cond'] at w_in_schema
         exact Part.dom_iff_mem.mp w_in_schema
   ⟩
@@ -83,7 +86,7 @@ theorem rename_comp (inst : RelationInstance) (f : Attribute → Attribute) (f_s
       simp_all only [exists_eq_right', Set.mem_setOf_eq, Function.comp_apply, RelationInstance.mk.injEq]
       apply And.intro
       · ext x : 1
-        simp_all only [Set.mem_image, exists_exists_and_eq_and]
+        simp_all only [Finset.mem_image, exists_exists_and_eq_and, Function.comp_apply]
       · rfl
 
 @[simp]
@@ -111,13 +114,14 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
         obtain ⟨left_1, right⟩ := h
         ext a
         simp_all only [PFun.mem_dom, Set.mem_union]
+        simp [← Finset.mem_coe]
         rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1]
         simp_all only [not_or, and_imp, PFun.mem_dom]
         apply Iff.intro
         · intro a_1
           obtain ⟨w_2, h⟩ := a_1
           by_cases g : a ∈ inst1.schema ∪ inst2.schema
-          . simp_all only [Set.mem_union]
+          . simp_all only [Finset.mem_union, not_or, and_imp]
             cases g with
             | inl h_1 =>
               simp_all only
@@ -132,7 +136,7 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
           . simp_all only [Set.mem_union, not_or, not_false_eq_true, Part.not_mem_none]
         · intro a_1
           by_cases g : a ∈ inst1.schema ∪ inst2.schema
-          . simp_all only [Set.mem_union]
+          . simp_all only [Finset.mem_union, not_or, and_imp]
             cases a_1 with
             | inl h =>
               cases g with
@@ -140,6 +144,7 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
               | inr h_2 =>
                 simp_all only
                 obtain ⟨w_2, h⟩ := h
+                simp [← Finset.mem_coe] at h_2
                 rw [← inst2.validSchema w_1 left_1] at h_2
                 simp_all only [PFun.mem_dom]
             | inr h_1 =>
@@ -147,11 +152,13 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
               | inl h =>
                 simp_all only
                 obtain ⟨w_2, h_1⟩ := h_1
+                simp [← Finset.mem_coe] at h
                 rw [← inst1.validSchema w left] at h
                 simp_all only [PFun.mem_dom]
               | inr h_2 => simp_all only
-          . rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1] at g
-            simp_all only [Set.mem_union, PFun.mem_dom, not_true_eq_false]
+          . simp [← Finset.mem_coe] at g
+            rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1] at g
+            simp_all only [Finset.mem_union, not_or, and_imp, PFun.mem_dom, not_exists, exists_const, or_self]
     ⟩
 
 @[simp]
@@ -159,7 +166,7 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
   simp_all only [join, Set.mem_union, not_or, and_imp, RelationInstance.mk.injEq]
   apply And.intro
   · ext x : 1
-    simp_all only [Set.mem_union]
+    simp_all only [Finset.mem_union]
     apply Iff.intro
     · intro a
       cases a with
@@ -181,7 +188,7 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
       apply Exists.intro
       · apply And.intro
         · exact left_1
-        · simp_all only [implies_true, true_and]
+        · simp_all only [Finset.mem_union, not_or, and_imp, implies_true, not_false_eq_true, and_true, true_and]
           apply Exists.intro
           · apply And.intro
             on_goal 2 => {
@@ -198,7 +205,7 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
       apply Exists.intro
       · apply And.intro
         · exact left_1
-        · simp_all only [implies_true, true_and]
+        · simp_all only [Finset.mem_union, not_or, and_imp, implies_true, not_false_eq_true, and_true, true_and]
           apply Exists.intro
           · apply And.intro
             on_goal 2 => {
@@ -210,7 +217,8 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
 @[simp]
 theorem join_empty (inst : RelationInstance) :
   join inst (∅r inst.schema)  = ∅r inst.schema := by
-    simp_all only [RelationInstance.empty, join, Set.union_self, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
+    simp_all only [join, Finset.union_idempotent, Set.mem_empty_iff_false, false_and, exists_const,
+      and_false, Set.setOf_false, RelationInstance.empty]
 
 @[simp]
 theorem empty_join (inst : RelationInstance) :
@@ -218,7 +226,7 @@ theorem empty_join (inst : RelationInstance) :
 
 @[simp]
 theorem join_self (inst : RelationInstance) : join inst inst = inst := by
-  simp only [join, Set.union_self, ← RelationInstance.eq, true_and]
+  simp only [join, Finset.union_idempotent, ← RelationInstance.eq, true_and]
   ext t
   simp only [Set.mem_setOf_eq]
   apply Iff.intro
@@ -230,12 +238,12 @@ theorem join_self (inst : RelationInstance) : join inst inst = inst := by
       . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
         apply Aesop.BuiltinRules.not_intro
         intro a_1
-        simp_all only [← inst.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
+        simp_all only [← Finset.mem_coe, ← inst.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
     rw [h]
     exact ht2
   . intro h
     have g : ∀a : Attribute, (a ∉ inst.schema → t a = Part.none) := by
-        simp_all [← inst.validSchema t h]
+        simp_all [← Finset.mem_coe, ← inst.validSchema t h]
         intro a a_1
         ext a_2 : 1
         simp_all only [Part.not_mem_none]
@@ -260,12 +268,13 @@ def projection (inst : RelationInstance) (s' : RelationSchema) (h : s' ⊆ inst.
       · intro ⟨w, w_ta'⟩
         have z := t_def' a
         by_cases h : a ∈ s'
-        . simp_all only [imp_self, not_true_eq_false, IsEmpty.forall_iff, and_self]
+        . simp_all only [imp_self, not_true_eq_false, IsEmpty.forall_iff, and_self, Finset.mem_coe]
         . simp_all only [not_false_eq_true, Part.not_mem_none]
       · intro a_1
+        simp [← Finset.coe_subset] at h
         rw [← inst.validSchema t t_in_tuples] at h
         have z := Set.mem_of_subset_of_mem h a_1
-        simp_all only [PFun.mem_dom]
+        simp_all only [PFun.mem_dom, Finset.mem_coe]
   ⟩
 
 abbrev emptyProjection (inst : RelationInstance) : RelationInstance := ⟨
@@ -274,15 +283,15 @@ abbrev emptyProjection (inst : RelationInstance) : RelationInstance := ⟨
   by
     intro _ ⟨_, _, right⟩
     subst right
-    exact rfl
+    simp only [Finset.coe_empty]
+    rfl
 ⟩
 
 -- This behavior is undefined in (most?) theory, so maybe should just leave it out
 theorem projection_empty (inst : RelationInstance) : projection inst ∅ inst.schema.empty_subset = emptyProjection inst := by
-      simp_all only [projection, Set.mem_empty_iff_false, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and,
-        exists_and_right, RelationInstance.mk.injEq]
+      simp_all only [projection, RelationInstance.mk.injEq, true_and]
       ext x : 1
-      simp_all only [Set.mem_setOf_eq]
+      simp_all only [Finset.not_mem_empty, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and, exists_and_right]
       apply Iff.intro
       · intro a
         obtain ⟨left, right⟩ := a
@@ -320,13 +329,14 @@ theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = 
         . simp_all only [not_false_eq_true, Part.not_mem_none, iff_false]
           apply Aesop.BuiltinRules.not_intro
           intro a_1
-          simp_all [← inst.validSchema w left]
+          simp_all [← Finset.mem_coe, ← inst.validSchema w left]
       rw [z] at left
       exact left
     · intro a
       apply Exists.intro t'
       simp_all only [implies_true, true_and]
       intro a_1 a_2
+      simp [← Finset.mem_coe] at a_2
       rw [← inst.validSchema t' a] at a_2
       simp_all only [PFun.mem_dom, not_exists]
       ext a_3 : 1
@@ -352,6 +362,7 @@ theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h
       obtain ⟨w, h⟩ := a
       obtain ⟨left, right⟩ := h
       simp_all only [not_false_eq_true, implies_true, and_true]
+      simp [← Finset.coe_subset] at h1
       rw [← inst.validSchema w left] at h1
       use PFun.restrict w h1
       apply And.intro
@@ -361,10 +372,10 @@ theorem projection_cascade {s1 s2 : RelationSchema} (inst : RelationInstance) (h
         apply And.intro
         · intro a_1
           ext a_2 : 1
-          simp_all only [PFun.mem_restrict, true_and]
+          simp_all only [PFun.mem_restrict, Finset.mem_coe, true_and]
         · intro a_1
           ext a_2 : 1
-          simp_all only [PFun.mem_restrict, false_and, Part.not_mem_none]
+          simp_all only [PFun.mem_restrict, Finset.mem_coe, false_and, Part.not_mem_none]
       · intro a a_1
         ext a_2 : 1
         simp_all only [PFun.mem_restrict, iff_and_self]
