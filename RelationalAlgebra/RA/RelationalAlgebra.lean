@@ -1,6 +1,6 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Util
-import RelationalAlgebra.Equiv
+import RelationalAlgebra.RA.Equiv
 
 import Mathlib.Data.PFun
 import Mathlib.Data.Part
@@ -218,28 +218,28 @@ theorem empty_join (inst : RelationInstance) :
 
 @[simp]
 theorem join_self (inst : RelationInstance) : join inst inst = inst := by
-    simp only [join, Set.union_self, ← RelationInstance.eq, true_and]
-    ext t
-    simp only [Set.mem_setOf_eq]
-    apply Iff.intro
-    . intro ⟨ht1, ht2, _, _, ht5⟩
-      have h : t = ht1 := by
-        ext a v
-        by_cases h : a ∈ inst.schema
-        . simp_all only
-        . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
-          apply Aesop.BuiltinRules.not_intro
-          intro a_1
-          simp_all only [← inst.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
-      rw [h]
-      exact ht2
-    . intro h
-      have g : ∀a : Attribute, (a ∉ inst.schema → t a = Part.none) := by
-          simp_all [← inst.validSchema t h]
-          intro a a_1
-          ext a_2 : 1
-          simp_all only [Part.not_mem_none]
-      exact Exists.intro t (And.intro h (Exists.intro t (And.intro h (λ a => And.intro (λ _ => rfl) (And.intro (λ _ => rfl) (λ h' => g a h'))))))
+  simp only [join, Set.union_self, ← RelationInstance.eq, true_and]
+  ext t
+  simp only [Set.mem_setOf_eq]
+  apply Iff.intro
+  . intro ⟨ht1, ht2, _, _, ht5⟩
+    have h : t = ht1 := by
+      ext a v
+      by_cases h : a ∈ inst.schema
+      . simp_all only
+      . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
+        apply Aesop.BuiltinRules.not_intro
+        intro a_1
+        simp_all only [← inst.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
+    rw [h]
+    exact ht2
+  . intro h
+    have g : ∀a : Attribute, (a ∉ inst.schema → t a = Part.none) := by
+        simp_all [← inst.validSchema t h]
+        intro a a_1
+        ext a_2 : 1
+        simp_all only [Part.not_mem_none]
+    exact Exists.intro t (And.intro h (Exists.intro t (And.intro h (λ a => And.intro (λ _ => rfl) (And.intro (λ _ => rfl) (λ h' => g a h'))))))
 
 end join
 

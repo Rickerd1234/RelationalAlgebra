@@ -1,4 +1,4 @@
-import RelationalAlgebra.RelationalAlgebra
+import RelationalAlgebra.RA.RelationalAlgebra
 
 open RM
 
@@ -8,7 +8,6 @@ theorem projection_union {s' : RelationSchema} (inst1 inst2 : RelationInstance) 
   projection (union inst1 inst2 h_un) s' h_pr = union (projection inst1 s' h_pr) (projection inst2 s' (by rw [←h_un]; exact h_pr)) rfl := by
     unfold projection union
     simp_all only [Set.mem_union, RelationInstance.mk.injEq, true_and]
-    simp_all only
     ext x : 1
     simp_all only [Set.mem_setOf_eq, Set.mem_union]
     apply Iff.intro
