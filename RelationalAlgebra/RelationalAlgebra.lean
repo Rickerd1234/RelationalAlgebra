@@ -1,6 +1,7 @@
 import RelationalAlgebra.RelationalModel
-import RelationalAlgebra.Equiv
 import RelationalAlgebra.Util
+import RelationalAlgebra.Equiv
+
 import Mathlib.Data.PFun
 import Mathlib.Data.Part
 import Mathlib.Logic.Function.Defs

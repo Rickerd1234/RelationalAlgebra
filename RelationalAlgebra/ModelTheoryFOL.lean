@@ -1,7 +1,8 @@
+import RelationalAlgebra.RelationalModel
+
 import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Syntax
 import Mathlib.ModelTheory.Satisfiability
-import RelationalAlgebra.RelationalModel
 import Mathlib.Data.PFun
 import Mathlib.Data.Finset.Sort
 import Mathlib.Order.Basic
@@ -32,13 +33,47 @@ instance Attribute.instTotal : IsTotal Attribute (.≤.) where
 def RelationSchema.ordering (rs : RelationSchema) : List Attribute
   := rs.sort (.≤.)
 
-theorem RelationSchema.ordering_mem (a : Attribute) (rs : RelationSchema) : a ∈ rs ↔ a ∈ rs.ordering := by simp [ordering]
+@[simp]
+theorem RelationSchema.ordering_mem (a : Attribute) (rs : RelationSchema) : a ∈ rs.ordering ↔ a ∈ rs:= by simp [ordering]
 
-def foldIndex (needleAtt: Attribute) (carry: (ℕ × Bool)) (a: Attribute) : ℕ × Bool := if a = needleAtt ∨ carry.2 = true then (carry.1, true) else (carry.1 + 1, false)
+@[simp]
+theorem RelationSchema.ordering_card (rs : RelationSchema) : rs.ordering.length = rs.card := by simp [ordering]
 
-def RelationSchema.index (rs : RelationSchema) (att: Attribute) : ℕ := (rs.ordering.foldl (foldIndex att) (0, false)).1
+def RelationSchema.index? (rs : RelationSchema) (att : Attribute) : Option (Fin rs.card) :=
+  (rs.ordering.finIdxOf? att).map (λ x : Fin (rs.ordering.length) => ⟨x, by simp [← RelationSchema.ordering_card]⟩)
 
-def RelationSchema.fromIndex (rs: RelationSchema) (i: Fin rs.card) : Attribute := rs.ordering.get ⟨i, by simp [RelationSchema.ordering]⟩
+@[simp]
+theorem index_isSome {rs : RelationSchema} {att : Attribute} : (h : att ∈ rs) → (rs.index? att).isSome := by
+  simp [← RelationSchema.ordering_mem, RelationSchema.index?]
+  induction (RelationSchema.ordering rs) with
+  | nil =>
+    intro h
+    simp_all only [List.not_mem_nil]
+  | cons a as tail_ih =>
+    intro h
+    simp_all only [List.mem_cons, List.length_cons, List.finIdxOf?_cons, beq_iff_eq, Fin.zero_eta]
+    cases h with
+    | inl att_is_a => simp_all only [att_is_a, ↓reduceIte, Option.isSome_some]
+    | inr h_2 =>
+      simp_all only [forall_const]
+      split
+      next h => simp_all only [h, Option.isSome_some]
+      next h => simp_all only [Option.isSome_map']
+
+def RelationSchema.index {rs : RelationSchema} {att : Attribute} (h : att ∈ rs) : Fin rs.card :=
+  (RelationSchema.index? rs att).get (index_isSome h)
+
+@[simp]
+theorem index_lt_card {rs : RelationSchema} {att : Attribute} : (h : att ∈ rs) → rs.index h < rs.card := by
+  simp [RelationSchema.ordering_mem, RelationSchema.index, RelationSchema.index?]
+
+def RelationSchema.fromIndex (rs : RelationSchema) (i : Fin rs.card) : Attribute := rs.ordering.get ⟨i, by simp [RelationSchema.ordering]⟩
+
+@[simp]
+theorem fromIndex_mem {rs : RelationSchema} : (i : Fin rs.card) → rs.fromIndex i ∈ rs := by
+  intro i
+  apply (RelationSchema.ordering_mem (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) rs)[i] rs).mp
+  simp [RelationSchema.ordering]
 
 end RM
 
@@ -153,42 +188,37 @@ structure RelationTermRestriction (n: ℕ) where
   inst : RelationInstance
   validSchema : fn.Dom = inst.schema
 
-theorem i_schema_mem (schema : RelationSchema) (i : Fin schema.card) : schema.fromIndex i ∈ schema := by
-  simp_all only [Fin.is_le', RM.RelationSchema.fromIndex, RM.RelationSchema.ordering,
-    List.get_eq_getElem, RM.RelationSchema.ordering_mem, List.getElem_mem]
-
-theorem atr_dom {n : ℕ} (atr : RelationTermRestriction n) : ∀ i, (atr.fn (atr.inst.schema.fromIndex i)).Dom := by
+theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.inst.schema.fromIndex i)).Dom := by
   intro i
   apply Part.dom_iff_mem.mpr
-  apply (PFun.mem_dom atr.fn (RM.RelationSchema.fromIndex atr.inst.schema i)).mp
-  simp [atr.validSchema] at *
-  exact i_schema_mem atr.inst.schema i
+  apply (PFun.mem_dom rtr.fn (RM.RelationSchema.fromIndex rtr.inst.schema i)).mp
+  simp [rtr.validSchema] at *
 
-def getMap {n : ℕ} (atr : RelationTermRestriction n) : Fin atr.inst.schema.card → VariableTerm n :=
-  λ i => (atr.fn (atr.inst.schema.fromIndex i)).get (atr_dom atr i)
+def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.inst.schema.card → VariableTerm n :=
+  λ i => (rtr.fn (rtr.inst.schema.fromIndex i)).get (rtr_dom rtr i)
 
-def BoundedRelation {n : ℕ} (atr : RelationTermRestriction n) : fol.BoundedFormula Variable n := Relations.boundedFormula (R atr.inst) (getMap atr)
+def BoundedRelation {n : ℕ} (rtr : RelationTermRestriction n) : fol.BoundedFormula Variable n := Relations.boundedFormula (R rtr.inst) (getMap rtr)
 
 
 def F : fol.Formula Variable := BoundedRelation ⟨a_t, relI, by simp [relI, relS, a_t, PFun.Dom]; aesop⟩
 
 example [struc: folStruc] : F.Realize v := by
-  simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel, getMap, a_t]
+  simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel]
   apply folStruc.RelMap_R relI
-  . use tup2
-    intro i
-    simp only [tup2, v, Part.coe_some]
-    split
-    next x heq => rfl
-    next x heq => rfl
-    next x x_1 x_2 =>
-      simp_all only [imp_false]
-      simp_all only [Term.realize_var, Sum.elim_inl, v]
-      simp_all only [Part.coe_some, Part.some_ne_none]
-      simp_all [relI, RM.RelationSchema.fromIndex]
+  use tup2
+  intro i
+  simp only [tup2, v, Part.coe_some]
+  split
+  all_goals simp_all [getMap, a_t]
+  next x heq => rfl
+  next x heq => rfl
+  next x x_1 x_2 =>
+    have z := RM.fromIndex_mem i
+    simp_all [relI, relS]
 
 
-def atr_G : RelationTermRestriction 1 := ⟨
+
+def rtr_G : RelationTermRestriction 1 := ⟨
   λ a => match a with
     | 0 => .some (var "x")
     | 1 => .some (free 0)
@@ -197,11 +227,18 @@ def atr_G : RelationTermRestriction 1 := ⟨
   by simp [relI, relS, PFun.Dom]; aesop
 ⟩
 
-def G : fol.Formula Variable := .ex (BoundedRelation atr_G)
+def G : fol.Formula Variable := .ex (BoundedRelation rtr_G)
 example [struc: folStruc] : G.Realize v := by
-  simp [Formula.Realize, G, BoundedRelation, BoundedFormula.realize_rel, getMap, atr_G]
+  simp [Formula.Realize, G, BoundedRelation, BoundedFormula.realize_rel]
   use .some 22
   apply folStruc.RelMap_R relI
   use tup2
   intro i
-  simp_all [tup2, v, atr_dom, Term.realize_var, getMap, atr_G, Term.realize_var]
+  simp_all only [tup2, Part.coe_some]
+  split
+  all_goals simp_all [rtr_G, getMap]
+  next x heq => rfl
+  next x heq => rfl
+  next x x_1 x_2 =>
+    have z := RM.fromIndex_mem i
+    simp_all [relI, relS]
