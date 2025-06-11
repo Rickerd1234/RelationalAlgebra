@@ -174,14 +174,8 @@ class folStruc extends fol.Structure (Part Value) where
           → RelMap (R ri) a                             -- Then the RelationMap contains the relation for this value assignment
 
 
--- Generalize this part, such that it is more intuitive
-def AttributeTermAssignment (n: ℕ) := Attribute →. VariableTerm n
-
 -- Convert RM.Attribute to FOL.Variable
-def a_t {n: ℕ} : AttributeTermAssignment n
-  | 0 => .some (var "x")
-  | 1 => .some (var "y")
-  | _ => .none
+def AttributeTermAssignment (n: ℕ) := Attribute →. VariableTerm n
 
 structure RelationTermRestriction (n: ℕ) where
   fn : AttributeTermAssignment n
@@ -199,8 +193,15 @@ def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.inst.schema.car
 
 def BoundedRelation {n : ℕ} (rtr : RelationTermRestriction n) : fol.BoundedFormula Variable n := Relations.boundedFormula (R rtr.inst) (getMap rtr)
 
-
-def F : fol.Formula Variable := BoundedRelation ⟨a_t, relI, by simp [relI, relS, a_t, PFun.Dom]; aesop⟩
+-- Relation with variables
+def F : fol.Formula Variable := BoundedRelation ⟨
+λ a => match a with
+  | 0 => .some (var "x")
+  | 1 => .some (var "y")
+  | _ => .none,
+  relI,
+  by simp [relI, relS, PFun.Dom]; aesop
+⟩
 
 example [struc: folStruc] : F.Realize v := by
   simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel]
@@ -209,15 +210,12 @@ example [struc: folStruc] : F.Realize v := by
   intro i
   simp only [tup2, v, Part.coe_some]
   split
-  all_goals simp_all [getMap, a_t]
-  next x heq => rfl
-  next x heq => rfl
+  all_goals simp_all [getMap]; try rfl
   next x x_1 x_2 =>
     have z := RM.fromIndex_mem i
     simp_all [relI, relS]
 
-
-
+-- Relation with a free variable
 def rtr_G : RelationTermRestriction 1 := ⟨
   λ a => match a with
     | 0 => .some (var "x")
@@ -236,9 +234,32 @@ example [struc: folStruc] : G.Realize v := by
   intro i
   simp_all only [tup2, Part.coe_some]
   split
-  all_goals simp_all [rtr_G, getMap]
-  next x heq => rfl
-  next x heq => rfl
+  all_goals simp_all [rtr_G, getMap]; try rfl
+  next x x_1 x_2 =>
+    have z := RM.fromIndex_mem i
+    simp_all [relI, relS]
+
+-- Relation with two free variables
+def rtr_H : RelationTermRestriction 2 := ⟨
+  λ a => match a with
+    | 0 => .some (free 1)
+    | 1 => .some (free 0)
+    | _ => .none,
+  relI,
+  by simp [relI, relS, PFun.Dom]; aesop
+⟩
+
+def H : fol.Formula Variable := .ex (.ex (BoundedRelation rtr_H))
+example [struc: folStruc] : H.Realize v := by
+  simp [Formula.Realize, H, BoundedRelation, BoundedFormula.realize_rel]
+  use .some 22
+  use .some 21
+  apply folStruc.RelMap_R relI
+  use tup2
+  intro i
+  simp_all only [tup2, Part.coe_some]
+  split
+  all_goals simp_all [rtr_H, getMap]; try rfl
   next x x_1 x_2 =>
     have z := RM.fromIndex_mem i
     simp_all [relI, relS]
