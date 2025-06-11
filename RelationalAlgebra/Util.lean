@@ -1,6 +1,6 @@
 import RelationalAlgebra.RelationalModel
 
-open RM
+namespace RM
 
 section empty
 
