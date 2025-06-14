@@ -92,13 +92,15 @@ example [struc: folStruc] : F.Realize v := by
   simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel]
   apply folStruc.RelMap_R relI
   use tup2
-  intro i
-  simp only [tup2, v, Part.coe_some]
-  split
-  all_goals simp_all [getMap]; try rfl
-  next x x_1 x_2 =>
-    have z := RelationSchema.fromIndex_mem i
-    simp_all [relI, relS]
+  apply And.intro
+  · simp [relI]
+  · intro i
+    simp only [tup2, v, Part.coe_some]
+    split
+    all_goals simp_all [getMap]; try rfl
+    next x x_1 x_2 =>
+      have z := RelationSchema.fromIndex_mem i
+      simp_all [relI, relS]
 
 -- Relation with a free variable
 def rtr_G : RelationTermRestriction 1 := ⟨
@@ -116,13 +118,15 @@ example [struc: folStruc] : G.Realize v := by
   use .some 22
   apply folStruc.RelMap_R relI
   use tup2
-  intro i
-  simp_all only [tup2, Part.coe_some]
-  split
-  all_goals simp_all [rtr_G, getMap]; try rfl
-  next x x_1 x_2 =>
-    have z := RelationSchema.fromIndex_mem i
-    simp_all [relI, relS]
+  apply And.intro
+  · simp [relI]
+  · intro i
+    simp_all only [tup2, Part.coe_some]
+    split
+    all_goals simp_all [rtr_G, getMap]; try rfl
+    next x x_1 x_2 =>
+      have z := RelationSchema.fromIndex_mem i
+      simp_all [relI, relS]
 
 -- Relation with two free variables
 def rtr_H : RelationTermRestriction 2 := ⟨
@@ -141,10 +145,12 @@ example [struc: folStruc] : H.Realize v := by
   use .some 21
   apply folStruc.RelMap_R relI
   use tup2
-  intro i
-  simp_all only [tup2, Part.coe_some]
-  split
-  all_goals simp_all [rtr_H, getMap]; try rfl
-  next x x_1 x_2 =>
-    have z := RelationSchema.fromIndex_mem i
-    simp_all [relI, relS]
+  apply And.intro
+  · simp [relI]
+  · intro i
+    simp_all only [tup2, Part.coe_some]
+    split
+    all_goals simp_all [rtr_H, getMap]; try rfl
+    next x x_1 x_2 =>
+      have z := RelationSchema.fromIndex_mem i
+      simp_all [relI, relS]

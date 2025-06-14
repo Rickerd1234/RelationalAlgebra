@@ -12,7 +12,7 @@ open FirstOrder RM
 
 /-- The type of Relations in FOL -/
 inductive relations : ℕ → Type
-  | R : (ri: RelationInstance) → relations ri.schema.card
+  | R : (rs: RelationSchema) → relations rs.card
 
 /-- The language of fol contains the relations -/
 def Language.fol : Language :=
@@ -31,23 +31,26 @@ def var {n: ℕ} (v: Variable) : VariableTerm n := Term.var (Sum.inl v)
 def free {n: ℕ} (i: Fin n) : VariableTerm n := Term.var (Sum.inr i)
 
 
+def assignmentInRelation {ri: RelationInstance} (a : Fin ri.schema.card → Part Value) : Prop :=
+    -- || Instead of this ∃, a unique mapping from a to t could be used?
+  (∃ t : Tuple,                                   -- Exists a tuple
+    t ∈ ri.tuples ∧                               -- Make sure t is contained in the set of tuples
+    ∀ i : Fin ri.schema.card,                     -- Every column index (up to arity)
+      a i = t (RelationSchema.fromIndex i)        -- The column index is some value
+  )
+
 -- Explore relation concepts
 class folStruc extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
       ∀ ri : RelationInstance,                          -- Every relation (and every arity)
       ∀ a : Fin ri.schema.card → Part Value,            -- Every value assignment (for this arity)
-        (∃ t : Tuple,                                   -- Exists a tuple
-          ∀ v : Fin ri.schema.card,                     -- Every column index (up to arity)
-            a v = t (RelationSchema.fromIndex v)        -- The column index is some value
-        )
-          → RelMap (.R ri) a                            -- Then the RelationMap contains the relation for this value assignment
+        assignmentInRelation a                          -- If this value assignment is valid in the relation instance
+          → RelMap (.R ri.schema) a                     -- Then the RelationMap contains the relation for this value assignment
 
 
 -- Convert RM.Attribute to FOL.Variable
-def AttributeTermAssignment (n: ℕ) := Attribute →. VariableTerm n
-
 structure RelationTermRestriction (n: ℕ) where
-  fn : AttributeTermAssignment n
+  fn : Attribute →. VariableTerm n
   inst : RelationInstance
   validSchema : fn.Dom = inst.schema
 
@@ -61,4 +64,4 @@ def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.inst.schema.car
   λ i => (rtr.fn (RelationSchema.fromIndex i)).get (rtr_dom rtr i)
 
 def BoundedRelation {n : ℕ} (rtr : RelationTermRestriction n) : fol.BoundedFormula Variable n :=
-  Relations.boundedFormula (.R rtr.inst) (getMap rtr)
+  Relations.boundedFormula (.R rtr.inst.schema) (getMap rtr)
