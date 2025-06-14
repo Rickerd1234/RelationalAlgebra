@@ -23,16 +23,16 @@ def union (inst inst' : RelationInstance) (h: inst.schema = inst'.schema): Relat
 
 @[simp]
 theorem union_empty (inst : RelationInstance) : union inst (∅r inst.schema) rfl = inst :=
-  by unfold union; simp_all only [RelationInstance.empty, Set.union_empty]
+  by unfold union; simp_all only [Set.union_empty]
 
 @[simp]
 theorem union_comm (inst inst' : RelationInstance) (h : inst.schema = inst'.schema) : union inst inst' h = union inst' inst h.symm :=
-  by unfold union; simp [Set.union_comm inst.tuples inst'.tuples, h]
+  by unfold union; simp only [h, Set.union_comm inst.tuples inst'.tuples]
 
 @[simp]
 theorem union_assoc (inst inst' inst'' : RelationInstance) (h : inst.schema = inst'.schema) (h' : inst'.schema = inst''.schema) :
   union (union inst inst' h) inst'' (h.trans h') = union inst (union inst' inst'' h') (by simp [union, h]) :=
-    by unfold union; simp [Set.union_assoc inst.tuples inst'.tuples inst''.tuples]
+    by unfold union; simp only [Set.union_assoc inst.tuples inst'.tuples inst''.tuples]
 
 end union
 
@@ -83,7 +83,7 @@ theorem rename_inst_id (inst : RelationInstance) : rename inst id Function.surje
 theorem rename_comp (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Surjective) (g : Attribute → Attribute) (b_sur : g.Surjective) :
     rename (rename inst f f_sur) g b_sur = rename inst (g ∘ f) (Function.Surjective.comp b_sur f_sur) := by
       unfold rename renameSchema
-      simp_all only [exists_eq_right', Set.mem_setOf_eq, Function.comp_apply, RelationInstance.mk.injEq]
+      simp_all only [exists_eq_right', Set.mem_setOf_eq, RelationInstance.mk.injEq]
       apply And.intro
       · ext x : 1
         simp_all only [Finset.mem_image, exists_exists_and_eq_and, Function.comp_apply]
@@ -107,16 +107,16 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
       },
       by
         intro t a
-        simp_all only [and_imp, Set.mem_setOf_eq]
+        simp_all only [Set.mem_setOf_eq]
         obtain ⟨w, h⟩ := a
         obtain ⟨left, right⟩ := h
         obtain ⟨w_1, h⟩ := right
         obtain ⟨left_1, right⟩ := h
         ext a
-        simp_all only [PFun.mem_dom, Set.mem_union]
+        simp_all only [PFun.mem_dom]
         simp [← Finset.mem_coe]
         rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1]
-        simp_all only [not_or, and_imp, PFun.mem_dom]
+        simp_all only [PFun.mem_dom]
         apply Iff.intro
         · intro a_1
           obtain ⟨w_2, h⟩ := a_1
@@ -133,7 +133,7 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
               apply Or.inr
               apply Exists.intro
               · exact h
-          . simp_all only [Set.mem_union, not_or, not_false_eq_true, Part.not_mem_none]
+          . simp_all only [not_false_eq_true, Part.not_mem_none]
         · intro a_1
           by_cases g : a ∈ inst1.schema ∪ inst2.schema
           . simp_all only [Finset.mem_union, not_or, and_imp]
@@ -163,7 +163,7 @@ def join (inst1 : RelationInstance) (inst2 : RelationInstance) : RelationInstanc
 
 @[simp]
 theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join inst2 inst1 := by
-  simp_all only [join, Set.mem_union, not_or, and_imp, RelationInstance.mk.injEq]
+  simp_all only [join, RelationInstance.mk.injEq]
   apply And.intro
   · ext x : 1
     simp_all only [Finset.mem_union]
@@ -184,7 +184,7 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
       obtain ⟨left, right⟩ := h
       obtain ⟨w_1, h⟩ := right
       obtain ⟨left_1, right⟩ := h
-      simp_all only [not_false_eq_true, implies_true, and_true]
+      simp_all only
       apply Exists.intro
       · apply And.intro
         · exact left_1
@@ -201,7 +201,7 @@ theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join ins
       obtain ⟨left, right⟩ := h
       obtain ⟨w_1, h⟩ := right
       obtain ⟨left_1, right⟩ := h
-      simp_all only [not_false_eq_true, implies_true, and_true]
+      simp_all only
       apply Exists.intro
       · apply And.intro
         · exact left_1
@@ -329,7 +329,8 @@ theorem projection_id {s' : RelationSchema} (inst : RelationInstance) (h : s' = 
         . simp_all only [not_false_eq_true, Part.not_mem_none, iff_false]
           apply Aesop.BuiltinRules.not_intro
           intro a_1
-          simp_all [← Finset.mem_coe, ← inst.validSchema w left]
+          simp_all only [← Finset.mem_coe, ← inst.validSchema w left, PFun.mem_dom,
+            forall_exists_index, not_exists]
       rw [z] at left
       exact left
     · intro a
