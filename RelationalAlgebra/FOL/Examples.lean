@@ -1,6 +1,6 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Util
-import RelationalAlgebra.FOL.ModelTheoryFOL
+import RelationalAlgebra.FOL.Query
 
 -- Operations for BoundedFormula
 -- AND: ⊓
@@ -95,7 +95,7 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 
 -- Relation with variables
-def F : fol.Formula Variable := BoundedRelation ⟨
+def F : Query := BoundedQuery.R ⟨
   λ a => match a with
   | 0 => .some (var "x")
   | 1 => .some (var "y")
@@ -105,8 +105,8 @@ def F : fol.Formula Variable := BoundedRelation ⟨
   (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
-example [struc: folStruc (dbI)] : F.Realize v := by
-  simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel]
+example [struc: folStruc (dbI)] : F.Realize dbI v := by
+  simp only [Query.Realize, F]
   apply folStruc.RelMap_R "R1"
   use tup2
   apply And.intro
@@ -130,9 +130,9 @@ def rtr_G : RelationTermRestriction 1 := ⟨
   (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
-def G : fol.Formula Variable := .ex (BoundedRelation rtr_G)
-example [struc: folStruc (dbI)] : G.Realize v := by
-  simp [Formula.Realize, G, BoundedRelation, BoundedFormula.realize_rel]
+def G : Query := .ex (.R rtr_G)
+example [struc: folStruc (dbI)] : G.Realize dbI v := by
+  simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, G]
   use .some 22
   apply folStruc.RelMap_R "R1"
   use tup2
@@ -157,9 +157,9 @@ def rtr_H : RelationTermRestriction 2 := ⟨
   (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
-def H : fol.Formula Variable := .ex (.ex (BoundedRelation rtr_H))
-example [struc: folStruc (dbI)] : H.Realize v := by
-  simp [Formula.Realize, H, BoundedRelation, BoundedFormula.realize_rel]
+def H : Query := .ex (.ex (.R rtr_H))
+example [struc: folStruc (dbI)] : H.Realize dbI v := by
+  simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, H]
   use .some 22
   use .some 21
   apply folStruc.RelMap_R "R1"

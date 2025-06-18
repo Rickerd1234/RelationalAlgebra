@@ -65,6 +65,3 @@ theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rt
 
 def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.schema.card → VariableTerm n :=
   λ i => (rtr.fn (RelationSchema.fromIndex i)).get (rtr_dom rtr i)
-
-def BoundedRelation {n : ℕ} (rtr : RelationTermRestriction n) : fol.BoundedFormula Variable n :=
-  Relations.boundedFormula (.R rtr.name rtr.schema) (getMap rtr)
