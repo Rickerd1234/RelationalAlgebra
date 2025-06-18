@@ -1,4 +1,5 @@
 import RelationalAlgebra.RelationalModel
+import RelationalAlgebra.Util
 import RelationalAlgebra.FOL.ModelTheoryFOL
 
 -- Operations for BoundedFormula
@@ -38,6 +39,21 @@ def relI : RelationInstance := ⟨
   by
     simp [relS, tup1, tup2, tup3, PFun.Dom]
     aesop
+⟩
+
+def dbI : DatabaseInstance := ⟨
+  λ x => match x with
+  | "R1" => relS
+  | _ => ∅,
+  λ x => match x with
+  | "R1" => relI
+  | _ => ∅r ∅,
+  by
+    intro rel
+    simp_all only [RelationInstance.empty]
+    split
+    next x => rfl
+    next x x_1 => simp_all only [imp_false]
 ⟩
 
 open FOL Language
@@ -80,27 +96,28 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 -- Relation with variables
 def F : fol.Formula Variable := BoundedRelation ⟨
-λ a => match a with
+  λ a => match a with
   | 0 => .some (var "x")
   | 1 => .some (var "y")
   | _ => .none,
-  relS,
-  by simp [relS, PFun.Dom]; aesop
+  "R1",
+  dbI,
+  (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
-example [struc: folStruc] : F.Realize v := by
+example [struc: folStruc (dbI)] : F.Realize v := by
   simp only [Formula.Realize, F, BoundedRelation, BoundedFormula.realize_rel]
-  apply folStruc.RelMap_R relI
+  apply folStruc.RelMap_R "R1"
   use tup2
   apply And.intro
-  · simp [relI]
+  · simp [dbI, relI]
   · intro i
     simp only [tup2, v, Part.coe_some]
     split
     all_goals simp_all [getMap]; try rfl
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
-      simp_all [relI, relS]
+      simp_all [dbI, relI, relS]
 
 -- Relation with a free variable
 def rtr_G : RelationTermRestriction 1 := ⟨
@@ -108,25 +125,26 @@ def rtr_G : RelationTermRestriction 1 := ⟨
     | 0 => .some (var "x")
     | 1 => .some (free 0)
     | _ => .none,
-  relS,
-  by simp [relS, PFun.Dom]; aesop
+  "R1",
+  dbI,
+  (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
 def G : fol.Formula Variable := .ex (BoundedRelation rtr_G)
-example [struc: folStruc] : G.Realize v := by
+example [struc: folStruc (dbI)] : G.Realize v := by
   simp [Formula.Realize, G, BoundedRelation, BoundedFormula.realize_rel]
   use .some 22
-  apply folStruc.RelMap_R relI
+  apply folStruc.RelMap_R "R1"
   use tup2
   apply And.intro
-  · simp [relI]
+  · simp [dbI, relI]
   · intro i
     simp_all only [tup2, Part.coe_some]
     split
     all_goals simp_all [rtr_G, getMap]; try rfl
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
-      simp_all [relI, relS]
+      simp_all [dbI, relI, relS]
 
 -- Relation with two free variables
 def rtr_H : RelationTermRestriction 2 := ⟨
@@ -134,23 +152,24 @@ def rtr_H : RelationTermRestriction 2 := ⟨
     | 0 => .some (free 1)
     | 1 => .some (free 0)
     | _ => .none,
-  relS,
-  by simp [relS, PFun.Dom]; aesop
+  "R1",
+  dbI,
+  (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
 def H : fol.Formula Variable := .ex (.ex (BoundedRelation rtr_H))
-example [struc: folStruc] : H.Realize v := by
+example [struc: folStruc (dbI)] : H.Realize v := by
   simp [Formula.Realize, H, BoundedRelation, BoundedFormula.realize_rel]
   use .some 22
   use .some 21
-  apply folStruc.RelMap_R relI
+  apply folStruc.RelMap_R "R1"
   use tup2
   apply And.intro
-  · simp [relI]
+  · simp [dbI, relI]
   · intro i
     simp_all only [tup2, Part.coe_some]
     split
     all_goals simp_all [rtr_H, getMap]; try rfl
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
-      simp_all [relI, relS]
+      simp_all [dbI, relI, relS]

@@ -12,7 +12,7 @@ open FirstOrder RM
 
 /-- The type of Relations in FOL -/
 inductive relations : ℕ → Type
-  | R : (rs: RelationSchema) → relations rs.card
+  | R : (rn: RelationName) → (rs: RelationSchema) → relations rs.card
 
 /-- The language of fol contains the relations -/
 def Language.fol : Language :=
@@ -40,19 +40,22 @@ def assignmentInRelation {ri: RelationInstance} (a : Fin ri.schema.card → Part
   )
 
 -- Explore relation concepts
-class folStruc extends fol.Structure (Part Value) where
+class folStruc (dbi : DatabaseInstance) extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
-      ∀ ri : RelationInstance,                          -- Every relation (and every arity)
-      ∀ a : Fin ri.schema.card → Part Value,            -- Every value assignment (for this arity)
-        assignmentInRelation a                          -- If this value assignment is valid in the relation instance
-          → RelMap (.R ri.schema) a                     -- Then the RelationMap contains the relation for this value assignment
+      ∀ rn : RelationName,                                    -- Every relation (and every arity)
+      ∀ a : Fin (dbi.relations rn).schema.card → Part Value,  -- Every value assignment (for this arity)
+        assignmentInRelation a                                -- If this value assignment is valid in the relation instance
+          → RelMap (.R rn (dbi.relations rn).schema) a        -- Then the RelationMap contains the relation for this value assignment
 
 
 -- Convert RM.Attribute to FOL.Variable
 structure RelationTermRestriction (n: ℕ) where
   fn : Attribute →. VariableTerm n
-  schema : RelationSchema
-  validSchema : fn.Dom = schema
+  name : RelationName
+  databaseInstance : DatabaseInstance
+  validSchema : fn.Dom = databaseInstance.schema name
+
+def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) := rtr.databaseInstance.schema rtr.name
 
 theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.schema.fromIndex i)).Dom := by
   intro i
@@ -64,4 +67,4 @@ def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.schema.card →
   λ i => (rtr.fn (RelationSchema.fromIndex i)).get (rtr_dom rtr i)
 
 def BoundedRelation {n : ℕ} (rtr : RelationTermRestriction n) : fol.BoundedFormula Variable n :=
-  Relations.boundedFormula (.R rtr.schema) (getMap rtr)
+  Relations.boundedFormula (.R rtr.name rtr.schema) (getMap rtr)
