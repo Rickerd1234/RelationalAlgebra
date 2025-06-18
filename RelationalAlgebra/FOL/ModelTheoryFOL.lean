@@ -51,17 +51,17 @@ class folStruc extends fol.Structure (Part Value) where
 -- Convert RM.Attribute to FOL.Variable
 structure RelationTermRestriction (n: ℕ) where
   fn : Attribute →. VariableTerm n
-  inst : RelationInstance
-  validSchema : fn.Dom = inst.schema
+  schema : RelationSchema
+  validSchema : fn.Dom = schema
 
-theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.inst.schema.fromIndex i)).Dom := by
+theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.schema.fromIndex i)).Dom := by
   intro i
   apply Part.dom_iff_mem.mpr
   apply (PFun.mem_dom rtr.fn (RelationSchema.fromIndex i)).mp
   simp [rtr.validSchema] at *
 
-def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.inst.schema.card → VariableTerm n :=
+def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.schema.card → VariableTerm n :=
   λ i => (rtr.fn (RelationSchema.fromIndex i)).get (rtr_dom rtr i)
 
 def BoundedRelation {n : ℕ} (rtr : RelationTermRestriction n) : fol.BoundedFormula Variable n :=
-  Relations.boundedFormula (.R rtr.inst.schema) (getMap rtr)
+  Relations.boundedFormula (.R rtr.schema) (getMap rtr)

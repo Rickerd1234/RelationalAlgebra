@@ -84,8 +84,8 @@ def F : fol.Formula Variable := BoundedRelation ⟨
   | 0 => .some (var "x")
   | 1 => .some (var "y")
   | _ => .none,
-  relI,
-  by simp [relI, relS, PFun.Dom]; aesop
+  relS,
+  by simp [relS, PFun.Dom]; aesop
 ⟩
 
 example [struc: folStruc] : F.Realize v := by
@@ -108,8 +108,8 @@ def rtr_G : RelationTermRestriction 1 := ⟨
     | 0 => .some (var "x")
     | 1 => .some (free 0)
     | _ => .none,
-  relI,
-  by simp [relI, relS, PFun.Dom]; aesop
+  relS,
+  by simp [relS, PFun.Dom]; aesop
 ⟩
 
 def G : fol.Formula Variable := .ex (BoundedRelation rtr_G)
@@ -134,8 +134,8 @@ def rtr_H : RelationTermRestriction 2 := ⟨
     | 0 => .some (free 1)
     | 1 => .some (free 0)
     | _ => .none,
-  relI,
-  by simp [relI, relS, PFun.Dom]; aesop
+  relS,
+  by simp [relS, PFun.Dom]; aesop
 ⟩
 
 def H : fol.Formula Variable := .ex (.ex (BoundedRelation rtr_H))
