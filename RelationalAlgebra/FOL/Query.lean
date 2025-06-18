@@ -39,7 +39,7 @@ def variableInQuery {n : ℕ} : BoundedQuery n → Variable → Prop
   | .ex q,          v => variableInQuery q v
   | .equal v1 v2,   v => varEquiv v v1 ∨ varEquiv v v2
 
-structure EvaluatableQuery (dbi : DatabaseInstance) where
+structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
   schema : RelationSchema
   outFn : Variable →. Attribute
@@ -48,14 +48,14 @@ structure EvaluatableQuery (dbi : DatabaseInstance) where
   validSchema : schema.toSet = {a | ∀v, variableInQuery query v ∧ outFn v = some a}
 
 -- Evaluation logic
-def EvaluateSchema {dbi : DatabaseInstance} (q : EvaluatableQuery dbi) : RelationSchema := q.schema
+def EvaluateSchema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema := q.schema
 
-def EvaluateTuples {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluatableQuery dbi) : Set Tuple :=
+def EvaluateTuples {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) : Set Tuple :=
 {t |
   ∀a v bv, q.outFn v = some a → (bv v = t a ↔ (q.query.Realize dbi bv ∧ a ∈ q.schema))
 }
 
-theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluatableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = EvaluateSchema q := by
+theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = EvaluateSchema q := by
   simp [EvaluateSchema, EvaluateTuples]
   intro t h
   ext a
@@ -73,5 +73,5 @@ theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluatableQue
     simp_all only [q.validSchema, Part.coe_some, Set.mem_setOf_eq, Part.some_inj]
     sorry
 
-def Evaluate {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluatableQuery dbi)
+def Evaluate {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi)
   : RelationInstance := ⟨EvaluateSchema q, EvaluateTuples q, evaluate_dom q⟩
