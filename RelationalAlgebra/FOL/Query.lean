@@ -16,11 +16,11 @@ def BoundedQuery.toFormula {n : ℕ} (q : BoundedQuery n) : fol.BoundedFormula V
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
 
-def BoundedQuery.Realize {n : ℕ} (dbi : DatabaseInstance) [folStruc dbi] (q : BoundedQuery n) :
+def BoundedQuery.Realize {n : ℕ} (dbi : DatabaseInstance) [folStruc] (q : BoundedQuery n) :
   (Variable → Part Value) → (Fin n → Part Value) → Prop :=
     q.toFormula.Realize
 
-nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (v : Variable → Part Value) : Prop :=
+nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Variable → Part Value) : Prop :=
   φ.Realize dbi v default
 
 -- Evaluation auxiliaries
@@ -50,12 +50,12 @@ structure EvaluableQuery (dbi : DatabaseInstance) where
   domIsSchema : outFn.Dom = schema -- Required, since otherwise there is no restriction on outFn in this direction
 
 -- Evaluation logic
-def EvaluateTuples {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) : Set Tuple :=
+def EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
 {t |
   ∀a v bv, q.outFn a = some v → (bv v = t a ↔ (q.query.Realize dbi bv ∧ a ∈ q.schema))
 }
 
-theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = q.schema := by
+theorem evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = q.schema := by
   simp [EvaluateTuples]
   intro t h
   ext a
@@ -66,5 +66,5 @@ theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery
   · intro ⟨w, h_1⟩
     sorry
 
-def Evaluate {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi)
+def Evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
   : RelationInstance := ⟨q.schema, EvaluateTuples q, evaluate_dom q⟩

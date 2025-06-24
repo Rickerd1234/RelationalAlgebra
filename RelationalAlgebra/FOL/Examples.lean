@@ -105,9 +105,9 @@ def F : Query := BoundedQuery.R ⟨
   (by simp [relS, PFun.Dom, dbI]; aesop)
 ⟩
 
-example [struc: folStruc (dbI)] : F.Realize dbI v := by
+example [struc: folStruc] : F.Realize dbI v := by
   simp only [Query.Realize, F]
-  apply folStruc.RelMap_R "R1"
+  apply folStruc.RelMap_R dbI "R1"
   use tup2
   apply And.intro
   · simp [dbI, relI]
@@ -131,10 +131,10 @@ def rtr_G : RelationTermRestriction 1 := ⟨
 ⟩
 
 def G : Query := .ex (.R rtr_G)
-example [struc: folStruc (dbI)] : G.Realize dbI v := by
+example [struc: folStruc] : G.Realize dbI v := by
   simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, G]
   use .some 22
-  apply folStruc.RelMap_R "R1"
+  apply folStruc.RelMap_R dbI "R1"
   use tup2
   apply And.intro
   · simp [dbI, relI]
@@ -158,11 +158,11 @@ def rtr_H : RelationTermRestriction 2 := ⟨
 ⟩
 
 def H : Query := .ex (.ex (.R rtr_H))
-example [struc: folStruc (dbI)] : H.Realize dbI v := by
+example [struc: folStruc] : H.Realize dbI v := by
   simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, H]
   use .some 22
   use .some 21
-  apply folStruc.RelMap_R "R1"
+  apply folStruc.RelMap_R dbI "R1"
   use tup2
   apply And.intro
   · simp [dbI, relI]
@@ -173,3 +173,52 @@ example [struc: folStruc (dbI)] : H.Realize dbI v := by
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
       simp_all [dbI, relI, relS]
+
+def t : EvaluableQuery (dbI) :=
+  ⟨
+    G,
+    {1},
+    λ x => match x with
+    | 1 => "x"
+    | _ => .none,
+    by
+      simp [variablesInQuery, G, rtr_G, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
+      ext
+      simp_all only [Set.mem_setOf_eq, Fin.isValue]
+      apply Iff.intro
+      · intro a
+        obtain ⟨w, h⟩ := a
+        split at h
+        next x_1 =>
+          simp_all only [Part.mem_some_iff, Fin.isValue]
+          subst h
+          use outVar "x"
+          simp [outVar]
+          use 0
+          simp
+        next x_1 x_2 => simp_all only [imp_false, Part.not_mem_none]
+      · intro a
+        obtain ⟨w, h⟩ := a
+        obtain ⟨left, right⟩ := h
+        obtain ⟨w_1, h⟩ := left
+        split at right
+        next x_1 x_2 =>
+          split at h
+          next x_3 =>
+            simp_all only [Sum.getLeft?_eq_some_iff, Part.mem_some_iff]
+            subst right
+            use 1
+            simp_all [outVar]
+          next x_3 =>
+            simp_all only [Sum.getLeft?_eq_some_iff, Fin.isValue, Part.mem_some_iff]
+            subst right
+            use 1
+            simp_all [inVar]
+          next x_3 x_4 x_5 => simp_all only [Sum.getLeft?_eq_some_iff, imp_false, Part.not_mem_none]
+        next x_1 x_2 =>
+          split at h
+          next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
+          next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
+          next x_3 x_4 x_5 => simp_all only [imp_false, Sum.forall, reduceCtorEq],
+    by aesop
+  ⟩

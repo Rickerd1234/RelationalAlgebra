@@ -41,8 +41,9 @@ def assignmentInRelation {ri: RelationInstance} (a : Fin ri.schema.card → Part
   )
 
 -- Explore relation concepts
-class folStruc (dbi : DatabaseInstance) extends fol.Structure (Part Value) where
+class folStruc extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
+      ∀ dbi : DatabaseInstance,                               -- Every database instance
       ∀ rn : RelationName,                                    -- Every relation (and every arity)
       ∀ a : Fin (dbi.relations rn).schema.card → Part Value,  -- Every value assignment (for this arity)
         assignmentInRelation a                                -- If this value assignment is valid in the relation instance
