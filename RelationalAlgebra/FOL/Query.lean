@@ -8,7 +8,6 @@ inductive BoundedQuery : ℕ → Type
   | R {n}: (rtr : RelationTermRestriction n) → BoundedQuery n
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
-  | equal {n} (v1 v2 : VariableTerm n) : BoundedQuery n
 
 abbrev Query := BoundedQuery 0
 
@@ -17,7 +16,6 @@ def BoundedQuery.toFormula {n : ℕ} (q : BoundedQuery n) : fol.BoundedFormula V
   | .R rtr => Relations.boundedFormula (.R rtr.name rtr.schema) (getMap rtr)
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
-  | .equal v1 v2 => .equal v1 v2
 
 def BoundedQuery.Realize {n : ℕ} (dbi : DatabaseInstance) [folStruc dbi] (q : BoundedQuery n) :
   (Variable → Part Value) → (Fin n → Part Value) → Prop :=
@@ -27,36 +25,38 @@ nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (v
   φ.Realize dbi v default
 
 -- Evaluation auxiliaries
-def varEquiv {n : ℕ} : Variable → VariableTerm n → Prop
-  | v1, .var v2 => v1 = v2.getLeft?
+def VariableTerm.IsVariable (n : ℕ) : VariableTerm n → Prop
+  | .var x => x.isLeft
+  | _ => False
 
-def variableInRTR {n : ℕ} (rtr : RelationTermRestriction n) (v : Variable) : Prop :=
-  ∃a, (h: a ∈ rtr.schema) → varEquiv v ((rtr.fn a).get (by simp_all [Part.dom_iff_mem, ← PFun.mem_dom, rtr.validSchema, RelationTermRestriction.schema, h]))
+def VariableTerm.var (n : ℕ) : (vt : VariableTerm n) → VariableTerm.IsVariable n vt → Variable
+  | .var x, h => x.getLeft h
+  | _, _ => ""
 
-def variableInQuery {n : ℕ} : BoundedQuery n → Variable → Prop
-  | .R rtr,         v => variableInRTR rtr v
-  | .and q1 q2,     v => variableInQuery q1 v ∨ variableInQuery q2 v
-  | .ex q,          v => variableInQuery q v
-  | .equal v1 v2,   v => varEquiv v v1 ∨ varEquiv v v2
+def variablesInRTR {n : ℕ} [DecidablePred (VariableTerm.IsVariable n)] (rtr : RelationTermRestriction n) [Fintype rtr.fn.ran] : Finset Variable :=
+  (rtr.fn.ran.toFinset.filter (VariableTerm.IsVariable n)).image VariableTerm.var n -- @TODO: Make this work
+
+def variablesInQuery {n : ℕ} : BoundedQuery n → Finset Variable
+  | .R rtr     => variablesInRTR rtr
+  | .and q1 q2 => variablesInQuery q1 ∪ variablesInQuery q2
+  | .ex q      => variablesInQuery q
 
 structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
-  schema : RelationSchema
-  outFn : Variable →. Attribute
-  injective : outFn.Injective
-  varInQuery : outFn.Dom = {v | variableInQuery query v}
-  validSchema : schema.toSet = {a | ∀v, variableInQuery query v ∧ outFn v = some a}
+  outFn : Attribute →. Variable -- @TODO: Check if reversing this makes it possible to have x = y subst → x,x
+  varsInQuery : outFn.ran = variablesInQuery query
 
 -- Evaluation logic
-def EvaluateSchema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema := q.schema
+def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) [Fintype q.outFn.Dom] : RelationSchema :=
+  q.outFn.Dom.toFinset
 
-def EvaluateTuples {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) : Set Tuple :=
+def EvaluateTuples {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) [Fintype q.outFn.Dom] : Set Tuple :=
 {t |
-  ∀a v bv, q.outFn v = some a → (bv v = t a ↔ (q.query.Realize dbi bv ∧ a ∈ q.schema))
+  ∀a v bv, q.outFn a = some v → (bv v = t a ↔ (q.query.Realize dbi bv ∧ a ∈ q.schema))
 }
 
 theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = EvaluateSchema q := by
-  simp [EvaluateSchema, EvaluateTuples]
+  simp [EvaluateTuples]
   intro t h
   ext a
   simp_all only [PFun.mem_dom, Finset.mem_coe]
@@ -73,5 +73,5 @@ theorem evaluate_dom {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery
     simp_all only [q.validSchema, Part.coe_some, Set.mem_setOf_eq, Part.some_inj]
     sorry
 
-def Evaluate {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi)
-  : RelationInstance := ⟨EvaluateSchema q, EvaluateTuples q, evaluate_dom q⟩
+def Evaluate {dbi : DatabaseInstance} [folStruc dbi] (q : EvaluableQuery dbi) [Fintype q.outFn.Dom]
+  : RelationInstance := ⟨q.schema, EvaluateTuples q, evaluate_dom q⟩

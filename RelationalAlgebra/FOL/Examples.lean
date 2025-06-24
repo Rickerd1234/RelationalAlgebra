@@ -58,9 +58,9 @@ def dbI : DatabaseInstance := ⟨
 
 open FOL Language
 
-def x : VariableTerm 0 := var "x"
-def y : VariableTerm 0 := var "y"
-def z : VariableTerm 1 := free 0
+def x : VariableTerm 0 := outVar "x"
+def y : VariableTerm 0 := outVar "y"
+def z : VariableTerm 1 := inVar 0
 
 -- Explore formula concepts
 def n_xy : fol.BoundedFormula Variable 0 := ∼(x =' y) ⟹ ⊤
@@ -88,7 +88,7 @@ example [struc: fol.Structure (Part Value)] : ex_n_xy_and_yz.Realize v := by
   rfl
 
 example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
-  simp only [Formula.Realize, all_xz_or_yz, x, y, z, v, var, free]
+  simp only [Formula.Realize, all_xz_or_yz, x, y, z, v, outVar, inVar]
   simp
   use Part.none
   simp [Term.liftAt, Fin.snoc, v]
@@ -97,8 +97,8 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 -- Relation with variables
 def F : Query := BoundedQuery.R ⟨
   λ a => match a with
-  | 0 => .some (var "x")
-  | 1 => .some (var "y")
+  | 0 => .some (outVar "x")
+  | 1 => .some (outVar "y")
   | _ => .none,
   "R1",
   dbI,
@@ -122,8 +122,8 @@ example [struc: folStruc (dbI)] : F.Realize dbI v := by
 -- Relation with a free variable
 def rtr_G : RelationTermRestriction 1 := ⟨
   λ a => match a with
-    | 0 => .some (var "x")
-    | 1 => .some (free 0)
+    | 0 => .some (outVar "x")
+    | 1 => .some (inVar 0)
     | _ => .none,
   "R1",
   dbI,
@@ -149,8 +149,8 @@ example [struc: folStruc (dbI)] : G.Realize dbI v := by
 -- Relation with two free variables
 def rtr_H : RelationTermRestriction 2 := ⟨
   λ a => match a with
-    | 0 => .some (free 1)
-    | 1 => .some (free 0)
+    | 0 => .some (inVar 1)
+    | 1 => .some (inVar 0)
     | _ => .none,
   "R1",
   dbI,

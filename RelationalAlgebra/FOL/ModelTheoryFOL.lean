@@ -27,8 +27,8 @@ open Language
 abbrev Variable := String
 abbrev VariableTerm (n: ℕ) := fol.Term (Variable ⊕ Fin n)
 
-def var {n: ℕ} (v: Variable) : VariableTerm n := Term.var (Sum.inl v)
-def free {n: ℕ} (i: Fin n) : VariableTerm n := Term.var (Sum.inr i)
+def outVar {n: ℕ} (v: Variable) : VariableTerm n := Term.var (Sum.inl v)
+def inVar {n: ℕ} (i: Fin n) : VariableTerm n := Term.var (Sum.inr i)
 
 
 def assignmentInRelation {ri: RelationInstance} (a : Fin ri.schema.card → Part Value) : Prop :=
@@ -49,6 +49,7 @@ class folStruc (dbi : DatabaseInstance) extends fol.Structure (Part Value) where
 
 
 -- Convert RM.Attribute to FOL.Variable
+-- @TODO: Think about whether databaseInstance should be part of this, since a Query should not require this
 structure RelationTermRestriction (n: ℕ) where
   fn : Attribute →. VariableTerm n
   name : RelationName
