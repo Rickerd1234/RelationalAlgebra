@@ -5,6 +5,7 @@ import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Syntax
 import Mathlib.ModelTheory.Satisfiability
 import Mathlib.Data.PFun
+import Mathlib.Data.Finset.PImage
 
 namespace FOL
 
@@ -32,7 +33,7 @@ def inVar {n: ℕ} (i: Fin n) : VariableTerm n := Term.var (Sum.inr i)
 
 
 def assignmentInRelation {ri: RelationInstance} (a : Fin ri.schema.card → Part Value) : Prop :=
-    -- || Instead of this ∃, a unique mapping from a to t could be used?
+    -- @TODO: Instead of this ∃, a unique mapping from a to t could be used?
   (∃ t : Tuple,                                   -- Exists a tuple
     t ∈ ri.tuples ∧                               -- Make sure t is contained in the set of tuples
     ∀ i : Fin ri.schema.card,                     -- Every column index (up to arity)
@@ -56,7 +57,27 @@ structure RelationTermRestriction (n: ℕ) where
   databaseInstance : DatabaseInstance
   validSchema : fn.Dom = databaseInstance.schema name
 
-def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) := rtr.databaseInstance.schema rtr.name
+instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.Dom := by
+  simp [rtr.validSchema]
+  exact Finset.fintypeCoeSort (rtr.databaseInstance.schema rtr.name)
+
+def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) : RelationSchema := rtr.databaseInstance.schema rtr.name
+
+instance {n : ℕ} (rtr : RelationTermRestriction n) (x : Attribute) : Decidable (rtr.fn x).Dom := by
+  simp only [Part.dom_iff_mem, ← PFun.mem_dom, rtr.validSchema, Finset.mem_coe]
+  apply Finset.decidableMem
+
+theorem rtr_ran_def {n : ℕ} (rtr : RelationTermRestriction n) : rtr.fn.ran = rtr.fn.Dom.toFinset.pimage rtr.fn := by
+  ext x
+  simp_all only [PFun.ran, PFun.Dom]
+  simp [Part.dom_iff_mem, PFun.image_def]
+  aesop
+
+instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.ran := by
+  rw [rtr_ran_def]
+  exact FinsetCoe.fintype (Finset.pimage rtr.fn rtr.fn.Dom.toFinset)
+
+def RelationTermRestriction.vars {n : ℕ} (rtr : RelationTermRestriction n) : Finset (VariableTerm n) := rtr.fn.ran.toFinset
 
 theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.schema.fromIndex i)).Dom := by
   intro i
