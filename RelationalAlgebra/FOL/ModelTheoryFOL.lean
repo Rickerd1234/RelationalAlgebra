@@ -51,40 +51,43 @@ class folStruc extends fol.Structure (Part Value) where
 
 
 -- Convert RM.Attribute to FOL.Variable
--- @TODO: Think about whether databaseInstance should be part of this, since a Query should not require this
 structure RelationTermRestriction (n: ℕ) where
   fn : Attribute →. VariableTerm n
   name : RelationName
-  databaseInstance : DatabaseInstance
-  validSchema : fn.Dom = databaseInstance.schema name
 
-instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.Dom := by
+structure BoundedRelationTermRestriction (n : ℕ) (dbi : DatabaseInstance) extends RelationTermRestriction n where
+  validSchema : fn.Dom = dbi.schema name
+
+def RelationTermRestriction.toBounded {n : ℕ} (rtr : RelationTermRestriction n) (dbi : DatabaseInstance) (h : rtr.fn.Dom = dbi.schema rtr.name)
+  : BoundedRelationTermRestriction n dbi := {rtr with validSchema := h}
+
+instance {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : Fintype rtr.fn.Dom := by
   simp [rtr.validSchema]
-  exact Finset.fintypeCoeSort (rtr.databaseInstance.schema rtr.name)
+  exact Finset.fintypeCoeSort (dbi.schema rtr.name)
 
-def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) : RelationSchema := rtr.databaseInstance.schema rtr.name
+def BoundedRelationTermRestriction.schema {n: ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : RelationSchema := dbi.schema rtr.name
 
-instance {n : ℕ} (rtr : RelationTermRestriction n) (x : Attribute) : Decidable (rtr.fn x).Dom := by
+instance {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) (x : Attribute) : Decidable (rtr.fn x).Dom := by
   simp only [Part.dom_iff_mem, ← PFun.mem_dom, rtr.validSchema, Finset.mem_coe]
   apply Finset.decidableMem
 
-theorem rtr_ran_def {n : ℕ} (rtr : RelationTermRestriction n) : rtr.fn.ran = rtr.fn.Dom.toFinset.pimage rtr.fn := by
+theorem rtr_ran_def {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : rtr.fn.ran = rtr.fn.Dom.toFinset.pimage rtr.fn := by
   ext x
   simp_all only [PFun.ran, PFun.Dom]
   simp [Part.dom_iff_mem, PFun.image_def]
   aesop
 
-instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.ran := by
+instance {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : Fintype rtr.fn.ran := by
   rw [rtr_ran_def]
   exact FinsetCoe.fintype (Finset.pimage rtr.fn rtr.fn.Dom.toFinset)
 
-def RelationTermRestriction.vars {n : ℕ} (rtr : RelationTermRestriction n) : Finset (VariableTerm n) := rtr.fn.ran.toFinset
+def BoundedRelationTermRestriction.vars {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : Finset (VariableTerm n) := rtr.fn.ran.toFinset
 
-theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.schema.fromIndex i)).Dom := by
+theorem rtr_dom {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : ∀ i, (rtr.fn (rtr.schema.fromIndex i)).Dom := by
   intro i
   apply Part.dom_iff_mem.mpr
   apply (PFun.mem_dom rtr.fn (RelationSchema.fromIndex i)).mp
   simp [rtr.validSchema] at *
 
-def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.schema.card → VariableTerm n :=
+def getMap {n : ℕ} {dbi : DatabaseInstance} (rtr : BoundedRelationTermRestriction n dbi) : Fin rtr.schema.card → VariableTerm n :=
   λ i => (rtr.fn (RelationSchema.fromIndex i)).get (rtr_dom rtr i)
