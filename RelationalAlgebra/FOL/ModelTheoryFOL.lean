@@ -1,5 +1,6 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.FOL.Ordering
+import RelationalAlgebra.Util.PFunFinRan
 
 import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Syntax
@@ -59,20 +60,6 @@ structure RelationTermRestriction (n: ℕ) where
 instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.Dom := rtr.fintypeDom
 
 def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) : RelationSchema := rtr.fn.Dom.toFinset
-
-instance {n : ℕ} (rtr : RelationTermRestriction n) (x : Attribute) : Decidable (rtr.fn x).Dom := by
-  simp only [Part.dom_iff_mem, ← PFun.mem_dom, Finset.mem_coe]
-  exact rtr.fn.Dom.decidableMemOfFintype x
-
-theorem rtr_ran_def {n : ℕ} (rtr : RelationTermRestriction n) : rtr.fn.ran = rtr.fn.Dom.toFinset.pimage rtr.fn := by
-  ext x
-  simp_all only [PFun.ran, PFun.Dom]
-  simp [Part.dom_iff_mem, PFun.image_def]
-  aesop
-
-instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.ran := by
-  rw [rtr_ran_def]
-  exact FinsetCoe.fintype (Finset.pimage rtr.fn rtr.fn.Dom.toFinset)
 
 def RelationTermRestriction.vars {n : ℕ} (rtr : RelationTermRestriction n) : Finset (VariableTerm n) := rtr.fn.ran.toFinset
 

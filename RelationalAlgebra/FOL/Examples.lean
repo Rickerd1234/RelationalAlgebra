@@ -1,5 +1,5 @@
 import RelationalAlgebra.RelationalModel
-import RelationalAlgebra.Util
+import RelationalAlgebra.Util.Util
 import RelationalAlgebra.FOL.Query
 
 -- Operations for BoundedFormula
