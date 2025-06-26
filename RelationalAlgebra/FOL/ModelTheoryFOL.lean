@@ -51,7 +51,6 @@ class folStruc extends fol.Structure (Part Value) where
 
 
 -- Convert RM.Attribute to FOL.Variable
--- @TODO: Think about whether databaseInstance should be part of this, since a Query should not require this
 structure RelationTermRestriction (n: ℕ) where
   fn : Attribute →. VariableTerm n
   name : RelationName
@@ -77,11 +76,20 @@ instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.ran := by
 
 def RelationTermRestriction.vars {n : ℕ} (rtr : RelationTermRestriction n) : Finset (VariableTerm n) := rtr.fn.ran.toFinset
 
-theorem rtr_dom {n : ℕ} (rtr : RelationTermRestriction n) : ∀ i, (rtr.fn (rtr.schema.fromIndex i)).Dom := by
-  intro i
+-- Bounded relation term restriction, used to bind a specific database instance and verify the schema
+structure BoundedRelationTermRestriction (n : ℕ) extends RelationTermRestriction n where
+  dbi : DatabaseInstance
+  validSchema : fn.Dom = dbi.schema name
+
+@[simp]
+theorem rtr_dom_is_schema {n : ℕ} (brtr : BoundedRelationTermRestriction n) : brtr.dbi.schema brtr.name = brtr.schema := by
+  simp only [RelationTermRestriction.schema, brtr.validSchema, Finset.toFinset_coe]
+
+theorem rtr_dom {n : ℕ} (rtr : BoundedRelationTermRestriction n) (i : Fin rtr.schema.card) : (rtr.fn (rtr.schema.fromIndex i)).Dom := by
   apply Part.dom_iff_mem.mpr
   apply (PFun.mem_dom rtr.fn (RelationSchema.fromIndex i)).mp
-  simp [rtr.validSchema] at *
+  rw [rtr.validSchema]
+  simp only [rtr_dom_is_schema, Finset.mem_coe, RelationSchema.fromIndex_mem]
 
-def getMap {n : ℕ} (rtr : RelationTermRestriction n) : Fin rtr.schema.card → VariableTerm n :=
-  λ i => (rtr.fn (RelationSchema.fromIndex i)).get (rtr_dom rtr i)
+def getMap {n : ℕ} (brtr : BoundedRelationTermRestriction n) : Fin brtr.schema.card → VariableTerm n :=
+  λ i => (brtr.fn (RelationSchema.fromIndex i)).get (rtr_dom brtr i)
