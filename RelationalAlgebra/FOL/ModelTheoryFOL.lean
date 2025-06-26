@@ -55,18 +55,15 @@ class folStruc extends fol.Structure (Part Value) where
 structure RelationTermRestriction (n: ℕ) where
   fn : Attribute →. VariableTerm n
   name : RelationName
-  databaseInstance : DatabaseInstance
-  validSchema : fn.Dom = databaseInstance.schema name
+  fintypeDom : Fintype fn.Dom
 
-instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.Dom := by
-  simp [rtr.validSchema]
-  exact Finset.fintypeCoeSort (rtr.databaseInstance.schema rtr.name)
+instance {n : ℕ} (rtr : RelationTermRestriction n) : Fintype rtr.fn.Dom := rtr.fintypeDom
 
-def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) : RelationSchema := rtr.databaseInstance.schema rtr.name
+def RelationTermRestriction.schema {n: ℕ} (rtr : RelationTermRestriction n) : RelationSchema := rtr.fn.Dom.toFinset
 
 instance {n : ℕ} (rtr : RelationTermRestriction n) (x : Attribute) : Decidable (rtr.fn x).Dom := by
-  simp only [Part.dom_iff_mem, ← PFun.mem_dom, rtr.validSchema, Finset.mem_coe]
-  apply Finset.decidableMem
+  simp only [Part.dom_iff_mem, ← PFun.mem_dom, Finset.mem_coe]
+  exact rtr.fn.Dom.decidableMemOfFintype x
 
 theorem rtr_ran_def {n : ℕ} (rtr : RelationTermRestriction n) : rtr.fn.ran = rtr.fn.Dom.toFinset.pimage rtr.fn := by
   ext x

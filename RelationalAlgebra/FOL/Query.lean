@@ -44,10 +44,14 @@ def variablesInQuery {n : ℕ} : BoundedQuery n → Finset Variable
 
 structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
-  schema : RelationSchema
   outFn : Attribute →. Variable -- @TODO: Check if reversing this makes it possible to have x = y subst → x,x
   varsInQuery : outFn.ran = variablesInQuery query
-  domIsSchema : outFn.Dom = schema -- Required, since otherwise there is no restriction on outFn in this direction
+  fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
+
+instance {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : Fintype q.outFn.Dom := q.fintypeDom
+
+def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
+  q.outFn.Dom.toFinset
 
 -- Evaluation logic
 def EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
@@ -59,12 +63,8 @@ theorem evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi
   simp [EvaluateTuples]
   intro t h
   ext a
-  simp_all only [PFun.mem_dom, Finset.mem_coe, ← q.domIsSchema]
-  apply Iff.intro
-  · intro ⟨w, h_1⟩
-    sorry
-  · intro ⟨w, h_1⟩
-    sorry
+  simp_all only [PFun.mem_dom, Finset.mem_coe]
+  sorry
 
 def Evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
   : RelationInstance := ⟨q.schema, EvaluateTuples q, evaluate_dom q⟩
