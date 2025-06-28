@@ -103,7 +103,7 @@ def inF : Attribute →. VariableTerm 0
 
 theorem inF_dom : inF.Dom = ({0, 1} : Finset Attribute) := by unfold inF; aesop
 
-def brtrF : BoundedRelationTermRestriction 0 := ⟨⟨
+def brtr_F : BoundedRelationTermRestriction 0 := ⟨⟨
   inF,
   "R1",
   by simp_all only [inF_dom]; exact FinsetCoe.fintype ?_
@@ -112,22 +112,31 @@ def brtrF : BoundedRelationTermRestriction 0 := ⟨⟨
   by simp_all only [inF_dom, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
 ⟩
 
-def F : Query := BoundedQuery.R brtrF
+def F : Query := BoundedQuery.R brtr_F
 
 example [struc: folStruc] : F.Realize dbI v := by
-  apply folStruc.RelMap_R brtrF.dbi brtrF.name
-  use tup2
-  apply And.intro
-  · simp [brtrF, dbI, relI]
-  · intro i
-    simp only [tup2, v, Part.coe_some]
-    split
-    all_goals simp_all [getMap]; try rfl
-    next x x_1 x_2 =>
-      have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS, brtrF]
+  -- Unfold query
+  simp only [Query.Realize, BoundedQuery.Realize, F, BoundedQuery.toFormula, BoundedFormula.realize_rel]
 
+  -- Use relation structure
+  refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
+  -- Find specific equivalent tuple
+  apply Or.inr
+  apply Or.inl
+
+  -- Break down assignmentToTuple proof
+  rw [assignmentToTuple_def]
+  intro i
+  simp [tup2]
+
+  -- Proof all goals
+  split
+  all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+  next x x_1 x_2 =>
+    have z := RelationSchema.fromIndex_mem i
+    simp_all [dbI, relI, relS]
+  next => simp [MTVar, dbI, relI]
 
 -- Relation with a free variable
 def inG : Attribute →. VariableTerm 1
@@ -137,7 +146,7 @@ def inG : Attribute →. VariableTerm 1
 
 theorem inG_dom : inG.Dom = ({0, 1} : Finset Attribute) := by unfold inG; aesop
 
-def rtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
+def brtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
   inG,
   "R1",
   by simp_all only [inG_dom]; exact FinsetCoe.fintype ?_
@@ -146,21 +155,33 @@ def rtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
   by simp_all only [inG_dom, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
 ⟩
 
-def G : Query := .ex (.R rtr_G)
+def G : Query := .ex (.R brtr_G)
 example [struc: folStruc] : G.Realize dbI v := by
+  -- Unfold query
   simp only [Query.Realize, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
+
+  -- Fill in inVar value
   use .some 22
-  apply folStruc.RelMap_R dbI "R1"
-  use tup2
-  apply And.intro
-  · simp [dbI, relI]
-  · intro i
-    simp_all only [tup2, Part.coe_some]
-    split
-    all_goals simp_all [rtr_G, getMap]; try rfl
-    next x x_1 x_2 =>
-      have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS]
+
+  -- Use relation structure
+  refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+
+  -- Find specific equivalent tuple
+  apply Or.inr
+  apply Or.inl
+
+  -- Break down assignmentToTuple proof
+  rw [assignmentToTuple_def]
+  intro i
+  simp [tup2]
+
+  -- Proof all goals
+  split
+  all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+  next x x_1 x_2 =>
+    have z := RelationSchema.fromIndex_mem i
+    simp_all [dbI, relI, relS]
+  next => simp [MTVar, dbI, relI]
 
 
 
@@ -186,20 +207,33 @@ def brtr_H : BoundedRelationTermRestriction 2 := ⟨
 
 def H : Query := .ex (.ex (.R brtr_H))
 example [struc: folStruc] : H.Realize dbI v := by
+  -- Unfold query
   simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, H]
+
+  -- Fill in inVar values
   use .some 22
   use .some 21
-  apply folStruc.RelMap_R dbI "R1"
-  use tup2
-  apply And.intro
-  · simp [dbI, relI]
-  · intro i
-    simp_all only [tup2, Part.coe_some]
-    split
-    all_goals simp_all [rtr_H, getMap]; try rfl
-    next x x_1 x_2 =>
-      have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS]
+
+  -- Use relation structure
+  refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+
+  -- Find specific equivalent tuple
+  apply Or.inr
+  apply Or.inl
+
+
+  -- Break down assignmentToTuple proof
+  rw [assignmentToTuple_def]
+  intro i
+  simp [tup2]
+
+  -- Proof all goals
+  split
+  all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+  next x x_1 x_2 =>
+    have z := RelationSchema.fromIndex_mem i
+    simp_all [dbI, relI, relS]
+  next => simp [MTVar, dbI, relI]
 
 
 
@@ -213,7 +247,7 @@ def t : EvaluableQuery (dbI) :=
     G,
     outG,
     by
-      simp [variablesInQuery, G, rtr_G, inG, outG, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
+      simp [variablesInQuery, G, brtr_G, inG, outG, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
       ext
       simp_all only [Set.mem_setOf_eq, Fin.isValue]
       apply Iff.intro
