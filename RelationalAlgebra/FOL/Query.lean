@@ -4,7 +4,7 @@ open FOL FirstOrder Language RM
 
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
-  | R {n}: (rtr : RelationTermRestriction n) → BoundedQuery n
+  | R {n}: (brtr : BoundedRelationTermRestriction n) → BoundedQuery n
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
 
@@ -12,7 +12,7 @@ abbrev Query := BoundedQuery 0
 
 def BoundedQuery.toFormula {n : ℕ} (q : BoundedQuery n) : fol.BoundedFormula Variable n :=
   match q with
-  | .R rtr => Relations.boundedFormula (.R rtr.name rtr.schema) (getMap rtr)
+  | .R brtr => Relations.boundedFormula (.R brtr.dbi brtr.name) (getMap brtr)
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
 
@@ -38,13 +38,13 @@ def variablesInRTR {n : ℕ} (rtr : RelationTermRestriction n) : Finset Variable
   rtr.vars.filterMap VariableTerm.outVar? VariableTerm.outVar?.injective
 
 def variablesInQuery {n : ℕ} : BoundedQuery n → Finset Variable
-  | .R rtr     => variablesInRTR rtr
+  | .R brtr     => variablesInRTR brtr.toRelationTermRestriction
   | .and q1 q2 => variablesInQuery q1 ∪ variablesInQuery q2
   | .ex q      => variablesInQuery q
 
 structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
-  outFn : Attribute →. Variable -- @TODO: Check if reversing this makes it possible to have x = y subst → x,x
+  outFn : Attribute →. Variable -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
   varsInQuery : outFn.ran = variablesInQuery query
   fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
 

@@ -94,45 +94,61 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
   simp [Term.liftAt, Fin.snoc, v]
 
 
+
 -- Relation with variables
-def F : Query := BoundedQuery.R ⟨
-  λ a => match a with
+def inF : Attribute →. VariableTerm 0
   | 0 => .some (outVar "x")
   | 1 => .some (outVar "y")
-  | _ => .none,
+  | _ => .none
+
+theorem inF_dom : inF.Dom = ({0, 1} : Finset Attribute) := by unfold inF; aesop
+
+def brtrF : BoundedRelationTermRestriction 0 := ⟨⟨
+  inF,
   "R1",
+  by simp_all only [inF_dom]; exact FinsetCoe.fintype ?_
+  ⟩,
   dbI,
-  (by simp [relS, PFun.Dom, dbI]; aesop)
+  by simp_all only [inF_dom, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
 ⟩
 
+def F : Query := BoundedQuery.R brtrF
+
 example [struc: folStruc] : F.Realize dbI v := by
-  simp only [Query.Realize, F]
-  apply folStruc.RelMap_R dbI "R1"
+  apply folStruc.RelMap_R brtrF.dbi brtrF.name
   use tup2
   apply And.intro
-  · simp [dbI, relI]
+  · simp [brtrF, dbI, relI]
   · intro i
     simp only [tup2, v, Part.coe_some]
     split
     all_goals simp_all [getMap]; try rfl
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS]
+      simp_all [dbI, relI, relS, brtrF]
+
+
 
 -- Relation with a free variable
-def rtr_G : RelationTermRestriction 1 := ⟨
-  λ a => match a with
-    | 0 => .some (outVar "x")
-    | 1 => .some (inVar 0)
-    | _ => .none,
+def inG : Attribute →. VariableTerm 1
+  | 0 => .some (outVar "x")
+  | 1 => .some (inVar 0)
+  | _ => .none
+
+theorem inG_dom : inG.Dom = ({0, 1} : Finset Attribute) := by unfold inG; aesop
+
+def rtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
+  inG,
   "R1",
+  by simp_all only [inG_dom]; exact FinsetCoe.fintype ?_
+  ⟩,
   dbI,
-  (by simp [relS, PFun.Dom, dbI]; aesop)
+  by simp_all only [inG_dom, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
 ⟩
 
 def G : Query := .ex (.R rtr_G)
 example [struc: folStruc] : G.Realize dbI v := by
-  simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, G]
+  simp only [Query.Realize, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
   use .some 22
   apply folStruc.RelMap_R dbI "R1"
   use tup2
@@ -146,18 +162,29 @@ example [struc: folStruc] : G.Realize dbI v := by
       have z := RelationSchema.fromIndex_mem i
       simp_all [dbI, relI, relS]
 
+
+
 -- Relation with two free variables
+def inH : Attribute →. VariableTerm 2
+  | 0 => .some (inVar 1)
+  | 1 => .some (inVar 0)
+  | _ => .none
+
+theorem inH_dom : inH.Dom = ({0, 1} : Finset Attribute) := by unfold inH; aesop
+
 def rtr_H : RelationTermRestriction 2 := ⟨
-  λ a => match a with
-    | 0 => .some (inVar 1)
-    | 1 => .some (inVar 0)
-    | _ => .none,
+  inH,
   "R1",
-  dbI,
-  (by simp [relS, PFun.Dom, dbI]; aesop)
+  by simp_all only [inH_dom]; exact FinsetCoe.fintype ?_
 ⟩
 
-def H : Query := .ex (.ex (.R rtr_H))
+def brtr_H : BoundedRelationTermRestriction 2 := ⟨
+  rtr_H,
+  dbI,
+  by simp_all only [inH_dom, rtr_H, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
+⟩
+
+def H : Query := .ex (.ex (.R brtr_H))
 example [struc: folStruc] : H.Realize dbI v := by
   simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, H]
   use .some 22
@@ -174,15 +201,19 @@ example [struc: folStruc] : H.Realize dbI v := by
       have z := RelationSchema.fromIndex_mem i
       simp_all [dbI, relI, relS]
 
+
+
+
+def outG : Attribute →. Variable
+  | 1 => "x"
+  | _ => .none
+
 def t : EvaluableQuery (dbI) :=
   ⟨
     G,
-    {1},
-    λ x => match x with
-    | 1 => "x"
-    | _ => .none,
+    outG,
     by
-      simp [variablesInQuery, G, rtr_G, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
+      simp [variablesInQuery, G, rtr_G, inG, outG, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
       ext
       simp_all only [Set.mem_setOf_eq, Fin.isValue]
       apply Iff.intro
@@ -220,5 +251,8 @@ def t : EvaluableQuery (dbI) :=
           next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
           next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
           next x_3 x_4 x_5 => simp_all only [imp_false, Sum.forall, reduceCtorEq],
-    by aesop
+    by
+      have h : outG.Dom = ({1} : Finset Attribute) := by unfold outG; aesop
+      rw [h]
+      exact FinsetCoe.fintype ?_
   ⟩
