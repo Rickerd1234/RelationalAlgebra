@@ -45,8 +45,8 @@ def variablesInQuery {n : ℕ} : BoundedQuery n → Finset Variable
 structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
   outFn : Attribute →. Variable -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
-  varsInQuery : outFn.ran = variablesInQuery query
   fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
+  varsInQuery : outFn.ran.toFinset = variablesInQuery query
 
 instance {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : Fintype q.outFn.Dom := q.fintypeDom
 
@@ -54,9 +54,12 @@ def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : Re
   q.outFn.Dom.toFinset
 
 -- Evaluation logic
+def VariableAssignmentToTuple {dbi : DatabaseInstance} (q : EvaluableQuery dbi) (bv : Variable →. Value) : Tuple
+  := (λ att => ((q.outFn att).bind bv))
+
 def EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
 {t |
-  ∀a v bv, q.outFn a = some v → (bv v = t a ↔ (q.query.Realize dbi bv ∧ a ∈ q.schema))
+  ∀bv, q.query.Realize dbi bv ↔ t = VariableAssignmentToTuple q bv
 }
 
 theorem evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = q.schema := by

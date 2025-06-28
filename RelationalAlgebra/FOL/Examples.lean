@@ -247,9 +247,13 @@ def t : EvaluableQuery (dbI) :=
     G,
     outG,
     by
+      have h : outG.Dom = ({1} : Finset Attribute) := by unfold outG; aesop
+      rw [h]
+      exact FinsetCoe.fintype ?_,
+    by
       simp [variablesInQuery, G, brtr_G, inG, outG, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
       ext
-      simp_all only [Set.mem_setOf_eq, Fin.isValue]
+      simp_all only [Set.mem_toFinset, Set.mem_setOf_eq, Fin.isValue, Finset.mem_filterMap, VariableTerm.outVar?]
       apply Iff.intro
       · intro a
         obtain ⟨w, h⟩ := a
@@ -284,9 +288,5 @@ def t : EvaluableQuery (dbI) :=
           split at h
           next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
           next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
-          next x_3 x_4 x_5 => simp_all only [imp_false, Sum.forall, reduceCtorEq],
-    by
-      have h : outG.Dom = ({1} : Finset Attribute) := by unfold outG; aesop
-      rw [h]
-      exact FinsetCoe.fintype ?_
+          next x_3 x_4 x_5 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
   ⟩
