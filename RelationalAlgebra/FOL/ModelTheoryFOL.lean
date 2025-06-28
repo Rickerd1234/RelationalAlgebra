@@ -69,14 +69,14 @@ structure BoundedRelationTermRestriction (n : ℕ) extends RelationTermRestricti
   validSchema : inFn.Dom = dbi.schema name
 
 @[simp]
-theorem rtr_dom_is_schema {n : ℕ} (brtr : BoundedRelationTermRestriction n) : brtr.dbi.schema brtr.name = brtr.schema := by
+theorem brtr_schema_dbi_def {n : ℕ} (brtr : BoundedRelationTermRestriction n) : brtr.dbi.schema brtr.name = brtr.schema := by
   simp only [RelationTermRestriction.schema, brtr.validSchema, Finset.toFinset_coe]
 
-theorem rtr_dom {n : ℕ} (brtr : BoundedRelationTermRestriction n) (i : Fin (brtr.dbi.schema brtr.name).card) : (brtr.inFn ((brtr.dbi.schema brtr.name).fromIndex i)).Dom := by
+theorem brtr_dom {n : ℕ} {brtr : BoundedRelationTermRestriction n} (i : Fin (brtr.dbi.schema brtr.name).card) : (brtr.inFn ((brtr.dbi.schema brtr.name).fromIndex i)).Dom := by
   apply Part.dom_iff_mem.mpr
   apply (PFun.mem_dom brtr.inFn (RelationSchema.fromIndex i)).mp
   rw [brtr.validSchema]
-  simp only [← rtr_dom_is_schema, Finset.mem_coe, RelationSchema.fromIndex_mem]
+  simp only [← brtr_schema_dbi_def, Finset.mem_coe, RelationSchema.fromIndex_mem]
 
 def getMap {n : ℕ} (brtr : BoundedRelationTermRestriction n) : Fin (brtr.dbi.schema brtr.name).card → VariableTerm n :=
-  λ i => (brtr.inFn (RelationSchema.fromIndex i)).get (rtr_dom brtr i)
+  λ i => (brtr.inFn (RelationSchema.fromIndex i)).get (brtr_dom i)
