@@ -118,25 +118,46 @@ example [struc: folStruc] : F.Realize dbI v := by
   -- Unfold query
   simp only [Query.Realize, BoundedQuery.Realize, F, BoundedQuery.toFormula, BoundedFormula.realize_rel]
 
+-- Split goal into sat and active domain parts
+  apply And.intro
   -- Use relation structure
-  refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+  . refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
-  -- Find specific equivalent tuple
-  apply Or.inr
-  apply Or.inl
+    -- Find specific equivalent tuple
+    apply Or.inr
+    apply Or.inl
 
-  -- Break down assignmentToTuple proof
-  rw [assignmentToTuple_def]
-  intro i
-  simp [tup2]
+    -- Break down assignmentToTuple proof
+    rw [assignmentToTuple_def]
+    intro i
+    simp [tup2]
 
-  -- Proof all goals
-  split
-  all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-  next x x_1 x_2 =>
-    have z := RelationSchema.fromIndex_mem i
-    simp_all [dbI, relI, relS]
-  next => simp [MTVar, dbI, relI]
+    -- Proof all goals
+    split
+    all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+    next x x_1 x_2 =>
+      have z := RelationSchema.fromIndex_mem i
+      simp_all [dbI, relI, relS]
+    next => simp [MTVar, dbI, relI]
+  -- Proof active domain semantics
+  . simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
+    intro a x h
+    split at h
+    next x =>
+      simp_all only [Part.mem_some_iff]
+      subst h
+      use "R1"
+      simp [tup2]
+      use 0
+      simp_all
+    next x =>
+      simp_all only [Part.mem_some_iff]
+      subst h
+      use "R1"
+      simp [tup2]
+      use 1
+      simp_all
+    next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
 
 -- Relation with a free variable
 def inG : Attribute →. VariableTerm 1
@@ -160,28 +181,49 @@ example [struc: folStruc] : G.Realize dbI v := by
   -- Unfold query
   simp only [Query.Realize, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
 
+  apply And.intro
   -- Fill in inVar value
-  use .some 22
+  . use .some 22
 
-  -- Use relation structure
-  refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+    -- Use relation structure
+    refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
-  -- Find specific equivalent tuple
-  apply Or.inr
-  apply Or.inl
+    -- Find specific equivalent tuple
+    apply Or.inr
+    apply Or.inl
 
-  -- Break down assignmentToTuple proof
-  rw [assignmentToTuple_def]
-  intro i
-  simp [tup2]
+    -- Break down assignmentToTuple proof
+    rw [assignmentToTuple_def]
+    intro i
+    simp [tup2]
 
-  -- Proof all goals
-  split
-  all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-  next x x_1 x_2 =>
-    have z := RelationSchema.fromIndex_mem i
-    simp_all [dbI, relI, relS]
-  next => simp [MTVar, dbI, relI]
+    -- Proof all goals
+    split
+    all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+    next x x_1 x_2 =>
+      have z := RelationSchema.fromIndex_mem i
+      simp_all [dbI, relI, relS]
+    next => simp [MTVar, dbI, relI]
+  . apply And.intro
+    · simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
+      intro a x h
+      split at h
+      next x =>
+        simp_all only [Part.mem_some_iff]
+        subst h
+        use "R1"
+        simp [tup2]
+        use 0
+        simp_all
+      next x =>
+        simp_all only [Part.mem_some_iff]
+        subst h
+        use "R1"
+        simp [tup2]
+        use 1
+        simp_all
+      next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
+    · simp [PFun.ran]
 
 
 
@@ -210,31 +252,55 @@ example [struc: folStruc] : H.Realize dbI v := by
   -- Unfold query
   simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, H]
 
+
+  -- Split goal into sat and active domain parts
+  apply And.intro
   -- Fill in inVar values
-  use .some 22
-  use .some 21
+  · use Part.some 22
+    use Part.some 21
 
-  -- Use relation structure
-  refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+    -- Use relation structure
+    refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
-  -- Find specific equivalent tuple
-  apply Or.inr
-  apply Or.inl
+    -- Find specific equivalent tuple
+    apply Or.inr
+    apply Or.inl
 
 
-  -- Break down assignmentToTuple proof
-  rw [assignmentToTuple_def]
-  intro i
-  simp [tup2]
+    -- Break down assignmentToTuple proof
+    rw [assignmentToTuple_def]
+    intro i
+    simp [tup2]
 
-  -- Proof all goals
-  split
-  all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-  next x x_1 x_2 =>
-    have z := RelationSchema.fromIndex_mem i
-    simp_all [dbI, relI, relS]
-  next => simp [MTVar, dbI, relI]
+    -- Proof all goals
+    split
+    all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+    next x x_1 x_2 =>
+      have z := RelationSchema.fromIndex_mem i
+      simp_all [dbI, relI, relS]
+    next => simp [MTVar, dbI, relI]
 
+  -- Proof active domain semantics
+  · apply And.intro
+    · simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
+      intro a x h
+      split at h
+      next x =>
+        simp_all only [Part.mem_some_iff]
+        subst h
+        use "R1"
+        simp [tup1, tup2, tup3, RelationInstance.tuples]
+        use 0
+        simp
+      next x =>
+        simp_all only [Part.mem_some_iff]
+        subst h
+        use "R1"
+        simp [tup1, tup2, tup3, RelationInstance.tuples]
+        use 1
+        simp
+      next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
+    . simp [PFun.ran]
 
 
 

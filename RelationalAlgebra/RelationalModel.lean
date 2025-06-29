@@ -25,3 +25,8 @@ structure DatabaseInstance where
     schema : DatabaseSchema
     relations : RelationName → RelationInstance
     validSchema : ∀ rel : RelationName, schema rel = (relations rel).schema
+
+
+-- Database instance variable domain
+def DatabaseInstance.domain (dbi : DatabaseInstance) : Set Value :=
+    {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}

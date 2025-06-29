@@ -16,9 +16,9 @@ def BoundedQuery.toFormula {n : ℕ} (q : BoundedQuery n) : fol.BoundedFormula V
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
 
-def BoundedQuery.Realize {n : ℕ} (dbi : DatabaseInstance) [folStruc] (q : BoundedQuery n) :
-  (Variable → Part Value) → (Fin n → Part Value) → Prop :=
-    q.toFormula.Realize
+def BoundedQuery.Realize {n : ℕ} (dbi : DatabaseInstance) [folStruc] (q : BoundedQuery n)
+  (fv : Variable →. Value) (bv : Fin n →. Value) : Prop :=
+    q.toFormula.Realize fv bv ∧ fv.ran ⊆ dbi.domain ∧ bv.ran ⊆ dbi.domain
 
 nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Variable → Part Value) : Prop :=
   φ.Realize dbi v default
