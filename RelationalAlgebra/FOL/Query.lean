@@ -1,6 +1,6 @@
 import RelationalAlgebra.FOL.ModelTheoryFOL
 
-open FOL FirstOrder Language RM
+open FOL FirstOrder Language RM Term
 
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
@@ -24,43 +24,113 @@ def BoundedQuery.Realize {n : ℕ} [folStruc] : BoundedQuery n → (Variable →
 
 def BoundedQuery.RealizeDom {n : ℕ} (dbi : DatabaseInstance) [folStruc] : BoundedQuery n → (Variable →. Value) → (Fin n →. Value) → Prop
   | ex q, ov, iv  => (∃a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
-  -- | all q, ov, iv => ∀a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a)
+  -- | all q, ov, iv => (∀a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a))  ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
   | q, ov, iv     => q.toFormula.Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
 
 nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Variable → Part Value) : Prop :=
   φ.RealizeDom dbi v (λ _ => .none)
 
 -- Evaluation auxiliaries
-def VariableTerm.outVar? {n : ℕ} : (vt : VariableTerm n) → Option Variable
-  | .var x => x.getLeft?
-  | _ => none
+def BoundedQuery.variablesInQuery {n : ℕ} : BoundedQuery n → Finset Variable
+  | .R brtr    => brtr.outVars
+  | .and q1 q2 => q1.variablesInQuery ∪ q2.variablesInQuery
+  | .ex q      => q.variablesInQuery
+  -- | .all q     => q.variablesInQuery
+  -- | .not q     => q.variablesInQuery
 
-theorem VariableTerm.outVar?.injective {n : ℕ} (a a' : VariableTerm n) : ∀ b ∈ VariableTerm.outVar? a, b ∈ VariableTerm.outVar? a' → a = a' :=
-    by
-    intro b a_1 a_2
-    simp_all only [Option.mem_def, VariableTerm.outVar?]
-    aesop
-
-def variablesInRTR {n : ℕ} (rtr : RelationTermRestriction n) : Finset Variable :=
-  rtr.vars.filterMap VariableTerm.outVar? VariableTerm.outVar?.injective
-
-def variablesInQuery {n : ℕ} : BoundedQuery n → Finset Variable
-  | .R brtr    => variablesInRTR brtr.toRelationTermRestriction
-  | .and q1 q2 => variablesInQuery q1 ∪ variablesInQuery q2
-  | .ex q      => variablesInQuery q
-  -- | .all q     => variablesInQuery q
-  -- | .not q     => variablesInQuery q
+def BoundedQuery.brtrInQuery {n m : ℕ} : BoundedQuery n → BoundedRelationTermRestriction m → Prop
+  | .R brtr,    needle => dite (m ≤ n) (λ h => brtr = needle.lift h) (λ _ => False)
+  | .and q1 q2, needle => q1.brtrInQuery needle ∨ q2.brtrInQuery needle
+  | .ex q,      needle => q.brtrInQuery needle
+  -- | .all q,     needle => q.brtrInQuery needle
+  -- | .not q,     needle => q.brtrInQuery needle
 
 structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
   outFn : Attribute →. Variable -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
   fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
-  varsInQuery : outFn.ran.toFinset = variablesInQuery query
+  varsInQuery : outFn.ran.toFinset = query.variablesInQuery
 
 instance {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : Fintype q.outFn.Dom := q.fintypeDom
 
 def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
   q.outFn.Dom.toFinset
+
+@[simp]
+theorem vars_in_query_def {var : Variable} {dbi : DatabaseInstance} {q : EvaluableQuery dbi}
+  :  var ∈ q.query.variablesInQuery ↔ (∃ att, var ∈ q.outFn att) := by
+    simp_all only [← q.varsInQuery, PFun.ran, Set.mem_toFinset, Set.mem_setOf_eq]
+
+@[simp]
+theorem vars_in_query_brtr_def {n m: ℕ} {var : Variable} {query : BoundedQuery n}
+  : m ≤ n → (var ∈ query.variablesInQuery ↔ ∃brtr : BoundedRelationTermRestriction m, var ∈ brtr.outVars ∧ query.brtrInQuery brtr) := by
+    induction query with
+    | R brtr =>
+      rename ℕ => n'
+      simp_all only [BoundedQuery.variablesInQuery, RelationTermRestriction.outVars,
+        RelationTermRestriction.vars, Finset.mem_filterMap, Set.mem_toFinset, outVar?,
+        BoundedQuery.brtrInQuery, BoundedRelationTermRestriction.lift, dite_true, liftInFn, Term.relabel, Sum.map, PFun.ran]
+      intro a
+      simp_all only [Set.mem_setOf_eq, dite_else_false]
+      apply Iff.intro
+      · intro a_1
+        obtain ⟨w, h⟩ := a_1
+        obtain ⟨left, right⟩ := h
+        obtain ⟨w_1, h⟩ := left
+        split at right
+        next x x_1 =>
+          simp_all only [Sum.getLeft?_eq_some_iff]
+          subst right
+          sorry
+        next x x_1 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
+      · intro a_1
+        obtain ⟨w, h⟩ := a_1
+        obtain ⟨left, right⟩ := h
+        obtain ⟨w_1, h⟩ := left
+        obtain ⟨left, right_1⟩ := h
+        obtain ⟨w_2, h⟩ := left
+        subst right
+        simp_all only
+        split at right_1
+        next x x_1 =>
+          simp_all only [Sum.getLeft?_eq_some_iff]
+          subst right_1
+          sorry
+        next x x_1 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
+    | and q1 q2 h1 h2 =>
+      intro a
+      simp_all [BoundedQuery.variablesInQuery]
+      apply Iff.intro
+      · intro a_1
+        cases a_1 with
+        | inl h =>
+          simp_all only [iff_true]
+          obtain ⟨w, h⟩ := h
+          obtain ⟨left, right⟩ := h
+          simp_all [BoundedQuery.brtrInQuery]
+          apply Exists.intro
+          · apply And.intro
+            · exact left
+            · simp_all only [true_or]
+        | inr h_1 =>
+          simp_all only [iff_true]
+          obtain ⟨w, h⟩ := h_1
+          obtain ⟨left, right⟩ := h
+          simp_all [BoundedQuery.brtrInQuery]
+          apply Exists.intro
+          · apply And.intro
+            · exact left
+            · simp_all only [or_true]
+      · intro a_1
+        obtain ⟨w, h⟩ := a_1
+        obtain ⟨left, right⟩ := h
+        simp_all [BoundedQuery.brtrInQuery]
+        aesop
+    | _ q q_ih =>
+      rename ℕ => n'
+      intro a
+      have z : m ≤ n' + 1 := by exact Nat.le_add_right_of_le a
+      simp_all [BoundedQuery.brtrInQuery, BoundedQuery.variablesInQuery]
 
 -- Evaluation logic
 def VariableAssignmentToTuple {dbi : DatabaseInstance} (q : EvaluableQuery dbi) (ov : Variable →. Value) : Tuple
@@ -104,47 +174,76 @@ theorem query_realize_ex [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : Boun
 
 @[simp]
 theorem query_realizeDom_def {dbi} [folStruc] {q : Query} {ov : Variable →. Value}
-  : q.Realize dbi ov ↔ q.toFormula.Realize ov (λ x => .none) ∧ ov.ran ⊆ dbi.domain := by
+  : q.toFormula.Realize ov (λ x => .none) ∧ ov.ran ⊆ dbi.domain → q.Realize dbi ov:= by
     simp_all [Query.Realize, BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
     have z : (PFun.ran fun (x : Fin 0) ↦ Part.none) ⊆ dbi.domain := by simp [PFun.ran]
     cases q with
     | and q1 q2 =>
       simp_all only [query_realize_and, query_realize_def, and_true, BoundedQuery.toFormula,
         BoundedFormula.realize_inf]
-      exact Iff.symm and_assoc
+      exact fun a a ↦ trivial
     | ex qs =>
+        intro a a_1
+        simp_all only [query_realize_ex, Nat.reduceAdd, Part.coe_some, and_self, and_true]
+        simp_all [Query.Realize, BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
+        -- @TODO: Make this recusion?! work, and see if it can be a ↔ theorem instead of →
         sorry
     | _ => aesop
 
-@[simp]
-theorem query_realizeDom_vars {att} {dbi} [folStruc] {q : EvaluableQuery dbi} {ov : Variable →. Value}
-  : (∃t, t ∈ q.EvaluateTuples) → ∀var ∈ variablesInQuery q.query, var ∈ q.outFn att → (ov var).Dom := by
-    intro a
-    simp_all only [query_realizeDom_def, EvaluableQuery.schema, q.varsInQuery, PFun.ran, DatabaseInstance.domain, variablesInQuery, ne_eq,
-      EvaluableQuery.EvaluateTuples
-    ]
-    simp_all only [Set.mem_image, Set.setOf_subset_setOf, forall_exists_index]
-    obtain ⟨left, right⟩ := a
-    intro a var h_var
-    simp_all only [Set.mem_setOf_eq]
-    obtain ⟨w, h⟩ := right
-    obtain ⟨left_1, right⟩ := h
-    obtain ⟨left_1, right_1⟩ := left_1
-    rw [← q.varsInQuery] at var
-    simp_all [PFun.ran]
-    obtain ⟨w_1, h⟩ := var
+def FOL.BoundedRelationTermRestriction.realize [folStruc] {n : ℕ} (brtr : BoundedRelationTermRestriction n) (t : Tuple) (v : (Variable ⊕ Fin n) →. Value) : Prop :=
+  ∀att, t att = (brtr.inFn att).map (λ var => var.realize v)
 
-    -- sorry
-    have hz : w_1 ∈ left.Dom := by
-      simp_all [VariableAssignmentToTuple]; apply exists_comm.mp; use a;
+theorem relmap_eq_brtr_realize [folStruc] {n : ℕ} (brtr : BoundedRelationTermRestriction n) (v : (Variable ⊕ Fin n) →. Value) :
+  assignmentToTuple (λ i : Fin (Finset.card (brtr.dbi.schema brtr.name)) => ((brtr.inFn (brtr.schema.fromIndex ⟨i, by simp [← brtr_schema_dbi_def]⟩ )).bind (λ term => term.realize v))) ∈ (brtr.dbi.relations brtr.name).tuples ↔ ∃t, brtr.realize t v := by
+    simp_all only [getMap, RelationSchema.fromIndex, RelationSchema.ordering, List.get_eq_getElem,
+      brtr_schema_dbi_def, BoundedRelationTermRestriction.realize, Part.coe_some, Part.pure_eq_some,
+      Part.bind_eq_bind]
+    sorry
+
+@[simp]
+theorem query_realize_brtr_dom {n ov iv dbi} [folStruc] {q : EvaluableQuery dbi} {brtr : BoundedRelationTermRestriction n}
+  : q.query.brtrInQuery brtr → ((BoundedQuery.R brtr).RealizeDom brtr.dbi ov iv ∧ ∃t, t ∈ brtr.relationInstance.tuples) → ∃t, brtr.realize t (Sum.elim ov iv) := by
+    simp_all only [EvaluableQuery.EvaluateTuples, Query.Realize, BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula, ne_eq, Set.mem_setOf_eq, vars_in_query_def,
+      forall_exists_index, and_imp]
+    intro brtr_in_query h_sat ov_dom iv_dom t h_t
+    simp_all only [BoundedRelationTermRestriction.realize, BoundedFormula.realize_rel, Part.mem_bind_iff, exists_and_right, Part.coe_some, Part.pure_eq_some, Part.bind_eq_bind]
+    use λ a => (brtr.inFn a).bind (λ var => var.realize (Sum.elim ov iv))
+    intro att
+    simp_all only
+    simp_all [Part.bind_some_eq_map]
+    ext pval
+    simp_all only [Part.mem_bind_iff, Part.mem_map_iff]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      obtain ⟨w_1, h⟩ := right
+      obtain ⟨left_1, right⟩ := h
       subst right
+      use w
       simp_all only [true_and]
-      sorry
-    have ⟨z, z_def⟩ : ∃v, v = (left w_1).get hz := by simp_all only [exists_eq]
-    apply Part.dom_iff_mem.mpr
-    use z
-    subst right z_def
-    simp_all [VariableAssignmentToTuple, Part.bind, Part.assert, Part.get]
+      exact Part.eq_some_iff.mpr left_1
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      subst right
+      use w
+      simp_all only [true_and]
+      have z : att ∈ t.Dom := by sorry -- @TODO: connect through left?
+      use (t att).get z
+      simp_all only [Part.some_get]
+      have z2 : t att = realize (Sum.elim ov iv) w := by sorry
+      simp_all only [and_true]
+      exact Part.get_mem (z2 ▸ z)
+
+@[simp]
+theorem query_realizeDom_vars {dbi} [folStruc] {q : EvaluableQuery dbi}
+  : ∀ov, VariableAssignmentToTuple q ov ∈ q.EvaluateTuples → ∀var ∈ q.query.variablesInQuery, (ov var).Dom := by
+    simp_all only [EvaluableQuery.EvaluateTuples, Query.Realize, BoundedQuery.RealizeDom, BoundedQuery.Realize, ne_eq, Set.mem_setOf_eq, vars_in_query_def,
+      forall_exists_index, and_imp]
+    intro ov x a a_1 var x_1 h
+    sorry
+
 
 
 @[simp]
@@ -162,7 +261,7 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
       subst h_1
       simp_all only [exists_true_left]
       simp_all [Part.dom_iff_mem]
-      have ⟨val, w_2, h_var, h_val⟩ : ∃ val var, q.outFn att = Part.some var ∧ ov var = Part.some val := by--(q_att_dom_exists_val_var w_1 h)
+      have ⟨val, w_2, h_var, h_val⟩ : ∃ val var, q.outFn att = Part.some var ∧ ov var = Part.some val := by
         simp_all [Part.dom_iff_mem]
         obtain ⟨var, h_1⟩ := w_1
         apply exists_comm.mp
@@ -171,26 +270,20 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
         apply And.intro
         · exact Part.eq_some_iff.mpr h_1
         . simp_all [Part.eq_some_iff, ← Part.dom_iff_mem]
-          have h1 : ∃t, t ∈ q.EvaluateTuples := by simp_all [EvaluableQuery.EvaluateTuples]; aesop
-          apply query_realizeDom_vars h1
+          have h_ov : VariableAssignmentToTuple q ov ∈ q.EvaluateTuples := by simp_all [EvaluableQuery.EvaluateTuples]; aesop
+          apply query_realizeDom_vars ov h_ov
           . simp_all [← q.varsInQuery]
-            obtain ⟨left, right⟩ := h
-            obtain ⟨w, h⟩ := h1
-            apply (PFun.mem_image q.outFn var q.outFn.Dom).mpr
-            aesop
-          . exact h_1
+            apply (ran_mem q.outFn).mpr
+            use att
+            exact Part.eq_some_iff.mpr h_1
       simp_all only [Part.get_some, Part.mem_some_iff, exists_eq]
 
 theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = q.schema := by
   simp [EvaluateTuples]
   intro t ov h
   by_cases h2 : q.query.Realize dbi ov
-  . intro a a_1
-    subst a_1
-    simp_all only [query_realizeDom_def, and_self, realize_query_dom]
-  . intro a a_1
-    subst a_1
-    simp_all only [query_realizeDom_def, and_self, not_true_eq_false]
+  . intros; simp_all only [query_realizeDom_def, and_self, realize_query_dom]
+  . simp_all only [query_realizeDom_def, and_self, not_true_eq_false]
 
 def EvaluableQuery.Evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
   : RelationInstance := ⟨q.schema, q.EvaluateTuples, q.evaluate_dom⟩

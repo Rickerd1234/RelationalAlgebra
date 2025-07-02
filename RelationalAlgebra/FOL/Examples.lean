@@ -58,9 +58,9 @@ def dbI : DatabaseInstance := ⟨
 
 open FOL Language
 
-def x : VariableTerm 0 := outVar "x"
-def y : VariableTerm 0 := outVar "y"
-def z : VariableTerm 1 := inVar 0
+def x : fol.Term (Variable ⊕ Fin 0) := outVar "x"
+def y : fol.Term (Variable ⊕ Fin 0) := outVar "y"
+def z : fol.Term (Variable ⊕ Fin 1) := inVar 0
 
 -- Explore formula concepts
 def n_xy : fol.BoundedFormula Variable 0 := ∼(x =' y) ⟹ ⊤
@@ -96,7 +96,7 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 
 -- Relation with variables
-def inF : Attribute →. VariableTerm 0
+def inF : Attribute →. fol.Term (Variable ⊕ Fin 0)
   | 0 => .some (outVar "x")
   | 1 => .some (outVar "y")
   | _ => .none
@@ -138,7 +138,7 @@ example [struc: folStruc] : F.Realize dbI v := by
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
       simp_all [dbI, relI, relS]
-    next => simp [MTVar, dbI, relI]
+    next => simp [dbI, relI]
   -- Proof active domain semantics
   . simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
     intro a x h
@@ -160,7 +160,7 @@ example [struc: folStruc] : F.Realize dbI v := by
     next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
 
 -- Relation with a free variable
-def inG : Attribute →. VariableTerm 1
+def inG : Attribute →. fol.Term (Variable ⊕ Fin 1)
   | 0 => .some (outVar "x")
   | 1 => .some (inVar 0)
   | _ => .none
@@ -177,33 +177,56 @@ def brtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
 ⟩
 
 def G : Query := .ex (.R brtr_G)
-example [struc: folStruc] : G.Realize dbI v := by
+theorem v_sat_G [struc: folStruc] : G.Realize dbI v := by
   -- Unfold query
   simp only [Query.Realize, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
 
   apply And.intro
   -- Fill in inVar value
-  . use .some 22
+  . use 22
+    apply And.intro (by simp_all [dbI, DatabaseInstance.domain]; use "R1"; use 1; use tup2; tauto)
 
-    -- Use relation structure
-    refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+    simp only [BoundedQuery.RealizeDom, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
+    apply And.intro
 
-    -- Find specific equivalent tuple
-    apply Or.inr
-    apply Or.inl
+    . -- Use relation structure
+      refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
-    -- Break down assignmentToTuple proof
-    rw [assignmentToTuple_def]
-    intro i
-    simp [tup2]
+      -- Find specific equivalent tuple
+      apply Or.inr
+      apply Or.inl
 
-    -- Proof all goals
-    split
-    all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-    next x x_1 x_2 =>
-      have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS]
-    next => simp [MTVar, dbI, relI]
+      -- Break down assignmentToTuple proof
+      rw [assignmentToTuple_def]
+      intro i
+      simp [tup2]
+
+      -- Proof all goals
+      split
+      all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+      next x x_1 x_2 =>
+        have z := RelationSchema.fromIndex_mem i
+        simp_all [dbI, relI, relS]
+      next => simp [dbI, relI]
+    . rw [PFun.ran]
+      simp_all [dbI, DatabaseInstance.domain, relI, v, tup1, tup2, tup3]
+      apply And.intro
+      · intro a x h
+        split at h
+        next x =>
+          simp_all only [Part.mem_some_iff]
+          subst h
+          use "R1"; use 0; use tup2; tauto
+        next x =>
+          simp_all only [Part.mem_some_iff]
+          subst h
+          use "R1"; use 1; use tup2; tauto
+        next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
+      · rw [PFun.ran]
+        simp_all only [Set.setOf_subset_setOf, forall_exists_index]
+        simp_all [Fin.snoc]
+        use "R1"; use 1; use tup2; tauto
+
   . apply And.intro
     · simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
       intro a x h
@@ -228,7 +251,7 @@ example [struc: folStruc] : G.Realize dbI v := by
 
 
 -- Relation with two free variables
-def inH : Attribute →. VariableTerm 2
+def inH : Attribute →. fol.Term (Variable ⊕ Fin 2)
   | 0 => .some (inVar 1)
   | 1 => .some (inVar 0)
   | _ => .none
@@ -278,7 +301,7 @@ example [struc: folStruc] : H.Realize dbI v := by
     next x x_1 x_2 =>
       have z := RelationSchema.fromIndex_mem i
       simp_all [dbI, relI, relS]
-    next => simp [MTVar, dbI, relI]
+    next => simp [dbI, relI]
 
   -- Proof active domain semantics
   · apply And.intro
@@ -317,9 +340,9 @@ def t : EvaluableQuery (dbI) :=
       rw [h]
       exact FinsetCoe.fintype ?_,
     by
-      simp [variablesInQuery, G, brtr_G, inG, outG, variablesInRTR, Language.var, VariableTerm.outVar?, RelationTermRestriction.vars, PFun.ran]
+      simp [variablesInQuery, G, brtr_G, inG, outG, variablesInRTR, Language.var, outVar?, RelationTermRestriction.vars, PFun.ran]
       ext
-      simp_all only [Set.mem_toFinset, Set.mem_setOf_eq, Fin.isValue, Finset.mem_filterMap, VariableTerm.outVar?]
+      simp_all only [Set.mem_toFinset, Set.mem_setOf_eq, Fin.isValue, Finset.mem_filterMap, outVar?]
       apply Iff.intro
       · intro a
         obtain ⟨w, h⟩ := a
@@ -356,3 +379,48 @@ def t : EvaluableQuery (dbI) :=
           next x_3 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
           next x_3 x_4 x_5 => simp_all only [imp_false, Sum.forall, reduceCtorEq]
   ⟩
+
+theorem v_to_tup_in_t : VariableAssignmentToTuple t v = λ x => match x with | 1 => .some 21 | _ => .none := by
+  ext a val
+  apply Iff.intro
+  · intro a_1
+    split
+    next x =>
+      unfold VariableAssignmentToTuple v at a_1
+      simp_all only [t, outG, Part.coe_some, Part.bind_some, Part.mem_some_iff]
+    next x x_1 =>
+      simp_all only [imp_false, Part.not_mem_none]
+      unfold VariableAssignmentToTuple v at a_1
+      simp_all only [t, outG, Part.coe_some, Part.bind_none, Part.not_mem_none]
+  · intro a_1
+    split at a_1
+    next x =>
+      simp_all only [Part.mem_some_iff]
+      subst a_1
+      unfold VariableAssignmentToTuple v
+      simp_all only [t, outG, Part.coe_some, Part.mem_bind_iff, Part.mem_some_iff, exists_eq_left]
+    next x x_1 => simp_all only [imp_false, Part.not_mem_none]
+
+example [folStruc] : t.Evaluate.tuples = ({λ x => match x with | 1 => .some 21 | _ => .none} : Set Tuple) := by
+  unfold EvaluableQuery.Evaluate EvaluableQuery.EvaluateTuples
+  ext t;
+  simp_all only [Set.mem_setOf_eq, Set.mem_singleton_iff]
+  have z1 : FOL.t.query = G := by rfl
+  have z2 := v_to_tup_in_t
+  have z3 := v_sat_G
+  apply Iff.intro
+  · intro a
+    have z := a v
+    simp_all only [forall_const]
+  · intro a bv a_1
+    subst a
+    unfold VariableAssignmentToTuple t outG
+    by_cases h : v = bv
+    unfold v at *
+    . subst h
+      ext a val
+      aesop
+    . simp_all only [Part.coe_some]
+      have z : bv ≠ v → ¬G.Realize dbI bv := by
+        sorry
+      simp_all
