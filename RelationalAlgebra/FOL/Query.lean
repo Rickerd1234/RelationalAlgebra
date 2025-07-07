@@ -76,6 +76,8 @@ def BoundedQuery.brtrInQuery {n m : ℕ} : BoundedQuery n → BoundedRelationTer
   -- | .all q,     needle => q.brtrInQuery needle
   -- | .not q,     needle => q.brtrInQuery needle
 
+
+
 structure EvaluableQuery (dbi : DatabaseInstance) where
   query : Query
   outFn : Attribute →. Variable -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
@@ -83,9 +85,6 @@ structure EvaluableQuery (dbi : DatabaseInstance) where
   varsInQuery : outFn.ran.toFinset = query.variablesInQuery
 
 instance {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : Fintype q.outFn.Dom := q.fintypeDom
-
-def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
-  q.outFn.Dom.toFinset
 
 @[simp]
 theorem vars_in_query_def {var : Variable} {dbi : DatabaseInstance} {q : EvaluableQuery dbi}

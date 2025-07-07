@@ -12,27 +12,31 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
     induction q with
     | R brtr =>
       simp_all only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_rel]
-      -- @TODO: Finish most promising proof yet, by creating separate function for this h_map
-      -- have h_map : (Fin (Finset.card (brtr.dbi.schema brtr.name))) →. Value
-      --   := (λ i => ((brtr.inFn (brtr.schema.fromIndex ⟨i, by simp [← brtr_schema_dbi_def]⟩)).get (by sorry)).realize (Sum.elim ov iv))
-      have h3 := (folStruc.RelMap_R brtr.dbi brtr.name (fun i ↦ realize (Sum.elim ov iv) (getMap brtr i))).mpr h2
-      have v : ∀att, (h : att ∈ brtr.schema) →
-        ((fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) ⟨brtr.schema.index h, by simp [← brtr_schema_dbi_def]⟩).Dom := by
-          intro att h
-          simp_all only
-          sorry
-      simp_all only
 
-      simp [BoundedQuery.variablesInQuery, RelationTermRestriction.outVars, RelationTermRestriction.vars] at h1
+      simp_all [BoundedQuery.variablesInQuery, RelationTermRestriction.outVars, outVar?, RelationTermRestriction.vars]
       obtain ⟨w, h⟩ := h1
       obtain ⟨left, right⟩ := h
-      rw [PFun.ran] at left
-      simp_all only [Set.mem_setOf_eq]
-      obtain ⟨w_1, h⟩ := left
-      have z : w_1 ∈ brtr.schema := by simp [brtr_schema_dbi_def]; apply att_in_dom.mp; use w
-      have z2 := v w_1 z
-      simp_all only [brtr_schema_dbi_def]
-      sorry
+      split at right
+      next x x_1 =>
+        simp_all only [Sum.getLeft?_eq_some_iff]
+        subst right
+        rw [@ran_mem] at left
+        obtain ⟨w, h⟩ := left
+        have z : w ∈ brtr.schema := by
+          simp_all only [brtr_schema_dbi_def]
+          rw [← @BoundedRelationTermRestriction.validSchema]
+          simp_all only [Set.mem_toFinset, PFun.mem_dom, Part.mem_some_iff, exists_eq]
+        have h3 := (folStruc.RelMap_R brtr.dbi brtr.name (fun i ↦ realize (Sum.elim ov iv) (getMap brtr i))).mpr h2
+        have h4 : (assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)).Dom = (brtr.dbi.relations brtr.name).schema := by
+          apply (brtr.dbi.relations brtr.name).validSchema (assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) h3
+        simp_all only [brtr_schema_dbi_def]
+        have h5 : w ∈ PFun.Dom (assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) := by
+          simp_all only [Finset.mem_coe]
+          simp_all [DatabaseInstance.validSchema]
+        apply Part.dom_iff_mem.mpr
+        use ((assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) w).get h5
+        sorry
+      next => simp_all only [imp_false, Sum.forall, reduceCtorEq]
     | and q1 q2 q1_ih q2_ih =>
       simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
       simp only [BoundedQuery.variablesInQuery, Finset.mem_union] at h1
@@ -47,6 +51,9 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
       apply @qs_ih
       · exact h1
       · exact h
+
+def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
+  q.outFn.Dom.toFinset
 
 def EvaluableQuery.EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
 {t |
