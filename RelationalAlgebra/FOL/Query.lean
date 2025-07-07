@@ -24,7 +24,7 @@ def BoundedQuery.Realize {n : ℕ} [folStruc] : BoundedQuery n → (Variable →
 
 def BoundedQuery.RealizeDom {n : ℕ} (dbi : DatabaseInstance) [folStruc] : BoundedQuery n → (Variable →. Value) → (Fin n →. Value) → Prop
   | ex q, ov, iv  => (∃a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
-  -- | all q, ov, iv => (∀a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a))  ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
+  -- | all q, ov, iv => (∀a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
   | q, ov, iv     => q.toFormula.Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
 
 nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Variable → Part Value) : Prop :=
@@ -136,6 +136,52 @@ theorem vars_in_query_brtr_def {n m: ℕ} {var : Variable} {query : BoundedQuery
 def VariableAssignmentToTuple {dbi : DatabaseInstance} (q : EvaluableQuery dbi) (ov : Variable →. Value) : Tuple
   := (λ att => ((q.outFn att).bind ov))
 
+theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
+  (h1 : var ∈ q.variablesInQuery) (h2 : q.Realize ov iv)
+  : (ov var).Dom := by
+    induction q with
+    | R brtr =>
+      simp_all only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_rel]
+      -- @TODO: Finish most promising proof yet, by creating separate function for this h_map
+      -- have h_map : (Fin (Finset.card (brtr.dbi.schema brtr.name))) →. Value
+      --   := (λ i => ((brtr.inFn (brtr.schema.fromIndex ⟨i, by simp [← brtr_schema_dbi_def]⟩)).get (by sorry)).realize (Sum.elim ov iv))
+      have h3 := (folStruc.RelMap_R brtr.dbi brtr.name (fun i ↦ realize (Sum.elim ov iv) (getMap brtr i))).mpr h2
+      have v : ∀att, (h : att ∈ brtr.schema) →
+        ((fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) ⟨brtr.schema.index h, by simp⟩).Dom := by
+          sorry
+      simp_all only
+
+      simp [BoundedQuery.variablesInQuery, RelationTermRestriction.outVars, RelationTermRestriction.vars] at h1
+      obtain ⟨w, h⟩ := h1
+      obtain ⟨left, right⟩ := h
+      rw [PFun.ran] at left
+      simp_all only [Set.mem_setOf_eq]
+      obtain ⟨w_1, h⟩ := left
+      have z : w_1 ∈ brtr.schema := by simp [brtr_schema_dbi_def]; apply att_in_dom.mp; use w
+      have z2 := v w_1 z
+      simp_all [outVar?, getMap]
+      sorry
+
+
+
+
+
+
+    | and q1 q2 q1_ih q2_ih =>
+      simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
+      simp only [BoundedQuery.variablesInQuery, Finset.mem_union] at h1
+      obtain ⟨left, right⟩ := h2
+      cases h1 with
+      | inl h => exact q1_ih h left
+      | inr h => exact q2_ih h right
+    | ex qs qs_ih =>
+      simp_all only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_ex]
+      simp_all only [Nat.succ_eq_add_one]
+      obtain ⟨w, h⟩ := h2
+      apply @qs_ih
+      · exact h1
+      · exact h
+
 def EvaluableQuery.EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
 {t |
   ∃ov, q.query.Realize dbi ov ∧ t = VariableAssignmentToTuple q ov
@@ -236,13 +282,28 @@ theorem query_realize_brtr_dom {n ov iv dbi} [folStruc] {q : EvaluableQuery dbi}
       simp_all only [and_true]
       exact Part.get_mem (z2 ▸ z)
 
+theorem variable_assignment_ov_eq [folStruc] {iv ov1 ov2 dbi} {q : EvaluableQuery dbi} :
+  BoundedQuery.RealizeDom dbi q.query ov1 iv → VariableAssignmentToTuple q ov1 = VariableAssignmentToTuple q ov2 → BoundedQuery.RealizeDom dbi q.query ov2 iv := by
+    intro a a_1
+    sorry
+
+
+
 @[simp]
-theorem query_realizeDom_vars {dbi} [folStruc] {q : EvaluableQuery dbi}
-  : ∀ov, VariableAssignmentToTuple q ov ∈ q.EvaluateTuples → ∀var ∈ q.query.variablesInQuery, (ov var).Dom := by
+theorem query_realizeDom_vars {dbi} {var} [folStruc] {q : EvaluableQuery dbi} {ov}
+  (h : VariableAssignmentToTuple q ov ∈ q.EvaluateTuples) (h2 : var ∈ q.query.variablesInQuery)
+  : (ov var).Dom := by
+
     simp_all only [EvaluableQuery.EvaluateTuples, Query.Realize, BoundedQuery.RealizeDom, BoundedQuery.Realize, ne_eq, Set.mem_setOf_eq, vars_in_query_def,
       forall_exists_index, and_imp]
-    intro ov x a a_1 var x_1 h
-    sorry
+    obtain ⟨h_ov, h⟩ := h
+    obtain ⟨w_1, h_1⟩ := h2
+    obtain ⟨left, right⟩ := h
+
+    have h1 : var ∈ BoundedQuery.variablesInQuery q.query := by apply vars_in_query_def.mpr; use w_1
+    have h2 : BoundedQuery.Realize q.query ov (λ x => .none) := by sorry
+
+    apply realize_relation_dom q.query h1 h2
 
 
 
@@ -282,8 +343,8 @@ theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : Eva
   simp [EvaluateTuples]
   intro t ov h
   by_cases h2 : q.query.Realize dbi ov
-  . intros; simp_all only [query_realizeDom_def, and_self, realize_query_dom]
-  . simp_all only [query_realizeDom_def, and_self, not_true_eq_false]
+  . intros; simp_all only [realize_query_dom]
+  . simp_all only
 
 def EvaluableQuery.Evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
   : RelationInstance := ⟨q.schema, q.EvaluateTuples, q.evaluate_dom⟩
