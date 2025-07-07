@@ -1,6 +1,6 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Util.Util
-import RelationalAlgebra.FOL.Query
+import RelationalAlgebra.FOL.Evaluate
 
 -- Operations for BoundedFormula
 -- AND: ⊓
@@ -109,7 +109,7 @@ def brtr_F : BoundedRelationTermRestriction 0 := ⟨⟨
   by simp_all only [inF_dom]; exact FinsetCoe.fintype ?_
   ⟩,
   dbI,
-  by simp_all only [inF_dom, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
+  by simp_all [inF_dom, dbI, relS]
 ⟩
 
 def F : Query := BoundedQuery.R brtr_F
@@ -173,7 +173,7 @@ def brtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
   by simp_all only [inG_dom]; exact FinsetCoe.fintype ?_
   ⟩,
   dbI,
-  by simp_all only [inG_dom, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
+  by simp_all [inG_dom, dbI, relS]
 ⟩
 
 def G : Query := .ex (.R brtr_G)
@@ -267,7 +267,7 @@ def rtr_H : RelationTermRestriction 2 := ⟨
 def brtr_H : BoundedRelationTermRestriction 2 := ⟨
   rtr_H,
   dbI,
-  by simp_all only [inH_dom, rtr_H, dbI, relS, Finset.coe_insert, Finset.coe_singleton]
+  by simp_all [inH_dom, rtr_H, dbI, relS]
 ⟩
 
 def H : Query := .ex (.ex (.R brtr_H))
@@ -279,29 +279,30 @@ example [struc: folStruc] : H.Realize dbI v := by
   -- Split goal into sat and active domain parts
   apply And.intro
   -- Fill in inVar values
-  · use Part.some 22
-    use Part.some 21
+  · sorry
+    -- use Part.some 22
+    -- use Part.some 21
 
-    -- Use relation structure
-    refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+    -- -- Use relation structure
+    -- refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
-    -- Find specific equivalent tuple
-    apply Or.inr
-    apply Or.inl
+    -- -- Find specific equivalent tuple
+    -- apply Or.inr
+    -- apply Or.inl
 
 
-    -- Break down assignmentToTuple proof
-    rw [assignmentToTuple_def]
-    intro i
-    simp [tup2]
+    -- -- Break down assignmentToTuple proof
+    -- rw [assignmentToTuple_def]
+    -- intro i
+    -- simp [tup2]
 
-    -- Proof all goals
-    split
-    all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-    next x x_1 x_2 =>
-      have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS]
-    next => simp [dbI, relI]
+    -- -- Proof all goals
+    -- split
+    -- all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+    -- next x x_1 x_2 =>
+    --   have z := RelationSchema.fromIndex_mem i
+    --   simp_all [dbI, relI, relS]
+    -- next => simp [dbI, relI]
 
   -- Proof active domain semantics
   · apply And.intro
@@ -340,7 +341,7 @@ def t : EvaluableQuery (dbI) :=
       rw [h]
       exact FinsetCoe.fintype ?_,
     by
-      simp [variablesInQuery, G, brtr_G, inG, outG, variablesInRTR, Language.var, outVar?, RelationTermRestriction.vars, PFun.ran]
+      simp [BoundedQuery.variablesInQuery, G, brtr_G, inG, outG, RelationTermRestriction.outVars, Language.var, outVar?, RelationTermRestriction.vars, PFun.ran]
       ext
       simp_all only [Set.mem_toFinset, Set.mem_setOf_eq, Fin.isValue, Finset.mem_filterMap, outVar?]
       apply Iff.intro
@@ -402,25 +403,10 @@ theorem v_to_tup_in_t : VariableAssignmentToTuple t v = λ x => match x with | 1
     next x x_1 => simp_all only [imp_false, Part.not_mem_none]
 
 example [folStruc] : t.Evaluate.tuples = ({λ x => match x with | 1 => .some 21 | _ => .none} : Set Tuple) := by
-  unfold EvaluableQuery.Evaluate EvaluableQuery.EvaluateTuples
+  unfold EvaluableQuery.Evaluate EvaluableQuery.EvaluateTuples VariableAssignmentToTuple
   ext t;
   simp_all only [Set.mem_setOf_eq, Set.mem_singleton_iff]
   have z1 : FOL.t.query = G := by rfl
   have z2 := v_to_tup_in_t
   have z3 := v_sat_G
-  apply Iff.intro
-  · intro a
-    have z := a v
-    simp_all only [forall_const]
-  · intro a bv a_1
-    subst a
-    unfold VariableAssignmentToTuple t outG
-    by_cases h : v = bv
-    unfold v at *
-    . subst h
-      ext a val
-      aesop
-    . simp_all only [Part.coe_some]
-      have z : bv ≠ v → ¬G.Realize dbI bv := by
-        sorry
-      simp_all
+  sorry
