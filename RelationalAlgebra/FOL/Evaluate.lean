@@ -27,15 +27,28 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
           rw [← @BoundedRelationTermRestriction.validSchema]
           simp_all only [Set.mem_toFinset, PFun.mem_dom, Part.mem_some_iff, exists_eq]
         have h3 := (folStruc.RelMap_R brtr.dbi brtr.name (fun i ↦ realize (Sum.elim ov iv) (getMap brtr i))).mpr h2
-        have h4 : (assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)).Dom = (brtr.dbi.relations brtr.name).schema := by
-          apply (brtr.dbi.relations brtr.name).validSchema (assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) h3
+
+
+        have h4 : (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)).Dom = (brtr.dbi.relations brtr.name).schema := by
+          apply (brtr.dbi.relations brtr.name).validSchema (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) h3
         simp_all only [brtr_schema_dbi_def]
-        have h5 : w ∈ PFun.Dom (assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) := by
+        have h5 : w ∈ PFun.Dom (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) := by
           simp_all only [Finset.mem_coe]
           simp_all [DatabaseInstance.validSchema]
         apply Part.dom_iff_mem.mpr
-        use ((assignmentToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) w).get h5
-        sorry
+        use ((ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) w).get h5
+        have h6 : ∃i, w = (brtr.dbi.schema brtr.name).fromIndex i := by
+          simp_all only [← DatabaseInstance.validSchema]
+          use RelationSchema.index h5
+          simp_all only [RelationSchema.fromIndex_index_eq]
+
+        obtain ⟨w_1, h_1⟩ := h6
+        subst h_1
+        simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
+        unfold getMap
+        simp_all only [Part.get_some, realize_var, Sum.elim_inl]
+
+        exact?
       next => simp_all only [imp_false, Sum.forall, reduceCtorEq]
     | and q1 q2 q1_ih q2_ih =>
       simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
@@ -74,6 +87,8 @@ theorem query_realizeDom_vars [folStruc] {dbi ov var} {q : EvaluableQuery dbi}
 
     have h1 : var ∈ BoundedQuery.variablesInQuery q.query := by apply vars_in_query_def.mpr; use w_1
     have h2 : BoundedQuery.Realize q.query ov (λ x => .none) := by
+      simp_all only [vars_in_query_def, query_realize_def]
+      obtain ⟨w, h⟩ := h1
       sorry
 
     apply realize_relation_dom q.query h1 h2

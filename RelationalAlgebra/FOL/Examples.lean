@@ -128,7 +128,7 @@ example [struc: folStruc] : F.Realize dbI v := by
     apply Or.inl
 
     -- Break down assignmentToTuple proof
-    rw [assignmentToTuple_def]
+    rw [arityToTuple_def]
     intro i
     simp [tup2]
 
@@ -197,7 +197,7 @@ theorem v_sat_G [struc: folStruc] : G.Realize dbI v := by
       apply Or.inl
 
       -- Break down assignmentToTuple proof
-      rw [assignmentToTuple_def]
+      rw [arityToTuple_def]
       intro i
       simp [tup2]
 
