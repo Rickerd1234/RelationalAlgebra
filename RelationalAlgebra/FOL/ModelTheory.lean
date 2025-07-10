@@ -59,7 +59,7 @@ theorem arityToTuple_def {dbi: DatabaseInstance} {rn : RelationName} {i : Fin (F
               refine (List.Nodup.get_inj_iff ?_).mp left
               simp_all only [Finset.sort_nodup]
             subst z
-            simp_all only [Fin.coe_cast, Fin.eta]
+            simp_all only [Fin.coe_cast, Fin.cast_trans, Fin.cast_eq_self]
           next opt_2 heq_2 =>
             simp_all only [Option.some.injEq, List.finIdxOf?_eq_none_iff, List.getElem_mem, not_true_eq_false]
         next opt_1 heq_1 =>

@@ -44,7 +44,7 @@ theorem RelationSchema.ordering_card (rs : RelationSchema) : rs.ordering.length 
 
 -- Add index? to RelationSchema
 def RelationSchema.index? (rs : RelationSchema) (att : Attribute) : Option (Fin rs.card) :=
-  (rs.ordering.finIdxOf? att).map (λ x : Fin (rs.ordering.length) => ⟨x, by simp [← RelationSchema.ordering_card]⟩)
+  (rs.ordering.finIdxOf? att).map (λ x : Fin (rs.ordering.length) => x.cast (RelationSchema.ordering_card rs))
 
 -- Proof usefull properties for index?
 @[simp]
@@ -83,7 +83,7 @@ theorem RelationSchema.index_lt_card {rs : RelationSchema} {att : Attribute} (h 
   simp [RelationSchema.ordering_mem, RelationSchema.index, RelationSchema.index?]
 
 -- Add fromIndex to RelationSchema
-def RelationSchema.fromIndex {rs : RelationSchema} (i : Fin rs.card) : Attribute := rs.ordering.get ⟨i, by simp [RelationSchema.ordering]⟩
+def RelationSchema.fromIndex {rs : RelationSchema} (i : Fin rs.card) : Attribute := rs.ordering.get (i.cast (RelationSchema.ordering_card rs).symm)
 
 -- Proof usefull properties for fromIndex
 @[simp]
@@ -99,7 +99,7 @@ theorem RelationSchema.fromIndex_inj {rs : RelationSchema} {i j : Fin rs.card} :
     unfold fromIndex at a
     simp_all only [List.get_eq_getElem]
     have z := (RelationSchema.ordering_inj rs).mp a
-    simp_all only [Fin.mk.injEq]
+    simp_all only [Fin.coe_cast, Fin.mk.injEq]
     ext : 1
     simp_all only
   · intro a
@@ -180,7 +180,18 @@ theorem RelationSchema.fromIndex_index_inj {att1 att2} {rs : RelationSchema} (h1
 
 @[simp]
 theorem RelationSchema.fromIndex_index_eq {att} {rs : RelationSchema} (h : att ∈ rs) : RelationSchema.fromIndex (RelationSchema.index h) = att := by
-  sorry
+  unfold fromIndex index index? List.finIdxOf? Option.map Option.get
+  simp_all only [Option.isSome_some, List.get_eq_getElem, Fin.coe_cast]
+  split
+  rename_i x x_1 x_2 x_3 heq heq_1
+  simp_all only [heq_eq_eq]
+  split at heq
+  next opt x_4
+    heq_1 =>
+    simp_all only [List.findFinIdx?_eq_some_iff, Fin.getElem_fin, beq_iff_eq, Option.some.injEq]
+    subst heq
+    simp_all only [Fin.coe_cast]
+  next opt heq_1 => simp_all only [List.findFinIdx?_eq_none_iff, beq_iff_eq, reduceCtorEq]
 
 
 end order

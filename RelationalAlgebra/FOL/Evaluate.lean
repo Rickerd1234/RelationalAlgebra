@@ -37,12 +37,11 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
           simp_all [DatabaseInstance.validSchema]
         apply Part.dom_iff_mem.mpr
         use ((ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) w).get h5
-        have h6 : ∃i, w = (brtr.dbi.schema brtr.name).fromIndex i := by
+        have ⟨w_1, h_1⟩ : ∃i, w = (brtr.dbi.schema brtr.name).fromIndex i := by
           simp_all only [← DatabaseInstance.validSchema]
           use RelationSchema.index h5
           simp_all only [RelationSchema.fromIndex_index_eq]
 
-        obtain ⟨w_1, h_1⟩ := h6
         subst h_1
         simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
         unfold getMap
@@ -73,27 +72,6 @@ def EvaluableQuery.EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : Evalu
   ∃ov, q.query.Realize dbi ov ∧ t = VariableAssignmentToTuple q ov
 }
 
-
-@[simp]
-theorem query_realizeDom_vars [folStruc] {dbi ov var} {q : EvaluableQuery dbi}
-  (h : VariableAssignmentToTuple q ov ∈ q.EvaluateTuples) (h2 : var ∈ q.query.variablesInQuery)
-  : (ov var).Dom := by
-
-    simp_all only [EvaluableQuery.EvaluateTuples, Query.Realize, BoundedQuery.RealizeDom, BoundedQuery.Realize, ne_eq, Set.mem_setOf_eq, vars_in_query_def,
-      forall_exists_index, and_imp]
-    obtain ⟨h_ov, h⟩ := h
-    obtain ⟨w_1, h_1⟩ := h2
-    obtain ⟨left, right⟩ := h
-
-    have h1 : var ∈ BoundedQuery.variablesInQuery q.query := by apply vars_in_query_def.mpr; use w_1
-    have h2 : BoundedQuery.Realize q.query ov (λ x => .none) := by
-      simp_all only [vars_in_query_def, query_realize_def]
-      obtain ⟨w, h⟩ := h1
-      sorry
-
-    apply realize_relation_dom q.query h1 h2
-
-
 @[simp]
 theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) :
   q.query.Realize dbi ov → (VariableAssignmentToTuple q ov).Dom = q.schema := by
@@ -118,12 +96,56 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
         apply And.intro
         · exact Part.eq_some_iff.mpr h_1
         . simp_all [Part.eq_some_iff, ← Part.dom_iff_mem]
-          have h_ov : VariableAssignmentToTuple q ov ∈ q.EvaluateTuples := by simp_all [EvaluableQuery.EvaluateTuples]; aesop
-          apply query_realizeDom_vars h_ov
-          . simp_all [← q.varsInQuery]
-            apply (ran_mem q.outFn).mpr
-            use att
-            exact Part.eq_some_iff.mpr h_1
+          have ⟨hw, hz⟩ : ∃iv, BoundedQuery.Realize q.query ov iv := by
+            unfold Query.Realize BoundedQuery.RealizeDom BoundedQuery.Realize BoundedQuery.toFormula at *
+            simp_all only [Nat.reduceAdd, Part.coe_some]
+            split
+            next x brtr heq =>
+              simp_all only [BoundedFormula.realize_rel]
+              obtain ⟨left, right⟩ := h
+              obtain ⟨left_1, right⟩ := right
+              exact Exists.intro (fun x ↦ Part.none) left
+            next x q1 q2 heq =>
+              simp_all only [BoundedFormula.realize_inf]
+              obtain ⟨left, right⟩ := h
+              obtain ⟨left, right_1⟩ := left
+              obtain ⟨left_1, right⟩ := right
+              exact Filter.frequently_principal.mp fun a ↦ a left right_1
+            next x q_1
+              heq =>
+              simp_all only [BoundedFormula.realize_ex, Nat.succ_eq_add_one, Nat.reduceAdd]
+              obtain ⟨left, right⟩ := h
+              obtain ⟨w, h⟩ := left
+              obtain ⟨left, right⟩ := right
+              obtain ⟨left_1, right_1⟩ := h
+              split at right_1
+              next x_1 brtr =>
+                simp_all only [BoundedFormula.realize_rel]
+                apply Exists.intro
+                · apply Exists.intro
+                  · exact right_1
+              next x_1 q1 q2 =>
+                simp_all only [BoundedFormula.realize_inf]
+                obtain ⟨left_2, right_1⟩ := right_1
+                simp_all [BoundedQuery.toFormula]
+                apply Exists.intro
+                · apply Exists.intro
+                  · apply And.intro
+                    on_goal 2 => {exact right_1
+                    }
+                    · simp_all only
+              next x_1 q_1 =>
+                simp_all only [BoundedFormula.realize_ex, Nat.succ_eq_add_one, Nat.reduceAdd]
+                obtain ⟨w_1, h⟩ := right_1
+                simp_all [BoundedQuery.toFormula]
+                apply Exists.intro
+                · apply Exists.intro
+                  · apply Exists.intro
+                    · exact h
+          refine realize_relation_dom q.query ?_ hz
+          . simp_all only [query_realize_def, vars_in_query_def]
+            apply Exists.intro
+            · exact h_1
       simp_all only [Part.get_some, Part.mem_some_iff, exists_eq]
 
 theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = q.schema := by
