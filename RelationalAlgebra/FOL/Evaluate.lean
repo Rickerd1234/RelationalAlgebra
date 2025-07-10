@@ -28,10 +28,9 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
           simp_all only [Set.mem_toFinset, PFun.mem_dom, Part.mem_some_iff, exists_eq]
         have h3 := (folStruc.RelMap_R brtr.dbi brtr.name (fun i ↦ realize (Sum.elim ov iv) (getMap brtr i))).mpr h2
 
-
         have h4 : (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)).Dom = (brtr.dbi.relations brtr.name).schema := by
           apply (brtr.dbi.relations brtr.name).validSchema (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) h3
-        simp_all only [brtr_schema_dbi_def]
+
         have h5 : w ∈ PFun.Dom (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) := by
           simp_all only [Finset.mem_coe]
           simp_all [DatabaseInstance.validSchema]
@@ -42,12 +41,8 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
           use RelationSchema.index h5
           simp_all only [RelationSchema.fromIndex_index_eq]
 
-        subst h_1
-        simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
-        unfold getMap
-        simp_all only [Part.get_some, realize_var, Sum.elim_inl]
-
-        exact?
+        simp_all only [getMap, RelationSchema.fromIndex_mem, arityToTuple_def, Part.get_some,
+          realize_var, Sum.elim_inl, Part.get_mem]
       next => simp_all only [imp_false, Sum.forall, reduceCtorEq]
     | and q1 q2 q1_ih q2_ih =>
       simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
