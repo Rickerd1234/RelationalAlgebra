@@ -11,6 +11,17 @@ open RM
 
 -- Selection and Difference are 'trivial', hence they are not included yet
 
+def selection (inst : RelationInstance) (x : Attribute) (y : Attribute ⊕ Value) (not : Bool) : RelationInstance :=
+⟨
+  inst.schema,
+  {t | t ∈ inst.tuples ∧ ite not (t x ≠ Sum.elim t id y) (t x = Sum.elim t id y)},
+  by
+    intro t a
+    simp_all only [Part.coe_some, bind_pure_comp, Set.mem_setOf_eq]
+    cases y
+    all_goals exact inst.validSchema t a.1
+
+⟩
 
 -- Union
 section union
