@@ -11,36 +11,41 @@ inductive Query : Type
   -- | u: Query → Query → Query
   -- | d: Query → Query → Query
 
-def Query.schema : (q : Query) → (dbi : DatabaseInstance) → RelationSchema
-  | .R rn => λ dbi => dbi.schema rn
+def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
+  | .R rn => λ dbs => dbs rn
   | .s _ _ _ sq => sq.schema
   | .p rs _ => λ _ => rs
-  | .j q1 q2 => λ dbi => q1.schema dbi ∪ q2.schema dbi
-  | .r f sq => λ dbi => renameSchema (sq.schema dbi) f
+  | .j q1 q2 => λ dbs => q1.schema dbs ∪ q2.schema dbs
+  | .r f sq => λ dbs => renameSchema (sq.schema dbs) f
   -- | .u q1 _ => q1.schema
   -- | .d q1 _ => q1.schema
 
-def Query.isSafeRec (dbi : DatabaseInstance) (q : Query) : (RelationSchema × Prop) :=
+def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
-  | .R _ => (q.schema dbi, True)
-  | .s _ _ _ sq => sq.isSafeRec dbi -- @TODO: Verify if this requires any safety checks
-  | .p rs sq => (q.schema dbi, (sq.isSafeRec dbi).2 ∧ rs ⊆ (sq.schema dbi))
-  | .j q1 q2 => (q.schema dbi, (q1.isSafeRec dbi).2 ∧ (q2.isSafeRec dbi).2)
-  | .r f sq => (q.schema dbi, (sq.isSafeRec dbi).2 ∧ f.Surjective)
-  -- | .u q1 q2 => (q.schema dbi, (q1.isSafeRec dbi).2 ∧ (q2.isSafeRec dbi).2 ∧ q1.schema dbi = q2.schema dbi)
-  -- | .d q1 q2 => (q.schema dbi, (q1.isSafeRec dbi).2 ∧ (q2.isSafeRec dbi).2 ∧ q1.schema dbi = q2.schema dbi)
+  | .R _ => (True)
+  | .s a b _ sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs -- ∧ @TODO Requirement for b in case of attribute
+  | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
+  | .j q1 q2 => q1.isWellTyped dbs ∧ q2.isWellTyped dbs
+  | .r f sq => sq.isWellTyped dbs ∧ f.Surjective
+  -- | .u q1 q2 => q1.isWellTyped dbs ∧ q2.isWellTyped dbs ∧ q1.schema dbs = q2.schema dbs
+  -- | .d q1 q2 => q1.isWellTyped dbs ∧ q2.isWellTyped dbs ∧ q1.schema dbs = q2.schema dbs
 
-def Query.isSafe (dbi : DatabaseInstance) (q : Query): Prop := (q.isSafeRec dbi).2
-
-def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isSafe dbi) : RelationInstance :=
+def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
   match q with
-  | .R rn => dbi.relations rn
-  | .s a b i sq => selection (sq.evaluate dbi (by simp_all [isSafe, isSafeRec])) a b i
-  | .p rs sq => projection (sq.evaluate dbi (by simp_all [isSafe, isSafeRec])) rs (by sorry)
-  | .j q1 q2 => join (q1.evaluate dbi (by simp_all [isSafe, isSafeRec])) (q2.evaluate dbi (by simp_all [isSafe, isSafeRec]))
-  | .r f sq => rename (sq.evaluate dbi (by simp_all [isSafe, isSafeRec])) f (by simp_all [isSafe, isSafeRec])
-  -- | .u q1 q2 => union (q1.evaluate dbi (by simp_all [isSafe, isSafeRec])) (q2.evaluate dbi (by simp_all [isSafe, isSafeRec])) (by sorry)
-  -- | .d q1 q2 => diff (q1.evaluate dbi (by simp_all [isSafe, isSafeRec])) (q2.evaluate dbi (by simp_all [isSafe, isSafeRec])) (by sorry)
+  | .R rn => (dbi.relations rn).tuples
+  | .s a b i sq => selectionT (sq.evaluateT dbi) a b i
+  | .p rs sq => projectionT (sq.evaluateT dbi) rs
+  | .j q1 q2 => joinT (q1.evaluateT dbi) (q2.evaluateT dbi)
+  | .r f sq => renameT (sq.evaluateT dbi) f
+  -- | .u q1 q2 => unionT (q1.evaluateT dbi) (q2.evaluateT dbi)
+  -- | .d q1 q2 => diffT (q1.evaluateT dbi) (q2.evaluateT dbi)
+
+def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.schema) : RelationInstance :=
+  ⟨
+    q.schema dbi.schema,
+    q.evaluateT dbi,
+    by sorry
+  ⟩
 
 
 
@@ -108,6 +113,10 @@ def dbI : DatabaseInstance := ⟨
 ⟩
 
 def j : Query :=
-  .j (.R "R1") (.R "R2")
+  (.j (.R "R1") (.R "R2"))
 
-#simp [Query.evaluate, Query.schema, j, dbI, join, relI, relI2, relS, relS2, tup1, tup2, tup3, tupA, tupB, tupC] (j.schema dbI)
+theorem hj {dbi} : j.isWellTyped dbi := by
+  simp_all [j, Query.isWellTyped]
+
+#simp [Query.evaluate, Query.schema, j, dbI, relS, relS2] (j.schema dbI.schema)
+#simp [Query.evaluate, Query.evaluateT, j, dbI, relI, relI2, joinT, tup1, tup2, tup3, tupA, tupB, tupC] (j.evaluate dbI hj).tuples

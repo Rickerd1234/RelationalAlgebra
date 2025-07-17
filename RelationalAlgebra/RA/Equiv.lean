@@ -16,6 +16,9 @@ protected theorem RelationInstance.eq.mpr : ∀ {a b : RelationInstance}, a = b 
 theorem RelationInstance.eq : ∀ {a b : RelationInstance}, (a.schema = b.schema ∧ a.tuples = b.tuples) ↔ a = b :=
   Iff.intro (RelationInstance.eq.mp) (RelationInstance.eq.mpr)
 
+@[simp]
+theorem RelationInstance.dom_eq_schema {t : Tuple} {r : RelationInstance} {h : t ∈ r.tuples} : t.Dom = r.schema :=
+  by rw [RelationInstance.validSchema r t h]
 
 -- `PFun.Dom t a` derived from `v ∈ t a`
 @[simp]
