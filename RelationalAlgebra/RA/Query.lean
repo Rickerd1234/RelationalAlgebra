@@ -44,7 +44,33 @@ def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.s
   ⟨
     q.schema dbi.schema,
     q.evaluateT dbi,
-    by sorry
+    by
+      induction q with
+      | R rn =>
+        intro t h_t
+        simp_all only [isWellTyped, evaluateT, schema, DatabaseInstance.validSchema]
+        exact (dbi.relations rn).validSchema t h_t
+      | s a b i sq ih =>
+        simp_all only [isWellTyped, evaluateT, selectionT, schema]
+        simp_all only [forall_const, Part.coe_some, bind_pure_comp, ne_eq, Set.mem_setOf_eq,
+          implies_true]
+      | p rs sq ih =>
+        intros
+        simp_all [isWellTyped, evaluateT, projectionT, schema]
+        apply projectionDom ⟨sq.schema dbi.schema, evaluateT dbi sq, fun t h => ih t h⟩ ?_ h.2
+        . simp_all only [projectionT, Set.mem_setOf_eq]
+      | j sq1 sq2 ih1 ih2 =>
+        intros
+        simp_all [isWellTyped, evaluateT, joinT]
+        apply joinDom
+          ⟨sq1.schema dbi.schema, evaluateT dbi sq1, fun t h => ih1 t h⟩
+          ⟨sq2.schema dbi.schema, evaluateT dbi sq2, fun t h => ih2 t h⟩
+        . simp_all [joinT]
+      | r f sq ih =>
+        intros
+        simp_all [isWellTyped, evaluateT, renameT, schema]
+        apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, fun t h => ih t h⟩ h.2
+        . simp_all only [renameT, exists_eq_right', Set.mem_setOf_eq]
   ⟩
 
 
