@@ -15,30 +15,30 @@ def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
   | .R rn => λ dbs => dbs rn
   | .s _ _ _ sq => sq.schema
   | .p rs _ => λ _ => rs
-  | .j q1 q2 => λ dbs => q1.schema dbs ∪ q2.schema dbs
+  | .j sq1 sq2 => λ dbs => sq1.schema dbs ∪ sq2.schema dbs
   | .r f sq => λ dbs => renameSchema (sq.schema dbs) f
-  -- | .u q1 _ => q1.schema
-  -- | .d q1 _ => q1.schema
+  -- | .u sq1 _ => sq1.schema
+  -- | .d sq1 _ => sq1.schema
 
 def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
   | .R _ => (True)
   | .s a b _ sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs -- ∧ @TODO Requirement for b in case of attribute
   | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
-  | .j q1 q2 => q1.isWellTyped dbs ∧ q2.isWellTyped dbs
+  | .j sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs
   | .r f sq => sq.isWellTyped dbs ∧ f.Surjective
-  -- | .u q1 q2 => q1.isWellTyped dbs ∧ q2.isWellTyped dbs ∧ q1.schema dbs = q2.schema dbs
-  -- | .d q1 q2 => q1.isWellTyped dbs ∧ q2.isWellTyped dbs ∧ q1.schema dbs = q2.schema dbs
+  -- | .u sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
+  -- | .d sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
 
 def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
   match q with
   | .R rn => (dbi.relations rn).tuples
   | .s a b i sq => selectionT (sq.evaluateT dbi) a b i
   | .p rs sq => projectionT (sq.evaluateT dbi) rs
-  | .j q1 q2 => joinT (q1.evaluateT dbi) (q2.evaluateT dbi)
+  | .j sq1 sq2 => joinT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
   | .r f sq => renameT (sq.evaluateT dbi) f
-  -- | .u q1 q2 => unionT (q1.evaluateT dbi) (q2.evaluateT dbi)
-  -- | .d q1 q2 => diffT (q1.evaluateT dbi) (q2.evaluateT dbi)
+  -- | .u sq1 sq2 => unionT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
+  -- | .d sq1 sq2 => diffT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
 
 def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.schema) : RelationInstance :=
   ⟨
@@ -71,6 +71,16 @@ def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.s
         simp_all [isWellTyped, evaluateT, renameT, schema]
         apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, fun t h => ih t h⟩ h.2
         . simp_all only [renameT, exists_eq_right', Set.mem_setOf_eq]
+      -- | u sq1 sq2 ih =>
+      --   intro _ ht
+      --   simp_all [isWellTyped, evaluateT, unionT, schema]
+      --   cases ht
+      --   all_goals simp_all only
+      -- | d sq1 sq2 ih =>
+      --   intro _ ht
+      --   simp_all [isWellTyped, evaluateT, diffT, schema]
+      --   cases ht
+      --   all_goals simp_all only
   ⟩
 
 

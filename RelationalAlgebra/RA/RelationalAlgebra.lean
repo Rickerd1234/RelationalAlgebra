@@ -28,7 +28,7 @@ def selection (inst : RelationInstance) (x : Attribute) (y : Attribute ⊕ Value
 ⟩
 
 def diffT (inTuplesA inTuplesB : Set Tuple) : Set Tuple :=
-  {t | t ∈ inTuplesA ∧ ¬t ∈ inTuplesB}
+  Set.diff inTuplesA inTuplesB
 
 def diff (inst inst' : RelationInstance) : RelationInstance :=
 ⟨
