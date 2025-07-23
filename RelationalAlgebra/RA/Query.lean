@@ -33,7 +33,7 @@ def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
 def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
   match q with
   | .R rn => (dbi.relations rn).tuples
-  | .s a b i sq => selectionT (sq.evaluateT dbi) a b i
+  | .s a b posEq sq => selectionT (sq.evaluateT dbi) a b posEq
   | .p rs sq => projectionT (sq.evaluateT dbi) rs
   | .j sq1 sq2 => joinT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
   | .r f sq => renameT (sq.evaluateT dbi) f
@@ -82,77 +82,3 @@ def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.s
       --   cases ht
       --   all_goals simp_all only
   ⟩
-
-
-
-def tup1 : Tuple
-  | 0 => some 11
-  | 1 => some 12
-  | _ => Part.none
-
-def tup2 : Tuple
-  | 0 => some 21
-  | 1 => some 22
-  | _ => Part.none
-
-def tup3 : Tuple
-  | 0 => some 31
-  | 1 => some 32
-  | _ => Part.none
-
-def tupA : Tuple
-  | 1 => some 11
-  | 2 => some 12
-  | _ => Part.none
-
-def tupB : Tuple
-  | 1 => some 21
-  | 2 => some 22
-  | _ => Part.none
-
-def tupC : Tuple
-  | 1 => some 31
-  | 2 => some 32
-  | _ => Part.none
-
-def relS : RelationSchema := {0, 1}
-def relS2 : RelationSchema := {1, 2}
-
-def relI : RelationInstance := ⟨
-  relS,
-  {tup1, tup2, tup3},
-  by
-    simp [relS, tup1, tup2, tup3, PFun.Dom]
-    aesop
-⟩
-def relI2 : RelationInstance := ⟨
-  relS2,
-  {tupA, tupB, tupC},
-  by
-    simp [relS2, tupA, tupB, tupC, PFun.Dom]
-    aesop
-⟩
-
-def dbI : DatabaseInstance := ⟨
-  λ x => match x with
-  | "R1" => relS
-  | "R2" => relS2
-  | _ => ∅,
-  λ x => match x with
-  | "R1" => relI
-  | "R2" => relI2
-  | _ => ∅r ∅,
-  by
-    intro rel
-    simp_all only [RelationInstance.empty]
-    aesop
-⟩
-
-def j : Query :=
-  (.j (.R "R1") (.R "R2"))
-
-theorem hj {dbi} : j.isWellTyped dbi := by
-  simp_all [j, Query.isWellTyped]
-
-#simp [Query.evaluate, Query.schema, j, dbI, relS, relS2] (j.schema dbI.schema)
-#simp [Query.evaluate, Query.evaluateT, j, dbI, relI, relI2, joinT, tup1, tup2, tup3, tupA, tupB, tupC] (j.evaluate dbI hj).tuples

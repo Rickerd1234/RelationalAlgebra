@@ -11,8 +11,14 @@ open RM
 
 -- Selection and Difference are 'trivial', hence they do not include proofs yet
 
-def selectionT (inTuples : Set Tuple) (x : Attribute) (y : Attribute ⊕ Value) (not : Bool) : Set Tuple :=
-  {t | t ∈ inTuples ∧ ite not (t x ≠ Sum.elim t id y) (t x = Sum.elim t id y)}
+def selectionT (inTuples : Set Tuple) (x : Attribute) (y : Attribute ⊕ Value) (positiveEq : Bool) : Set Tuple :=
+  {t | t ∈ inTuples ∧ ite positiveEq (t x = Sum.elim t id y) (t x ≠ Sum.elim t id y)}
+
+@[simp]
+theorem selectionT.def_att (a : Attribute) (t : Tuple) : Sum.elim t id (Part.some <$> Sum.inl a) = t a := rfl
+
+@[simp]
+theorem selectionT.def_val (v : Value) (t : Tuple) : Sum.elim t id (Part.some <$> Sum.inr v) = .some v := rfl
 
 theorem selectionDom {x y t} {not : Bool} {inst : RelationInstance} (h : t ∈ selectionT inst.tuples x y not) :
   PFun.Dom t = inst.schema := by
