@@ -23,7 +23,7 @@ def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
 def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
   | .R _ => (True)
-  | .s a b _ sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs -- ∧ @TODO Requirement for b in case of attribute
+  | .s a b _ sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b.elim (. ∈ sq.schema dbs) (fun _ => True)
   | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
   | .j sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs
   | .r f sq => sq.isWellTyped dbs ∧ f.Surjective
