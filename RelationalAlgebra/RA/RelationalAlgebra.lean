@@ -176,57 +176,28 @@ def join (inst1 inst2 : RelationInstance) : RelationInstance :=
 @[simp]
 theorem join_comm (inst1 inst2 : RelationInstance) : join inst1 inst2 = join inst2 inst1 := by
   simp_all only [join, RelationInstance.mk.injEq, joinT]
-  -- sorry
   apply And.intro
-  · ext x : 1
-    simp_all only [Finset.mem_union]
+  · ext t : 1
     apply Iff.intro
+    all_goals
+    · simp_all only [Finset.mem_union]
+      intro h
+      cases h
+      all_goals simp_all only [or_true, true_or]
+  · ext t : 1
+    apply Iff.intro
+    all_goals
     · intro a
-      cases a with
-      | inl h => simp_all only [or_true]
-      | inr h_1 => simp_all only [true_or]
-    · intro a
-      cases a with
-      | inl h => simp_all only [or_true]
-      | inr h_1 => simp_all only [true_or]
-  · ext x : 1
-    simp_all only [Set.mem_setOf_eq]
-    sorry
-    -- apply Iff.intro
-    -- · intro a
-    --   obtain ⟨w, h⟩ := a
-    --   obtain ⟨left, right⟩ := h
-    --   obtain ⟨w_1, h⟩ := right
-    --   obtain ⟨left_1, right⟩ := h
-    --   simp_all only
-    --   apply Exists.intro
-    --   · apply And.intro
-    --     · exact left_1
-    --     · simp_all only [Finset.mem_union, not_or, and_imp, implies_true, not_false_eq_true, and_true, true_and]
-    --       apply Exists.intro
-    --       · apply And.intro
-    --         on_goal 2 => {
-    --           intro a a_1
-    --           rfl
-    --         }
-    --         · simp_all only
-    -- · intro a
-    --   obtain ⟨w, h⟩ := a
-    --   obtain ⟨left, right⟩ := h
-    --   obtain ⟨w_1, h⟩ := right
-    --   obtain ⟨left_1, right⟩ := h
-    --   simp_all only
-    --   apply Exists.intro
-    --   · apply And.intro
-    --     · exact left_1
-    --     · simp_all only [Finset.mem_union, not_or, and_imp, implies_true, not_false_eq_true, and_true, true_and]
-    --       apply Exists.intro
-    --       · apply And.intro
-    --         on_goal 2 => {
-    --           intro a a_1
-    --           rfl
-    --         }
-    --         · simp_all only
+      obtain ⟨t1, ht1, t2, ht2, h⟩ := a
+      apply Exists.intro
+      · apply And.intro
+        · exact ht2
+        · simp_all only [PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp]
+          apply Exists.intro
+          · apply And.intro ht1
+            . intro a
+              simp_all only [not_false_eq_true, implies_true, and_true]
+              exact And.intro (h a).2.1 (h a).1
 
 @[simp]
 theorem join_empty (inst : RelationInstance) :
@@ -244,18 +215,24 @@ theorem join_self (inst : RelationInstance) : join inst inst = inst := by
   ext t
   simp only [Set.mem_setOf_eq]
   apply Iff.intro
-  . intro ⟨ht1, ht2, _, _, ht5⟩
-    have h : t = ht1 := by
-      sorry
-      -- ext a v
-      -- by_cases h : a ∈ inst.schema
-      -- . simp_all
-      -- . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
-      --   apply Aesop.BuiltinRules.not_intro
-      --   intro a_1
-      --   simp_all only [← Finset.mem_coe, ← inst.validSchema ht1 ht2, PFun.mem_dom, forall_exists_index, not_exists]
-    rw [h]
-    exact ht2
+  . intro ⟨t1, ht1, t2, ht2, h1⟩
+    have t_eq_t1 : t = t1 := by
+      have t1_dom : t1.Dom = inst.schema := inst.validSchema t1 ht1
+      have t2_dom : t2.Dom = inst.schema := inst.validSchema t2 ht2
+      simp_all only [Set.union_self]
+      ext a v
+      by_cases hc : a ∈ inst.schema
+      . simp_all only [Finset.mem_coe]
+      . have z := (h1 a).2.2 hc
+        simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
+        by_contra hc2
+        apply hc
+        have z2 : a ∈ t1.Dom := by
+          simp [PFun.mem_dom]
+          apply Exists.intro v hc2
+        rw [t1_dom] at z2
+        simp_all only [Finset.mem_coe]
+    simp_all only
   . intro h
     have g : ∀a : Attribute, (a ∉ t.Dom ∪ t.Dom → t a = Part.none) := by
         simp_all only [Set.union_self, PFun.mem_dom, not_exists]
