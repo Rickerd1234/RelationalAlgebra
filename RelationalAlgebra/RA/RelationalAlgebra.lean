@@ -86,7 +86,7 @@ theorem rename_schema_id (schema : RelationSchema) : renameSchema schema id = sc
 def renameT (inTuples : Set Tuple) (f : Attribute → Attribute) : Set Tuple :=
   { t' | ∃ t ∈ inTuples, t' ∘ f = t }
 
-theorem renameDom {f t} (inst : RelationInstance) (f_sur : f.Surjective) (h : t ∈ renameT inst.tuples f):
+theorem renameDom {f t} (inst : RelationInstance) (f_bij : f.Bijective) (h : t ∈ renameT inst.tuples f):
   PFun.Dom t = renameSchema inst.schema f := by
     ext a
     simp_all only [renameSchema, exists_eq_right', Set.mem_setOf_eq, PFun.mem_dom, Finset.coe_image, Set.mem_image,
@@ -97,7 +97,7 @@ theorem renameDom {f t} (inst : RelationInstance) (f_sur : f.Surjective) (h : t 
       simp [← Finset.mem_coe]
       rw [← inst.validSchema (t ∘ f)]
       . simp_all only [PFun.mem_dom, Function.comp_apply]
-        have ⟨a', ha'⟩ := f_sur a
+        have ⟨a', ha'⟩ := f_bij.right a
         rw [← ha'] at w_ta ⊢
         exact Exists.intro a' (And.intro (Exists.intro w w_ta) rfl)
       . exact h
@@ -109,20 +109,20 @@ theorem renameDom {f t} (inst : RelationInstance) (f_sur : f.Surjective) (h : t 
       exact Part.dom_iff_mem.mp w_in_schema
 
 
-def rename (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Surjective) : RelationInstance := ⟨
+def rename (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Bijective) : RelationInstance := ⟨
     renameSchema inst.schema f,
     renameT inst.tuples f,
     fun _ ht => renameDom inst f_sur ht
   ⟩
 
 @[simp]
-theorem rename_inst_id (inst : RelationInstance) : rename inst id Function.surjective_id = inst := by
+theorem rename_inst_id (inst : RelationInstance) : rename inst id Function.bijective_id = inst := by
   unfold rename
   simp_all only [rename_schema_id, Function.comp_id, exists_eq_right', Set.setOf_mem_eq, renameT]
 
 @[simp]
-theorem rename_comp (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Surjective) (g : Attribute → Attribute) (b_sur : g.Surjective) :
-    rename (rename inst f f_sur) g b_sur = rename inst (g ∘ f) (Function.Surjective.comp b_sur f_sur) := by
+theorem rename_comp (inst : RelationInstance) (f : Attribute → Attribute) (f_bij : f.Bijective) (g : Attribute → Attribute) (g_bij : g.Bijective) :
+    rename (rename inst f f_bij) g g_bij = rename inst (g ∘ f) (Function.Bijective.comp g_bij f_bij) := by
       unfold rename renameSchema
       simp_all only [exists_eq_right', Set.mem_setOf_eq, RelationInstance.mk.injEq, renameT]
       apply And.intro
@@ -131,8 +131,8 @@ theorem rename_comp (inst : RelationInstance) (f : Attribute → Attribute) (f_s
       · rfl
 
 @[simp]
-theorem rename_inv (inst : RelationInstance) (f : Attribute → Attribute) (f_sur : f.Surjective) (g : Attribute → Attribute) (g_sur : g.Surjective) (c : g ∘ f = id) :
-  rename (rename inst f f_sur) g g_sur = inst := by simp_all only [rename_comp, rename_inst_id]
+theorem rename_inv (inst : RelationInstance) (f : Attribute → Attribute) (f_bij : f.Bijective) (g : Attribute → Attribute) (g_bij : g.Bijective) (c : g ∘ f = id) :
+  rename (rename inst f f_bij) g g_bij = inst := by simp_all only [rename_comp, rename_inst_id]
 
 end rename
 
