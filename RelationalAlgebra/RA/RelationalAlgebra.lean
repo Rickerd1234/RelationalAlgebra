@@ -1,6 +1,6 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.Util.Util
-import RelationalAlgebra.RA.Equiv
+import RelationalAlgebra.Util.Equiv
 
 import Mathlib.Data.Finset.Image
 import Mathlib.Data.Part
