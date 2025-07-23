@@ -2,6 +2,8 @@ import RelationalAlgebra.FOL.Relation
 
 open FOL FirstOrder Language RM Term
 
+namespace FOL
+
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
   | R {n}: (brtr : BoundedRelationTermRestriction n) → BoundedQuery n

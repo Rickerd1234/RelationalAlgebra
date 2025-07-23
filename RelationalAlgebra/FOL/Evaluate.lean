@@ -2,6 +2,8 @@ import RelationalAlgebra.FOL.Query
 
 open FOL FirstOrder Language RM Term
 
+namespace FOL
+
 -- Evaluation logic
 def VariableAssignmentToTuple {dbi : DatabaseInstance} (q : EvaluableQuery dbi) (ov : Variable →. Value) : Tuple
   := (λ att => ((q.outFn att).bind ov))
@@ -62,7 +64,7 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
 def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
   q.outFn.Dom.toFinset
 
-def EvaluableQuery.EvaluateTuples {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
+def EvaluableQuery.evaluateT {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
 {t |
   ∃ov, q.query.Realize dbi ov ∧ t = VariableAssignmentToTuple q ov
 }
@@ -143,12 +145,12 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
             · exact h_1
       simp_all only [Part.get_some, Part.mem_some_iff, exists_eq]
 
-theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluateTuples q → t.Dom = q.schema := by
-  simp [EvaluateTuples]
+theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluableQuery.evaluateT q → t.Dom = q.schema := by
+  simp [EvaluableQuery.evaluateT]
   intro t ov h
   by_cases h2 : q.query.Realize dbi ov
   . intros; simp_all only [realize_query_dom]
   . simp_all only
 
-def EvaluableQuery.Evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
-  : RelationInstance := ⟨q.schema, q.EvaluateTuples, q.evaluate_dom⟩
+def EvaluableQuery.evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
+  : RelationInstance := ⟨q.schema, q.evaluateT, q.evaluate_dom⟩

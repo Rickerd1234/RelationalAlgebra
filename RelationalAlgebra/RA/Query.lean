@@ -2,6 +2,8 @@ import RelationalAlgebra.RA.RelationalAlgebra
 
 open RM
 
+namespace RA
+
 inductive Query : Type
   | R: RelationName → Query
   | s: Attribute → (Attribute ⊕ Value) → Bool → Query → Query

@@ -403,7 +403,7 @@ theorem v_to_tup_in_t : VariableAssignmentToTuple t v = λ x => match x with | 1
     next x x_1 => simp_all only [imp_false, Part.not_mem_none]
 
 example [folStruc] : t.Evaluate.tuples = ({λ x => match x with | 1 => .some 21 | _ => .none} : Set Tuple) := by
-  unfold EvaluableQuery.Evaluate EvaluableQuery.EvaluateTuples VariableAssignmentToTuple
+  unfold EvaluableQuery.evaluate EvaluableQuery.evaluateT VariableAssignmentToTuple
   ext t;
   simp_all only [Set.mem_setOf_eq, Set.mem_singleton_iff]
   have z1 : FOL.t.query = G := by rfl
