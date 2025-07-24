@@ -1,6 +1,6 @@
 import RelationalAlgebra.RA.Query
 
-open RM
+open RM RA
 
 def tup1 : Tuple
   | 0 => .some 11
