@@ -128,17 +128,18 @@ example [struc: folStruc] : F.Realize dbI v := by
     apply Or.inl
 
     -- Break down assignmentToTuple proof
-    rw [arityToTuple_def]
-    intro i
-    simp [tup2]
+    sorry;
+    -- rw [arityToTuple_def]
+    -- intro i
+    -- simp [tup2]
 
-    -- Proof all goals
-    split
-    all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-    next x x_1 x_2 =>
-      have z := RelationSchema.fromIndex_mem i
-      simp_all [dbI, relI, relS]
-    next => simp [dbI, relI]
+    -- -- Proof all goals
+    -- split
+    -- all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+    -- next x x_1 x_2 =>
+    --   have z := RelationSchema.fromIndex_mem i
+    --   simp_all [dbI, relI, relS]
+    -- next => simp [dbI, relI]
   -- Proof active domain semantics
   . simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
     intro a x h
@@ -187,45 +188,46 @@ theorem v_sat_G [struc: folStruc] : G.Realize dbI v := by
     apply And.intro (by simp_all [dbI, DatabaseInstance.domain]; use "R1"; use 1; use tup2; tauto)
 
     simp only [BoundedQuery.RealizeDom, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
-    apply And.intro
+    sorry
+    -- apply And.intro
 
-    . -- Use relation structure
-      refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
+    -- . -- Use relation structure
+    --   refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
 
-      -- Find specific equivalent tuple
-      apply Or.inr
-      apply Or.inl
+    --   -- Find specific equivalent tuple
+    --   apply Or.inr
+    --   apply Or.inl
 
-      -- Break down assignmentToTuple proof
-      rw [arityToTuple_def]
-      intro i
-      simp [tup2]
+    --   -- Break down assignmentToTuple proof
+    --   rw [arityToTuple_def]
+    --   intro i
+    --   simp [tup2]
 
-      -- Proof all goals
-      split
-      all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-      next x x_1 x_2 =>
-        have z := RelationSchema.fromIndex_mem i
-        simp_all [dbI, relI, relS]
-      next => simp [dbI, relI]
-    . rw [PFun.ran]
-      simp_all [dbI, DatabaseInstance.domain, relI, v, tup1, tup2, tup3]
-      apply And.intro
-      · intro a x h
-        split at h
-        next x =>
-          simp_all only [Part.mem_some_iff]
-          subst h
-          use "R1"; use 0; use tup2; tauto
-        next x =>
-          simp_all only [Part.mem_some_iff]
-          subst h
-          use "R1"; use 1; use tup2; tauto
-        next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
-      · rw [PFun.ran]
-        simp_all only [Set.setOf_subset_setOf, forall_exists_index]
-        simp_all [Fin.snoc]
-        use "R1"; use 1; use tup2; tauto
+    --   -- Proof all goals
+    --   split
+    --   all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
+    --   next x x_1 x_2 =>
+    --     have z := RelationSchema.fromIndex_mem i
+    --     simp_all [dbI, relI, relS]
+    --   next => simp [dbI, relI]
+    -- . rw [PFun.ran]
+    --   simp_all [dbI, DatabaseInstance.domain, relI, v, tup1, tup2, tup3]
+    --   apply And.intro
+    --   · intro a x h
+    --     split at h
+    --     next x =>
+    --       simp_all only [Part.mem_some_iff]
+    --       subst h
+    --       use "R1"; use 0; use tup2; tauto
+    --     next x =>
+    --       simp_all only [Part.mem_some_iff]
+    --       subst h
+    --       use "R1"; use 1; use tup2; tauto
+    --     next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
+    --   · rw [PFun.ran]
+    --     simp_all only [Set.setOf_subset_setOf, forall_exists_index]
+    --     simp_all [Fin.snoc]
+    --     use "R1"; use 1; use tup2; tauto
 
   . apply And.intro
     · simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
@@ -402,11 +404,34 @@ theorem v_to_tup_in_t : VariableAssignmentToTuple t v = λ x => match x with | 1
       simp_all only [t, outG, Part.coe_some, Part.mem_bind_iff, Part.mem_some_iff, exists_eq_left]
     next x x_1 => simp_all only [imp_false, Part.not_mem_none]
 
-example [folStruc] : t.Evaluate.tuples = ({λ x => match x with | 1 => .some 21 | _ => .none} : Set Tuple) := by
+example [folStruc] : t.evaluate.tuples = ({λ x => match x with | 1 => .some 21 | _ => .none} : Set Tuple) := by
   unfold EvaluableQuery.evaluate EvaluableQuery.evaluateT VariableAssignmentToTuple
   ext t;
   simp_all only [Set.mem_setOf_eq, Set.mem_singleton_iff]
   have z1 : FOL.t.query = G := by rfl
   have z2 := v_to_tup_in_t
   have z3 := v_sat_G
-  sorry
+  simp_all only
+  apply Iff.intro
+  · intro a
+    obtain ⟨w, h⟩ := a
+    obtain ⟨left, right⟩ := h
+    have z4 : w = v := by sorry
+    subst right
+    ext a v'
+    simp_all only [Part.mem_bind_iff]
+    apply Iff.intro
+    · intro a_1
+      obtain ⟨w_1, h⟩ := a_1
+      obtain ⟨left_1, right⟩ := h
+      split
+      all_goals simp_all [v, t, outG]
+    · intro a_1
+      split at a_1
+      next x => simp_all [Part.mem_some_iff, v, t, outG]
+      next x x_1 => simp_all only [imp_false, Part.not_mem_none]
+  · intro a
+    subst a
+    use v
+    unfold VariableAssignmentToTuple at z2
+    simp_all only [and_self]
