@@ -20,29 +20,19 @@ noncomputable def ra_to_fol_r {dbi} (w : FOL.EvaluableQuery dbi) (f : Attribute 
     apply Set.Finite.ofFinset (z.image f).toFinset
     intro x
     simp_all only [Set.Finite.mem_toFinset, Set.mem_image, Set.mem_setOf_eq]
-    have z : ∀a, (Function.invFun f ∘ f) a = a := by
-      simp_all only [Function.invFun_comp h.1, id_eq, implies_true]
-    have z2 : ∀a, f (Function.invFun f a) = a := by
-        intro a
-        apply Function.invFun_eq
-        simp_all [Function.Bijective, Function.Surjective]
     apply Iff.intro
     · intro a
       obtain ⟨w_1, h_1⟩ := a
       obtain ⟨left, right⟩ := h_1
       obtain ⟨w_2, h_1⟩ := left
       subst right
-      simp_all only [Function.comp_apply]
-      apply Exists.intro
-      · exact h_1
+      simp_all only [inv_f_id_apply]
+      apply Exists.intro w_2 h_1
     · intro a
       obtain ⟨w_1, h_1⟩ := a
-      use (Function.invFun f x)
-      apply exists_and_right.mp
-      simp_all only [exists_and_right]
-      apply And.intro
-      · use w_1
-      · simp_all only [Function.comp_apply]
+      apply Exists.intro
+      · apply And.intro (Exists.intro w_1 h_1)
+        · simp_all only [f_inv_id]
   ,
   by
     rw [← w.varsInQuery]
@@ -52,13 +42,10 @@ noncomputable def ra_to_fol_r {dbi} (w : FOL.EvaluableQuery dbi) (f : Attribute 
     apply Iff.intro
     . intro a
       obtain ⟨w_1, h_1⟩ := a
-      apply Exists.intro
-      · exact h_1
+      exact Exists.intro (Function.invFun f w_1) h_1
     . intro ⟨w_1, h_1⟩
       use f w_1
-      have z : ∀a, (Function.invFun f ∘ f) a = a := by
-        simp_all only [Function.invFun_comp h.1, id_eq, implies_true]
-      simp_all only [Function.comp_apply]
+      simp_all only [inv_f_id_apply]
 ⟩
 
 theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
@@ -93,17 +80,10 @@ theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi
       simp_all only [Set.mem_setOf_eq]
 
       use ra_to_fol_r w f right
-      have z : ∀a, (Function.invFun f ∘ f) a = a := by
-        simp_all only [Function.invFun_comp right.1, id_eq, implies_true]
-      have z2 : ∀a, f (Function.invFun f a) = a := by
-        intro a
-        apply Function.invFun_eq
-        simp_all [Function.Bijective, Function.Surjective]
 
       simp only [renameSchema]
       apply And.intro
-      . simp_all only [Function.comp_apply]
-        ext t : 1
+      . ext t : 1
         simp_all only [Finset.mem_image, Set.mem_toFinset, PFun.mem_dom, Function.comp_apply]
         apply Iff.intro
         · intro a_1
@@ -111,16 +91,12 @@ theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi
           obtain ⟨left_2, right_2⟩ := h
           obtain ⟨w_2, h⟩ := left_2
           subst right_2
-          simp_all only [ra_to_fol_r, Function.comp_apply]
+          simp_all only [ra_to_fol_r, Function.comp_apply, inv_f_id_apply]
+          apply Exists.intro w_2 h
+        · intro ⟨w_1, h⟩
           apply Exists.intro
-          · exact h
-        · intro a_1
-          obtain ⟨w_1, h⟩ := a_1
-          apply Exists.intro
-          · apply And.intro
-            · apply Exists.intro
-              · exact h
-            · simp_all only
+          · apply And.intro (Exists.intro w_1 h)
+            · simp_all only [f_inv_id]
       . ext t
         simp_all only [Set.mem_setOf_eq]
         apply Iff.intro
@@ -128,7 +104,6 @@ theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi
           obtain ⟨ov, h⟩ := a
           obtain ⟨left_2, right_2⟩ := h
           unfold FOL.VariableAssignmentToTuple at *
-          simp_all
           use ov
           simp_all only [true_and, ra_to_fol_r]
           ext a v
@@ -146,12 +121,10 @@ theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi
           obtain ⟨left_2, right_2⟩ := h
           subst right_2
           unfold FOL.VariableAssignmentToTuple
-          simp_all only [Function.comp_apply]
           apply Exists.intro
-          · apply And.intro
-            · exact left_2
+          · apply And.intro left_2
             · ext a b : 1
-              simp_all only [Function.comp_apply, Part.mem_bind_iff, ra_to_fol_r]
+              simp_all only [ra_to_fol_r, Function.comp_apply, inv_f_id_apply, Part.mem_bind_iff]
 
 
 theorem fol_to_ra [FOL.folStruc] {dbi} (folQ : FOL.EvaluableQuery dbi) :
