@@ -83,7 +83,6 @@ theorem rename_func_injective [DecidableEq Attribute] (old new : Attribute) (h :
     . simp_all only [not_false_eq_true, ite_true, ite_false]
       intro a' h
       split at h
-      -- -- . split at h
       . simp_all only [not_true_eq_false]
       . split at h
         . simp_all only
