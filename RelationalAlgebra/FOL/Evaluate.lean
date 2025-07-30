@@ -12,54 +12,21 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
   (h1 : var ∈ q.variablesInQuery) (h2 : q.Realize ov iv)
   : (ov var).Dom := by
     induction q with
-    | R brtr =>
-      simp_all only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_rel]
-
-      simp_all [BoundedQuery.variablesInQuery, RelationTermRestriction.outVars, outVar?, RelationTermRestriction.vars]
-      obtain ⟨w, h⟩ := h1
-      obtain ⟨left, right⟩ := h
-      split at right
-      next x x_1 =>
-        simp_all only [Sum.getLeft?_eq_some_iff]
-        subst right
-        rw [@ran_mem] at left
-        obtain ⟨w, h⟩ := left
-        have z : w ∈ brtr.schema := by
-          simp_all only [brtr_schema_dbi_def]
-          rw [← @BoundedRelationTermRestriction.validSchema]
-          simp_all only [Set.mem_toFinset, PFun.mem_dom, Part.mem_some_iff, exists_eq]
-        have h3 := (folStruc.RelMap_R brtr.dbi brtr.name (fun i ↦ realize (Sum.elim ov iv) (getMap brtr i))).mpr h2
-
-        have h4 : (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)).Dom = (brtr.dbi.relations brtr.name).schema := by
-          apply (brtr.dbi.relations brtr.name).validSchema (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) h3
-
-        have h5 : w ∈ PFun.Dom (ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) := by
-          simp_all only [Finset.mem_coe]
-          simp_all [DatabaseInstance.validSchema]
-        apply Part.dom_iff_mem.mpr
-        use ((ArityToTuple fun i ↦ realize (Sum.elim ov iv) (getMap brtr i)) w).get h5
-        have ⟨w_1, h_1⟩ : ∃i, w = (brtr.dbi.schema brtr.name).fromIndex i := by
-          simp_all only [← DatabaseInstance.validSchema]
-          use RelationSchema.index h5
-          simp_all only [RelationSchema.fromIndex_index_eq]
-
-        simp_all only [getMap, RelationSchema.fromIndex_mem, arityToTuple_def, Part.get_some,
-          realize_var, Sum.elim_inl, Part.get_mem]
-      next => simp_all only [imp_false, Sum.forall, reduceCtorEq]
+    | R dbi rn h =>
+      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, inVar]
+    | eq t₁ t₂ =>
+      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize]
+      cases h1 with
+      | inl h => sorry
+      | inr h_1 => sorry
     | and q1 q2 q1_ih q2_ih =>
       simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
-      simp only [BoundedQuery.variablesInQuery, Finset.mem_union] at h1
+      simp only [BoundedQuery.variablesInQuery, Finset.union_empty, Finset.mem_union, BoundedFormula.freeVarFinset, BoundedQuery.toFormula] at h1
       obtain ⟨left, right⟩ := h2
-      cases h1 with
-      | inl h => exact q1_ih h left
-      | inr h => exact q2_ih h right
+      aesop
     | ex qs qs_ih =>
-      simp_all only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_ex]
-      simp_all only [Nat.succ_eq_add_one]
-      obtain ⟨w, h⟩ := h2
-      apply @qs_ih
-      · exact h1
-      · exact h
+      simp_all only [BoundedQuery.Realize, BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.realize_ex, BoundedFormula.freeVarFinset]
+      aesop
 
 def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
   q.outFn.Dom.toFinset
@@ -102,6 +69,7 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
               obtain ⟨left, right⟩ := h
               obtain ⟨left_1, right⟩ := right
               exact Exists.intro (fun x ↦ Part.none) left
+            next x t₁ t₂ heq => aesop
             next x q1 q2 heq =>
               simp_all only [BoundedFormula.realize_inf]
               obtain ⟨left, right⟩ := h
@@ -121,6 +89,7 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
                 apply Exists.intro
                 · apply Exists.intro
                   · exact right_1
+              next x_1 sq t₁ t₂ => aesop
               next x_1 q1 q2 =>
                 simp_all only [BoundedFormula.realize_inf]
                 obtain ⟨left_2, right_1⟩ := right_1

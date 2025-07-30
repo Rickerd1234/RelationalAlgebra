@@ -112,7 +112,7 @@ def brtr_F : BoundedRelationTermRestriction 0 := ⟨⟨
   by simp_all [inF_dom, dbI, relS]
 ⟩
 
-def F : Query := BoundedQuery.R brtr_F
+def F : Query := (.and (.and (.R dbI "R1" (by simp [dbI, relS])) (.eq (outVar "x") (inVar 0))) (.eq (outVar "y") (inVar 1)) : BoundedQuery 2).exs
 
 example [struc: folStruc] : F.Realize dbI v := by
   -- Unfold query
@@ -120,45 +120,52 @@ example [struc: folStruc] : F.Realize dbI v := by
 
 -- Split goal into sat and active domain parts
   apply And.intro
-  -- Use relation structure
-  . refine (folStruc.RelMap_R dbI "R1" ?_).mp ?_
-
-    -- Find specific equivalent tuple
-    apply Or.inr
-    apply Or.inl
-
-    -- Break down assignmentToTuple proof
-    sorry;
-    -- rw [arityToTuple_def]
-    -- intro i
-    -- simp [tup2]
-
-    -- -- Proof all goals
-    -- split
-    -- all_goals (try simp_all [getMap, v, outVar, inVar]; try rfl)
-    -- next x x_1 x_2 =>
-    --   have z := RelationSchema.fromIndex_mem i
-    --   simp_all [dbI, relI, relS]
-    -- next => simp [dbI, relI]
-  -- Proof active domain semantics
-  . simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v]
-    intro a x h
-    split at h
-    next x =>
-      simp_all only [Part.mem_some_iff]
-      subst h
-      use "R1"
-      simp [tup2]
+  . simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v, BoundedQuery.toFormula, BoundedFormula.Realize]
+    use 21
+    apply And.intro
+    · use "R1"
       use 0
-      simp_all
-    next x =>
-      simp_all only [Part.mem_some_iff]
-      subst h
-      use "R1"
-      simp [tup2]
-      use 1
-      simp_all
-    next x_1 x_2 x_3 => simp_all only [imp_false, Part.not_mem_none]
+      simp_all [tup2]
+    · use Part.some 22
+      -- simp_all only [Function.const_apply, Fin.isValue]
+      apply And.intro
+      · simp_all [tup1, tup2, tup3, Term.realize, inVar, relS, Fin.snoc]
+        -- @TODO: Generalize this proof
+        refine (folStruc.RelMap_R
+                ?_ "R1" ?_).mp ?_
+        simp_all [Set.mem_insert_iff, Set.mem_singleton_iff]
+        apply Or.inr
+        apply Or.inl
+
+        ext a v
+        simp_all [tup2, ArityToTuple]
+
+        sorry
+
+      . simp_all [Term.realize, inVar, outVar, v, Fin.snoc]
+
+
+  · apply And.intro
+    · simp_all [dbI, v, PFun.ran, DatabaseInstance.domain, relI, tup1, tup2, tup3, relS]
+      intro a v h
+      split at h
+      next x =>
+        simp_all only [Part.mem_some_iff]
+        subst h
+        use "R1"
+        simp [tup2]
+        use 0
+        simp_all
+      next x =>
+        simp_all only [Part.mem_some_iff]
+        subst h
+        use "R1"
+        simp [tup2]
+        use 1
+        simp_all
+      simp_all only [imp_false, Part.not_mem_none]
+    · simp_all [dbI, PFun.ran, DatabaseInstance.domain, relI, relS]
+
 
 -- Relation with a free variable
 def inG : Attribute →. fol.Term (Variable ⊕ Fin 1)

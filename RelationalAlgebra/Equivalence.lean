@@ -15,7 +15,7 @@ def schema_to_inFn {n} (dbs : DatabaseSchema) (rn : RelationName) : Attribute �
   PFun.res (FOL.outVar ∘ att_to_var) (dbs rn)
 
 def ra_to_fol_R {dbi} (rn : RelationName) : FOL.EvaluableQuery dbi := ⟨
-  .R ⟨⟨schema_to_inFn dbi.schema rn, rn, by apply Fintype.ofFinset (dbi.schema rn); simp_all [PFun.res, schema_to_inFn]⟩, dbi, by simp_all [schema_to_inFn, PFun.res]; aesop⟩,
+  (.R dbi rn (by aesop) : FOL.BoundedQuery (dbi.schema rn).card).exs, -- @TODO: Add outVar concept
   PFun.res att_to_var (dbi.schema rn),
   by
     apply Fintype.ofFinset (dbi.schema rn);
@@ -128,11 +128,8 @@ theorem FOL.RelationTermRestriction.project_name {n} (rtr : FOL.RelationTermRest
       . sorry
       . sorry
 
-def FOL.BoundedQuery.wrapEx {n} (sq : FOL.BoundedQuery m) (m : ℕ) (h : n ≤ m) : FOL.BoundedQuery n :=
-  dite (m = n) (λ _ => sq.cast n) (λ h2 => .ex (sq.wrapEx (m) (by apply Nat.succ_le_of_lt; exact Nat.lt_of_le_of_ne h fun a ↦ h2 (id (Eq.symm a)))))
-
 def FOL.BoundedRelationTermRestriction.projectBRTR {n} (brtr : FOL.BoundedRelationTermRestriction n) (rs : RelationSchema) (h : n ≤ rs.card) : FOL.BoundedQuery n :=
-  (FOL.BoundedQuery.R ⟨(⟨brtr.inFn, brtr.name, brtr.fintypeDom⟩ : RelationTermRestriction n).project rs, brtr.dbi, by simp_all [FOL.RelationTermRestriction.project]⟩).wrapEx rs.card h
+  (FOL.BoundedQuery.R ⟨(⟨brtr.inFn, brtr.name, brtr.fintypeDom⟩ : RelationTermRestriction n).project rs, brtr.dbi, by simp_all [FOL.RelationTermRestriction.project]⟩).exs
 
 
 def FOL.BoundedQuery.project {n} : FOL.BoundedQuery n → RelationSchema → FOL.BoundedQuery n
