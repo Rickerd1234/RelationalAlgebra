@@ -7,7 +7,7 @@ namespace FOL
 
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
-  | R {n} : (dbi : DatabaseInstance) → (rn : RelationName) → (Fin (dbi.schema rn).card → fol.Term (Variable ⊕ Fin n)) → BoundedQuery n
+  | R {n} : (dbs : DatabaseSchema) → (rn : RelationName) → (Fin (dbs rn).card → fol.Term (Variable ⊕ Fin n)) → BoundedQuery n
   -- | eq {n} : (t₁ : Fin n) → (t₂ : fol.Term (Variable ⊕ (Fin n))) → BoundedQuery n
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
@@ -21,7 +21,7 @@ def BoundedQuery.exs : ∀ {n}, BoundedQuery n → Query
   | _n + 1, φ => φ.ex.exs
 
 def BoundedQuery.toFormula {n : ℕ} : (q : BoundedQuery n) → fol.BoundedFormula Variable n
-  | .R dbi name vMap => Relations.boundedFormula (fol.Rel dbi name) vMap
+  | .R dbs name vMap => Relations.boundedFormula (fol.Rel dbs name) vMap
   -- | .eq t₁ t₂ => .equal (inVar t₁) t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
@@ -46,7 +46,7 @@ theorem query_realize_def {n} [folStruc] {q : BoundedQuery n} {ov : Variable →
 
 @[simp]
 theorem query_realize_rel [folStruc] {n : ℕ} {dbi : DatabaseInstance} {rn : RelationName} {vMap : Fin (dbi.schema rn).card → fol.Term (Variable ⊕ Fin n)} {ov : Variable →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.R dbi rn vMap).RealizeDom dbi ov iv ↔ (Relations.boundedFormula (fol.Rel dbi rn) vMap).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
+  : (BoundedQuery.R dbi.schema rn vMap).RealizeDom dbi ov iv ↔ (Relations.boundedFormula (fol.Rel dbi.schema rn) vMap).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
     simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
 
 -- @[simp]
@@ -79,15 +79,15 @@ theorem query_realize_ex [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : Boun
 -- Evaluation auxiliaries
 def BoundedQuery.variablesInQuery {n : ℕ} (q : BoundedQuery n) : Finset Variable := q.toFormula.freeVarFinset
 
-structure EvaluableQuery (dbi : DatabaseInstance) where --@TODO Reconsider this
+structure EvaluableQuery (dbs : DatabaseSchema) where --@TODO Reconsider this
   query : Query
   outFn : Attribute →. Variable -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
   fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
   varsInQuery : outFn.ran.toFinset = query.variablesInQuery
 
-instance {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : Fintype q.outFn.Dom := q.fintypeDom
+instance {dbs : DatabaseSchema} (q : EvaluableQuery dbs) : Fintype q.outFn.Dom := q.fintypeDom
 
 @[simp]
-theorem vars_in_query_def {var : Variable} {dbi : DatabaseInstance} {q : EvaluableQuery dbi}
+theorem vars_in_query_def {var : Variable} {dbs : DatabaseSchema} {q : EvaluableQuery dbs}
   :  var ∈ q.query.variablesInQuery ↔ (∃ att, var ∈ q.outFn att) := by
     simp_all only [← q.varsInQuery, PFun.ran, Set.mem_toFinset, Set.mem_setOf_eq]

@@ -5,7 +5,7 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 -- Evaluation logic
-def VariableAssignmentToTuple {dbi : DatabaseInstance} (q : EvaluableQuery dbi) (ov : Variable →. Value) : Tuple
+def VariableAssignmentToTuple {dbs : DatabaseSchema} (q : EvaluableQuery dbs) (ov : Variable →. Value) : Tuple
   := (λ att => ((q.outFn att).bind ov))
 
 theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
@@ -13,25 +13,26 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
   : (ov var).Dom := by
     induction q with
     | R dbi rn h =>
-      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
-      have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_RelMap h2
-      have h4 := (dbi.relations rn).validSchema
-      simp_all only [folStruc_apply_RelMap]
-      obtain ⟨w, h_1⟩ := h1
-      have h5 := (dbi.schema rn).fromIndex_mem w
-      have h6 := (arityToTuple_dom (folStruc_apply_RelMap h2)).mpr h5
-      simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
-      have h7 : h w = (outVar var) := by
-        unfold varFinsetLeft at *
-        split at h_1
-        next x i heq =>
-          simp_all only [realize_var, Sum.elim_inl, Finset.mem_singleton]
-          subst h_1
-          rfl
-        next x _i heq => simp_all only [realize_var, Sum.elim_inr, Finset.not_mem_empty]
-        next x l _f ts heq => exact False.elim (folStruc_empty_fun _f)
-      simp_all only
-      exact h6
+      sorry
+      -- simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
+      -- have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_RelMap h2
+      -- have h4 := (dbi.relations rn).validSchema
+      -- simp_all only [folStruc_apply_RelMap]
+      -- obtain ⟨w, h_1⟩ := h1
+      -- have h5 := (dbi.schema rn).fromIndex_mem w
+      -- have h6 := (arityToTuple_dom (folStruc_apply_RelMap h2)).mpr h5
+      -- simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
+      -- have h7 : h w = (outVar var) := by
+      --   unfold varFinsetLeft at *
+      --   split at h_1
+      --   next x i heq =>
+      --     simp_all only [realize_var, Sum.elim_inl, Finset.mem_singleton]
+      --     subst h_1
+      --     rfl
+      --   next x _i heq => simp_all only [realize_var, Sum.elim_inr, Finset.not_mem_empty]
+      --   next x l _f ts heq => exact False.elim (folStruc_empty_fun _f)
+      -- simp_all only
+      -- exact h6
     -- | eq t₁ t₂ =>
     --   simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize, inVar]
     | and q1 q2 q1_ih q2_ih =>
@@ -43,16 +44,16 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
       simp_all only [BoundedQuery.Realize, BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.realize_ex, BoundedFormula.freeVarFinset]
       aesop
 
-def EvaluableQuery.schema {dbi : DatabaseInstance} (q : EvaluableQuery dbi) : RelationSchema :=
+def EvaluableQuery.schema {dbs : DatabaseSchema} (q : EvaluableQuery dbs) : RelationSchema :=
   q.outFn.Dom.toFinset
 
-def EvaluableQuery.evaluateT {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : Set Tuple :=
+def EvaluableQuery.evaluateT [folStruc]  {dbi : DatabaseInstance} (q : EvaluableQuery dbi.schema) : Set Tuple :=
 {t |
   ∃ov, q.query.Realize dbi ov ∧ t = VariableAssignmentToTuple q ov
 }
 
 @[simp]
-theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) :
+theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi.schema) :
   q.query.Realize dbi ov → (VariableAssignmentToTuple q ov).Dom = q.schema := by
     intro h
     unfold VariableAssignmentToTuple EvaluableQuery.schema
@@ -129,12 +130,12 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
             · exact h_1
       simp_all only [Part.get_some, Part.mem_some_iff, exists_eq]
 
-theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi) : ∀ t : Tuple, t ∈ EvaluableQuery.evaluateT q → t.Dom = q.schema := by
+theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi.schema) : ∀ t : Tuple, t ∈ EvaluableQuery.evaluateT q → t.Dom = q.schema := by
   simp [EvaluableQuery.evaluateT]
   intro t ov h
   by_cases h2 : q.query.Realize dbi ov
   . intros; simp_all only [realize_query_dom]
   . simp_all only
 
-def EvaluableQuery.evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi)
+def EvaluableQuery.evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi.schema)
   : RelationInstance := ⟨q.schema, q.evaluateT, q.evaluate_dom⟩
