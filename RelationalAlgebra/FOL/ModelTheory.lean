@@ -22,6 +22,8 @@ def Language.fol : Language :=
     Relations := relations }
   deriving Language.IsRelational
 
+def fol.Rel (dbi: DatabaseInstance) (rn: RelationName) : Language.fol.Relations (dbi.schema rn).card :=
+  relations.R dbi rn
 
 open Language
 
@@ -86,3 +88,11 @@ class folStruc extends fol.Structure (Part Value) where
       (va : Fin (dbi.schema rn).card → Part Value) →      -- Every value assignment (for this arity)
         ArityToTuple va ∈ (dbi.relations rn).tuples  -- Iff this value assignment corresponds with a tuple in the relation instance
           ↔ RelMap (.R dbi rn) va                         -- Then the RelationMap contains the relation for this value assignment
+
+@[simp]
+theorem folStruc_apply_rel [folStruc] {dbi rn va} (h : Structure.RelMap (fol.Rel dbi rn) va) :
+  ArityToTuple va ∈ (dbi.relations rn).tuples := (folStruc.RelMap_R dbi rn va).mpr h
+
+@[simp]
+theorem folStruc_empty_fun {n} [folStruc] (_f : fol.Functions n) : False := by
+  exact Aesop.BuiltinRules.empty_false _f

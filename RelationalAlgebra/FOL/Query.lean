@@ -7,8 +7,8 @@ namespace FOL
 
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
-  | R {n} : (dbi : DatabaseInstance) → (rn : RelationName) → ((dbi.schema rn).card ≤ n) → BoundedQuery n -- @TODO: Explore if this n should be .card instead
-  | eq {n} : (t₁ t₂ : fol.Term (Variable ⊕ (Fin n))) → BoundedQuery n
+  | R {n} : (dbi : DatabaseInstance) → (rn : RelationName) → (Fin (dbi.schema rn).card → fol.Term (Variable ⊕ Fin n)) → BoundedQuery n
+  -- | eq {n} : (t₁ : Fin n) → (t₂ : fol.Term (Variable ⊕ (Fin n))) → BoundedQuery n
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
   -- | all {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
@@ -21,8 +21,8 @@ def BoundedQuery.exs : ∀ {n}, BoundedQuery n → Query
   | _n + 1, φ => φ.ex.exs
 
 def BoundedQuery.toFormula {n : ℕ} : (q : BoundedQuery n) → fol.BoundedFormula Variable n
-  | .R dbi name h => Relations.boundedFormula (.R dbi name) (λ x => inVar (Fin.castLE h x))
-  | .eq t₁ t₂ => .equal t₁ t₂
+  | .R dbi name vMap => Relations.boundedFormula (fol.Rel dbi name) vMap
+  -- | .eq t₁ t₂ => .equal (inVar t₁) t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
   -- | .all q => .all q.toFormula
@@ -45,15 +45,15 @@ theorem query_realize_def {n} [folStruc] {q : BoundedQuery n} {ov : Variable →
     simp_all [BoundedQuery.Realize, BoundedQuery.toFormula]
 
 @[simp]
-theorem query_realize_rel [folStruc] {n : ℕ} {dbi : DatabaseInstance} {rn : RelationName} {h : (dbi.schema rn).card ≤ n} {ov : Variable →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.R dbi rn h).RealizeDom dbi ov iv ↔ (Relations.boundedFormula (relations.R dbi rn) (λ x => inVar (Fin.castLE h x))).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
+theorem query_realize_rel [folStruc] {n : ℕ} {dbi : DatabaseInstance} {rn : RelationName} {vMap : Fin (dbi.schema rn).card → fol.Term (Variable ⊕ Fin n)} {ov : Variable →. Value} {iv : Fin n →. Value}
+  : (BoundedQuery.R dbi rn vMap).RealizeDom dbi ov iv ↔ (Relations.boundedFormula (fol.Rel dbi rn) vMap).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
     simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
 
-@[simp]
-theorem query_realize_eq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {t₁ t₂ : fol.Term (Variable ⊕ Fin n)} {ov : Variable →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.eq t₁ t₂).RealizeDom dbi ov iv ↔ t₁.realize (Sum.elim ov iv) = t₂.realize (Sum.elim ov iv) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
-    simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_bdEqual]
-    aesop
+-- @[simp]
+-- theorem query_realize_eq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {t₁: Fin n} {t₂ : fol.Term (Variable ⊕ Fin n)} {ov : Variable →. Value} {iv : Fin n →. Value}
+--   : (BoundedQuery.eq t₁ t₂).RealizeDom dbi ov iv ↔ (inVar t₁).realize (Sum.elim ov iv) = t₂.realize (Sum.elim ov iv) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
+--     simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_bdEqual]
+--     aesop
 
 @[simp]
 theorem query_realize_and [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q1 : BoundedQuery n} {q2 : BoundedQuery n} {ov : Variable →. Value} {iv : Fin n →. Value}
@@ -79,7 +79,7 @@ theorem query_realize_ex [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : Boun
 -- Evaluation auxiliaries
 def BoundedQuery.variablesInQuery {n : ℕ} (q : BoundedQuery n) : Finset Variable := q.toFormula.freeVarFinset
 
-structure EvaluableQuery (dbi : DatabaseInstance) where
+structure EvaluableQuery (dbi : DatabaseInstance) where --@TODO Reconsider this
   query : Query
   outFn : Attribute →. Variable -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
   fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction

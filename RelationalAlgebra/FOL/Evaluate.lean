@@ -13,12 +13,27 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
   : (ov var).Dom := by
     induction q with
     | R dbi rn h =>
-      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, inVar]
-    | eq t₁ t₂ =>
-      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize]
-      cases h1 with
-      | inl h => sorry
-      | inr h_1 => sorry
+      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
+      have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_rel h2
+      have h4 := (dbi.relations rn).validSchema
+      simp_all only [folStruc_apply_rel]
+      obtain ⟨w, h_1⟩ := h1
+      have h5 := (dbi.schema rn).fromIndex_mem w
+      have h6 := (arityToTuple_dom (folStruc_apply_rel h2)).mpr h5
+      simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
+      have h7 : h w = (outVar var) := by
+        unfold varFinsetLeft at *
+        split at h_1
+        next x i heq =>
+          simp_all only [realize_var, Sum.elim_inl, Finset.mem_singleton]
+          subst h_1
+          rfl
+        next x _i heq => simp_all only [realize_var, Sum.elim_inr, Finset.not_mem_empty]
+        next x l _f ts heq => exact False.elim (folStruc_empty_fun _f)
+      simp_all only
+      exact h6
+    -- | eq t₁ t₂ =>
+    --   simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize, inVar]
     | and q1 q2 q1_ih q2_ih =>
       simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
       simp only [BoundedQuery.variablesInQuery, Finset.union_empty, Finset.mem_union, BoundedFormula.freeVarFinset, BoundedQuery.toFormula] at h1
@@ -69,7 +84,7 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
               obtain ⟨left, right⟩ := h
               obtain ⟨left_1, right⟩ := right
               exact Exists.intro (fun x ↦ Part.none) left
-            next x t₁ t₂ heq => aesop
+            -- next x t₁ t₂ heq => aesop
             next x q1 q2 heq =>
               simp_all only [BoundedFormula.realize_inf]
               obtain ⟨left, right⟩ := h
@@ -89,7 +104,7 @@ theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [f
                 apply Exists.intro
                 · apply Exists.intro
                   · exact right_1
-              next x_1 sq t₁ t₂ => aesop
+              -- next x_1 sq t₁ t₂ => aesop
               next x_1 q1 q2 =>
                 simp_all only [BoundedFormula.realize_inf]
                 obtain ⟨left_2, right_1⟩ := right_1
