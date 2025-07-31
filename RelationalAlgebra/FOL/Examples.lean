@@ -96,23 +96,7 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 
 -- Relation with variables
-def inF : Attribute →. fol.Term (Variable ⊕ Fin 0)
-  | 0 => .some (outVar "x")
-  | 1 => .some (outVar "y")
-  | _ => .none
-
-theorem inF_dom : inF.Dom = ({0, 1} : Finset Attribute) := by unfold inF; aesop
-
-def brtr_F : BoundedRelationTermRestriction 0 := ⟨⟨
-  inF,
-  "R1",
-  by simp_all only [inF_dom]; exact FinsetCoe.fintype ?_
-  ⟩,
-  dbI,
-  by simp_all [inF_dom, dbI, relS]
-⟩
-
-def F : Query := (.and (.and (.R dbI "R1" (by simp [dbI, relS])) (.eq (outVar "x") (inVar 0))) (.eq (outVar "y") (inVar 1)) : BoundedQuery 2).exs
+def F : Query := (.R dbI "R1" [outVar "x", outVar "y"].get)
 
 example [struc: folStruc] : F.Realize dbI v := by
   -- Unfold query
@@ -120,30 +104,19 @@ example [struc: folStruc] : F.Realize dbI v := by
 
 -- Split goal into sat and active domain parts
   apply And.intro
-  . simp [dbI, PFun.ran, DatabaseInstance.domain, relI, v, BoundedQuery.toFormula, BoundedFormula.Realize]
-    use 21
-    apply And.intro
-    · use "R1"
-      use 0
-      simp_all [tup2]
-    · use Part.some 22
-      -- simp_all only [Function.const_apply, Fin.isValue]
-      apply And.intro
-      · simp_all [tup1, tup2, tup3, Term.realize, inVar, relS, Fin.snoc]
-        -- @TODO: Generalize this proof
-        refine (folStruc.RelMap_R
-                ?_ "R1" ?_).mp ?_
-        simp_all [Set.mem_insert_iff, Set.mem_singleton_iff]
-        apply Or.inr
-        apply Or.inl
+  . simp [BoundedQuery.toFormula, outVar, BoundedFormula.realize_rel]
 
-        ext a v
-        simp_all [tup2, ArityToTuple]
+    -- @TODO: Generalize this proof
+    refine (folStruc.RelMap_R
+            ?_ "R1" ?_).mp ?_
+    simp_all [dbI, relI]
+    apply Or.inr
+    apply Or.inl
 
-        sorry
-
-      . simp_all [Term.realize, inVar, outVar, v, Fin.snoc]
-
+    ext a x
+    simp_all [tup2, relS]
+    unfold v
+    sorry
 
   · apply And.intro
     · simp_all [dbI, v, PFun.ran, DatabaseInstance.domain, relI, tup1, tup2, tup3, relS]

@@ -14,12 +14,12 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
     induction q with
     | R dbi rn h =>
       simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
-      have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_rel h2
+      have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_RelMap h2
       have h4 := (dbi.relations rn).validSchema
-      simp_all only [folStruc_apply_rel]
+      simp_all only [folStruc_apply_RelMap]
       obtain ⟨w, h_1⟩ := h1
       have h5 := (dbi.schema rn).fromIndex_mem w
-      have h6 := (arityToTuple_dom (folStruc_apply_rel h2)).mpr h5
+      have h6 := (arityToTuple_dom (folStruc_apply_RelMap h2)).mpr h5
       simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
       have h7 : h w = (outVar var) := by
         unfold varFinsetLeft at *

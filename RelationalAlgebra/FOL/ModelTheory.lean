@@ -90,7 +90,7 @@ class folStruc extends fol.Structure (Part Value) where
           ↔ RelMap (.R dbi rn) va                         -- Then the RelationMap contains the relation for this value assignment
 
 @[simp]
-theorem folStruc_apply_rel [folStruc] {dbi rn va} (h : Structure.RelMap (fol.Rel dbi rn) va) :
+theorem folStruc_apply_RelMap [folStruc] {dbi rn va} (h : Structure.RelMap (fol.Rel dbi rn) va) :
   ArityToTuple va ∈ (dbi.relations rn).tuples := (folStruc.RelMap_R dbi rn va).mpr h
 
 @[simp]
