@@ -72,39 +72,39 @@ def ra_to_fol_query_r (w : FOL.Query) (f : Attribute → Attribute) : FOL.Query 
 noncomputable def ra_to_fol_outFn_r (wOut : Attribute → Part FOL.Variable) (f : Attribute → Attribute)
   : Attribute → Part FOL.Variable := wOut ∘ f.invFun
 
-noncomputable def ra_to_fol_r {dbi} (w : FOL.EvaluableQuery dbi) (f : Attribute → Attribute) (h : f.Bijective) : FOL.EvaluableQuery dbi := ⟨
-  ra_to_fol_query_r w.query f,
-  ra_to_fol_outFn_r w.outFn f,
-  by
-    apply Fintype.ofFinset (w.outFn.Dom.toFinset.image f);
-    intro x
-    simp_all only [Finset.mem_image, Set.mem_toFinset, PFun.mem_dom, Function.comp_apply, ra_to_fol_outFn_r]
-    apply Iff.intro
-    · intro a
-      obtain ⟨w_1, h_1⟩ := a
-      obtain ⟨left, right⟩ := h_1
-      obtain ⟨w_2, h_1⟩ := left
-      subst right
-      simp_all only [inv_f_id_apply]
-      apply Exists.intro w_2 h_1
-    · intro a
-      obtain ⟨w_1, h_1⟩ := a
-      apply Exists.intro
-      · apply And.intro (Exists.intro w_1 h_1)
-        · simp_all only [f_inv_id]
-  ,
-  by
-    rw [ra_to_fol_query_r, ← w.varsInQuery]
-    simp_all [PFun.ran]
-    ext v
-    simp_all only [Set.mem_setOf_eq]
-    apply Iff.intro
-    . intro a
-      obtain ⟨w_1, h_1⟩ := a
-      exact Exists.intro (Function.invFun f w_1) h_1
-    . intro ⟨w_1, h_1⟩
-      use f w_1
-      simp_all only [ra_to_fol_outFn_r, Function.comp_apply, inv_f_id_apply]
-⟩
+-- noncomputable def ra_to_fol_r {dbi} (w : FOL.EvaluableQuery dbi) (f : Attribute → Attribute) (h : f.Bijective) : FOL.EvaluableQuery dbi := ⟨
+--   ra_to_fol_query_r w.query f,
+--   ra_to_fol_outFn_r w.outFn f,
+--   by
+--     apply Fintype.ofFinset (w.outFn.Dom.toFinset.image f);
+--     intro x
+--     simp_all only [Finset.mem_image, Set.mem_toFinset, PFun.mem_dom, Function.comp_apply, ra_to_fol_outFn_r]
+--     apply Iff.intro
+--     · intro a
+--       obtain ⟨w_1, h_1⟩ := a
+--       obtain ⟨left, right⟩ := h_1
+--       obtain ⟨w_2, h_1⟩ := left
+--       subst right
+--       simp_all only [inv_f_id_apply]
+--       apply Exists.intro w_2 h_1
+--     · intro a
+--       obtain ⟨w_1, h_1⟩ := a
+--       apply Exists.intro
+--       · apply And.intro (Exists.intro w_1 h_1)
+--         · simp_all only [f_inv_id]
+--   ,
+--   by
+--     rw [ra_to_fol_query_r, ← w.varsInQuery]
+--     simp_all [PFun.ran]
+--     ext v
+--     simp_all only [Set.mem_setOf_eq]
+--     apply Iff.intro
+--     . intro a
+--       obtain ⟨w_1, h_1⟩ := a
+--       exact Exists.intro (Function.invFun f w_1) h_1
+--     . intro ⟨w_1, h_1⟩
+--       use f w_1
+--       simp_all only [ra_to_fol_outFn_r, Function.comp_apply, inv_f_id_apply]
+-- ⟩
 
 end r
