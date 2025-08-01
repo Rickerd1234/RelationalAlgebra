@@ -4,7 +4,7 @@ import Mathlib.Data.Finset.Defs
 
 namespace RM
 
-abbrev Attribute := Nat
+abbrev Attribute := String
 
 abbrev RelationName := String
 

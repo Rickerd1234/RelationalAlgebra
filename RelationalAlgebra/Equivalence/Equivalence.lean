@@ -6,7 +6,7 @@ theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellType
   raQ.evaluate dbi h = (ra_to_fol_def raQ h).evaluate := by
     simp [FOL.EvaluableQuery.evaluate, RA.Query.evaluate, FOL.EvaluableQuery.schema]
     apply And.intro
-    . simp [ra_to_fol_outFn_eq_schema, ra_to_fol_def]
+    . simp [ra_to_fol_outFn_eq_schema h, ra_to_fol_def]
     . induction raQ
       all_goals (
         simp only [RA.Query.isWellTyped] at h
@@ -21,12 +21,19 @@ theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellType
           simp_all only [Set.mem_setOf_eq]
           apply Iff.intro
           · intro ht
-            use λ v => t (var_to_att v)
+            use λ v => t v
             apply And.intro
             · simp_all [FOL.BoundedQuery.RealizeDom, FOL.Query.Realize]
-              sorry
+              apply And.intro
+              · simp_all [FOL.BoundedQuery.toFormula]
+                sorry
+              . simp_all [PFun.ran, DatabaseInstance.domain]
+                intro v a h
+                use rn
+                use a
+                use t
+                simp_all only [Part.eq_some_iff, true_and]
             · simp_all [PFun.res, PFun.restrict, Part.restrict, Part.bind]
-              simp [var_to_att_to_var_eq_id]
               ext a v
               simp_all only [Part.mem_assert_iff, Finset.mem_coe, exists_prop, iff_and_self]
               intro a_1
@@ -59,24 +66,16 @@ theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellType
           obtain ⟨w, h⟩ := a
           obtain ⟨left_1, right_1⟩ := h
           use w
-          apply And.intro left_1
-          ext a v
-          simp_all only [Part.mem_bind_iff]
           sorry
         · intro a
           obtain ⟨w, h⟩ := a
           obtain ⟨left_1, right_1⟩ := h
           subst right_1
-          use w
-          apply And.intro
-          · exact left_1
-          · ext a b : 1
-            simp_all only [Function.comp_apply, inv_f_id_apply, Part.mem_bind_iff]
-            rfl
+          sorry
       all_goals sorry
 
 theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  ∃folQ : FOL.EvaluableQuery dbi, raQ.evaluate dbi h = folQ.evaluate dbi := by
+  ∃folQ : FOL.EvaluableQuery dbi.schema, raQ.evaluate dbi h = folQ.evaluate dbi := by
     use ra_to_fol_def raQ h
     simp [ra_to_fol_eval]
 

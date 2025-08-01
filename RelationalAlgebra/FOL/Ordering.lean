@@ -7,14 +7,14 @@ namespace RM
 section order
 
 -- Add ordering to Attribute
-instance Attribute.instLe : IsTrans Attribute (.≤.) where
-  trans {_ _ _: Attribute} := Nat.le_trans
+instance Attribute.instLE : IsTrans Attribute (.≤.) where
+  trans {_ _ _: Attribute} := String.le_trans
 
 instance Attribute.instAntisymm : IsAntisymm Attribute (.≤.) where
-  antisymm {_ _: Attribute} := Nat.le_antisymm
+  antisymm {_ _: Attribute} := String.le_antisymm
 
 instance Attribute.instTotal : IsTotal Attribute (.≤.) where
-  total := Nat.le_total
+  total := String.le_total
 
 -- Add ordering to RelationSchema
 def RelationSchema.ordering (rs : RelationSchema) : List Attribute

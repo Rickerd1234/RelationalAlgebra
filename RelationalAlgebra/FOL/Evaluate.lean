@@ -5,7 +5,7 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 -- Evaluation logic
-def VariableAssignmentToTuple {dbs : DatabaseSchema} (q : EvaluableQuery dbs) (ov : Variable →. Value) : Tuple
+def VariableAssignmentToTuple {dbs : DatabaseSchema} (q : EvaluableQuery dbs) (ov : Attribute →. Value) : Tuple
   := (λ att => ((q.outFn att).bind ov))
 
 theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
@@ -53,7 +53,7 @@ def EvaluableQuery.evaluateT [folStruc]  {dbi : DatabaseInstance} (q : Evaluable
 }
 
 @[simp]
-theorem realize_query_dom {ov : Variable →. Value} {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi.schema) :
+theorem realize_query_dom {ov : Attribute →. Value} {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi.schema) :
   q.query.Realize dbi ov → (VariableAssignmentToTuple q ov).Dom = q.schema := by
     intro h
     unfold VariableAssignmentToTuple EvaluableQuery.schema

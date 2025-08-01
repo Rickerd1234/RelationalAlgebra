@@ -58,20 +58,20 @@ def dbI : DatabaseInstance := ⟨
 
 open FOL Language
 
-def x : fol.Term (Variable ⊕ Fin 0) := outVar "x"
-def y : fol.Term (Variable ⊕ Fin 0) := outVar "y"
-def z : fol.Term (Variable ⊕ Fin 1) := inVar 0
+def x : fol.Term (Attribute ⊕ Fin 0) := outVar "x"
+def y : fol.Term (Attribute ⊕ Fin 0) := outVar "y"
+def z : fol.Term (Attribute ⊕ Fin 1) := inVar 0
 
 -- Explore formula concepts
-def n_xy : fol.BoundedFormula Variable 0 := ∼(x =' y) ⟹ ⊤
+def n_xy : fol.BoundedFormula Attribute 0 := ∼(x =' y) ⟹ ⊤
 
-def ex_n_xy_or_yz : fol.Formula Variable := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
+def ex_n_xy_or_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
 
-def ex_n_xy_and_yz : fol.Formula Variable := .ex ((n_xy.liftAt 1 0) ⊓ (y.liftAt 1 0) =' z)
+def ex_n_xy_and_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊓ (y.liftAt 1 0) =' z)
 
-def all_xz_or_yz : fol.Formula Variable := .ex ((y.liftAt 1 0) =' z ⟹ ∼((x.liftAt 1 0) =' z))
+def all_xz_or_yz : fol.Formula Attribute := .ex ((y.liftAt 1 0) =' z ⟹ ∼((x.liftAt 1 0) =' z))
 
-def v : Variable →. Value
+def v : Attribute →. Value
   | "x" => some 21
   | "y" => some 22
   | _ => Part.none
@@ -96,7 +96,7 @@ example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
 
 
 -- Relation with variables
-def F : Query := (.R dbI "R1" [outVar "x", outVar "y"].get)
+def F : Query := (.R dbI "R1" [ouAttribute, outVar "y"].get)
 
 example [struc: folStruc] : F.Realize dbI v := by
   -- Unfold query
@@ -160,7 +160,7 @@ def brtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
 def G : Query := .ex (.R brtr_G)
 theorem v_sat_G [struc: folStruc] : G.Realize dbI v := by
   -- Unfold query
-  simp only [Query.Realize, BoundedQuery.Realize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
+  simp only [Query.Realize, BoundAttributeRealize, G, BoundedQuery.toFormula, BoundedFormula.realize_ex]
 
   apply And.intro
   -- Fill in inVar value
@@ -251,7 +251,7 @@ def brtr_H : BoundedRelationTermRestriction 2 := ⟨
   dbI,
   by simp_all [inH_dom, rtr_H, dbI, relS]
 ⟩
-
+Attribute
 def H : Query := .ex (.ex (.R brtr_H))
 example [struc: folStruc] : H.Realize dbI v := by
   -- Unfold query
@@ -328,7 +328,7 @@ def t : EvaluableQuery (dbI) :=
       simp_all only [Set.mem_toFinset, Set.mem_setOf_eq, Fin.isValue, Finset.mem_filterMap, outVar?]
       apply Iff.intro
       · intro a
-        obtain ⟨w, h⟩ := a
+        obtain ⟨w, h⟩ :=Attribute
         split at h
         next x_1 =>
           simp_all only [Part.mem_some_iff, Fin.isValue]

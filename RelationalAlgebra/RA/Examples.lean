@@ -3,37 +3,37 @@ import RelationalAlgebra.RA.Query
 open RM RA
 
 def tup1 : Tuple
-  | 0 => .some 11
-  | 1 => .some 12
+  | "0" => .some 11
+  | "1" => .some 12
   | _ => .none
 
 def tup2 : Tuple
-  | 0 => .some 21
-  | 1 => .some 22
+  | "0" => .some 21
+  | "1" => .some 22
   | _ => .none
 
 def tup3 : Tuple
-  | 0 => .some 31
-  | 1 => .some 31
+  | "0" => .some 31
+  | "1" => .some 31
   | _ => .none
 
 def tupA : Tuple
-  | 1 => .some 11
-  | 2 => .some 12
+  | "1" => .some 11
+  | "2" => .some 12
   | _ => .none
 
 def tupB : Tuple
-  | 1 => .some 21
-  | 2 => .some 22
+  | "1" => .some 21
+  | "2" => .some 22
   | _ => .none
 
 def tupC : Tuple
-  | 1 => .some 31
-  | 2 => .some 32
+  | "1" => .some 31
+  | "2" => .some 32
   | _ => .none
 
-def relS : RelationSchema := {0, 1}
-def relS2 : RelationSchema := {1, 2}
+def relS : RelationSchema := {"0", "1"}
+def relS2 : RelationSchema := {"1", "2"}
 
 def relI : RelationInstance := ⟨
   relS,
@@ -67,7 +67,7 @@ def dbI : DatabaseInstance := ⟨
 ⟩
 
 def j : Query :=
-  .s 0 1 true (.j (.R "R1") (.R "R2"))
+  .s "0" "1" true (.j (.R "R1") (.R "R2"))
 
 theorem hj : j.isWellTyped dbI.schema := by
   simp_all [j, Query.isWellTyped, Query.schema, dbI, relS, relS2]
@@ -78,9 +78,9 @@ example : ∃t, t ∈ (j.evaluate dbI hj).tuples := by
   simp [Query.evaluate, Query.evaluateT, selectionT, joinT, j, dbI]
 
   use λ a => match a with
-    | 0 => .some 31
-    | 1 => .some 31
-    | 2 => .some 32
+    | "0" => .some 31
+    | "1" => .some 31
+    | "2" => .some 32
     | _ => .none
 
   apply And.intro

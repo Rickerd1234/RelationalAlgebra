@@ -1,11 +1,11 @@
 import RelationalAlgebra.FOL.Query
 
-open FOL FirstOrder Language Term
+open FOL FirstOrder Language Term RM
 
 namespace FOL
 
 /-- Maps bounded formulas along a map of terms and a map of relations. -/
-def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Variable ⊕ (Fin n)) → fol.Term (Variable ⊕ (Fin (g n))))
+def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
     (h : ∀ n, BoundedQuery (g (n + 1)) → BoundedQuery (g n + 1)) :
     ∀ {n}, BoundedQuery n → BoundedQuery (g n)
   | _n, .R dbs rn vMap  => .R dbs rn (λ i => ft _ (vMap i))
@@ -30,10 +30,10 @@ def BoundedQuery.liftAt : ∀ {n : ℕ} (n' _m : ℕ), BoundedQuery n → Bounde
     castLE (by rw [add_assoc, add_comm 1, add_assoc])
 
 /-- A function to help relabel the variables in bounded formulas. -/
-def BoundedQuery.relabelAux (g : Variable → Variable ⊕ (Fin n)) (k : ℕ) : Variable ⊕ (Fin k) → Variable ⊕ (Fin (n + k)) :=
+def BoundedQuery.relabelAux (g : Attribute → Attribute ⊕ (Fin n)) (k : ℕ) : Attribute ⊕ (Fin k) → Attribute ⊕ (Fin (n + k)) :=
   Sum.map id finSumFinEquiv ∘ Equiv.sumAssoc _ _ _ ∘ Sum.map g id
 
 /-- Relabels a bounded formula's variables along a particular function. -/
-def BoundedQuery.relabel (g : Variable → Variable ⊕ (Fin n)) {k} (φ : BoundedQuery k) : BoundedQuery (n + k) :=
+def BoundedQuery.relabel (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery k) : BoundedQuery (n + k) :=
   φ.mapTermRel (fun _ t => t.relabel (relabelAux g _)) fun _ =>
     castLE (ge_of_eq (add_assoc _ _ _))
