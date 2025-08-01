@@ -12,7 +12,7 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
   (h1 : var ∈ q.variablesInQuery) (h2 : q.Realize ov iv)
   : (ov var).Dom := by
     induction q with
-    | R dbi rn h =>
+    | R dbs rn h =>
       sorry
       -- simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
       -- have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_RelMap h2
@@ -137,5 +137,5 @@ theorem EvaluableQuery.evaluate_dom {dbi : DatabaseInstance} [folStruc] (q : Eva
   . intros; simp_all only [realize_query_dom]
   . simp_all only
 
-def EvaluableQuery.evaluate {dbi : DatabaseInstance} [folStruc] (q : EvaluableQuery dbi.schema)
+def EvaluableQuery.evaluate (dbi : DatabaseInstance) [folStruc] (q : EvaluableQuery dbi.schema)
   : RelationInstance := ⟨q.schema, q.evaluateT, q.evaluate_dom⟩

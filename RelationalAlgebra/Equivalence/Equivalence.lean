@@ -76,10 +76,10 @@ theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellType
       all_goals sorry
 
 theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  ∃folQ : FOL.EvaluableQuery dbi, raQ.evaluate dbi h = folQ.evaluate := by
+  ∃folQ : FOL.EvaluableQuery dbi, raQ.evaluate dbi h = folQ.evaluate dbi := by
     use ra_to_fol_def raQ h
     simp [ra_to_fol_eval]
 
 
-theorem fol_to_ra [FOL.folStruc] {dbi} (folQ : FOL.EvaluableQuery dbi) :
-  ∃raQ : RA.Query, (h : raQ.isWellTyped dbi.schema) → raQ.evaluate dbi h = folQ.evaluate := by sorry
+theorem fol_to_ra [FOL.folStruc] {dbi} (folQ : FOL.EvaluableQuery dbi.schema) :
+  ∃raQ : RA.Query, (h : raQ.isWellTyped dbi.schema) → raQ.evaluate dbi h = folQ.evaluate dbi := by sorry

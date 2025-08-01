@@ -18,36 +18,36 @@ theorem var_to_att_to_var_eq_id {a} : var_to_att (att_to_var a) = a := by
 def schema_to_inFn {n} (dbs : DatabaseSchema) (rn : RelationName) : Attribute →. FOL.Language.fol.Term (FOL.Variable ⊕ Fin n) :=
   PFun.res (FOL.outVar ∘ att_to_var) (dbs rn)
 
-def ra_to_fol_R {dbi} (rn : RelationName) : FOL.EvaluableQuery dbi := ⟨
-  .R dbi rn (FOL.outVar ∘ att_to_var ∘ (dbi.schema rn).fromIndex),
-  PFun.res att_to_var (dbi.schema rn),
-  by
-    apply Fintype.ofFinset (dbi.schema rn);
-    simp_all [PFun.res]
-  ,
-  by
-    ext v
-    simp_all only [PFun.ran, PFun.res, PFun.restrict, Part.restrict, att_to_var, PFun.coe_val,
-      Part.get_some, Part.mem_mk_iff, Finset.mem_coe, exists_prop, Set.mem_toFinset,
-      Set.mem_setOf_eq, FOL.BoundedQuery.variablesInQuery, FOL.BoundedQuery.toFormula,
-      FirstOrder.Language.Relations.boundedFormula, FOL.fol.Rel,
-      FirstOrder.Language.BoundedFormula.freeVarFinset, Function.comp_apply, FOL.outVar,
-      FirstOrder.Language.Term.varFinsetLeft, Finset.mem_biUnion, Finset.mem_univ,
-      Finset.mem_singleton, true_and]
-    apply Iff.intro
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      subst right
-      use RM.RelationSchema.index left
-      simp_all only [RelationSchema.fromIndex_index_eq]
-    · intro a
-      obtain ⟨w, h⟩ := a
-      use var_to_att v
-      subst h
-      rw [← att_to_var, var_to_att_to_var_eq_id]
-      exact And.intro (RelationSchema.fromIndex_mem w) rfl
-⟩
+-- def ra_to_fol_R {dbi} (rn : RelationName) : FOL.EvaluableQuery dbi := ⟨
+--   .R dbi rn (FOL.outVar ∘ att_to_var ∘ (dbi.schema rn).fromIndex),
+--   PFun.res att_to_var (dbi.schema rn),
+--   by
+--     apply Fintype.ofFinset (dbi.schema rn);
+--     simp_all [PFun.res]
+--   ,
+--   byP
+--     ext v
+--     simp_all only [PFun.ran, PFun.res, PFun.restrict, Part.restrict, att_to_var, PFun.coe_val,
+--       Part.get_some, Part.mem_mk_iff, Finset.mem_coe, exists_prop, Set.mem_toFinset,
+--       Set.mem_setOf_eq, FOL.BoundedQuery.variablesInQuery, FOL.BoundedQuery.toFormula,
+--       FirstOrder.Language.Relations.boundedFormula, FOL.fol.Rel,
+--       FirstOrder.Language.BoundedFormula.freeVarFinset, Function.comp_apply, FOL.outVar,
+--       FirstOrder.Language.Term.varFinsetLeft, Finset.mem_biUnion, Finset.mem_univ,
+--       Finset.mem_singleton, true_and]
+--     apply Iff.intro
+--     · intro a
+--       obtain ⟨w, h⟩ := a
+--       obtain ⟨left, right⟩ := h
+--       subst right
+--       use RM.RelationSchema.index left
+--       simp_all only [RelationSchema.fromIndex_index_eq]
+--     · intro a
+--       obtain ⟨w, h⟩ := a
+--       use var_to_att v
+--       subst h
+--       rw [← att_to_var, var_to_att_to_var_eq_id]
+--       exact And.intro (RelationSchema.fromIndex_mem w) rfl
+-- ⟩
 
 end R
 
