@@ -13,26 +13,26 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
   : (ov var).Dom := by
     induction q with
     | R dbs rn h =>
-      sorry
-      -- simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
-      -- have h3 : ArityToTuple (fun i ↦ realize (Sum.elim ov iv) (h i)) ∈ (dbi.relations rn).tuples := by exact folStruc_apply_RelMap h2
-      -- have h4 := (dbi.relations rn).validSchema
-      -- simp_all only [folStruc_apply_RelMap]
-      -- obtain ⟨w, h_1⟩ := h1
-      -- have h5 := (dbi.schema rn).fromIndex_mem w
-      -- have h6 := (arityToTuple_dom (folStruc_apply_RelMap h2)).mpr h5
-      -- simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
-      -- have h7 : h w = (outVar var) := by
-      --   unfold varFinsetLeft at *
-      --   split at h_1
-      --   next x i heq =>
-      --     simp_all only [realize_var, Sum.elim_inl, Finset.mem_singleton]
-      --     subst h_1
-      --     rfl
-      --   next x _i heq => simp_all only [realize_var, Sum.elim_inr, Finset.not_mem_empty]
-      --   next x l _f ts heq => exact False.elim (folStruc_empty_fun _f)
-      -- simp_all only
-      -- exact h6
+      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
+      have ⟨dbi, h3⟩ := folStruc_apply_RelMap h2
+      have h4 := (dbi.relations rn).validSchema
+      obtain ⟨w, h_1⟩ := h1
+      obtain ⟨left, right⟩ := h3
+      subst left
+      have h5 := (dbi.schema rn).fromIndex_mem w
+      have h6 := (arityToTuple_dom right).mpr h5
+      simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def]
+      have h7 : h w = (outVar var) := by
+        unfold varFinsetLeft at *
+        split at h_1
+        next x i heq =>
+          simp_all only [realize_var, Sum.elim_inl, Finset.mem_singleton]
+          subst h_1
+          rfl
+        next x _i heq => simp_all only [realize_var, Sum.elim_inr, Finset.not_mem_empty]
+        next x l _f ts heq => exact False.elim (folStruc_empty_fun _f)
+      simp_all only
+      exact h6
     -- | eq t₁ t₂ =>
     --   simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize, inVar]
     | and q1 q2 q1_ih q2_ih =>
