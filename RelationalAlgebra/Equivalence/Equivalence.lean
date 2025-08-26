@@ -2,7 +2,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Defs
 
 open RM
 
-theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
+theorem ra_to_fol_eval [struc : FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
   raQ.evaluate dbi h = (ra_to_fol_def raQ h).evaluate := by
     simp [FOL.EvaluableQuery.evaluate, RA.Query.evaluate, FOL.EvaluableQuery.schema]
     apply And.intro
@@ -26,7 +26,24 @@ theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellType
             · simp_all [FOL.BoundedQuery.RealizeDom, FOL.Query.Realize]
               apply And.intro
               · simp_all [FOL.BoundedQuery.toFormula]
-                sorry
+                refine (struc.RelMap_R dbi.schema rn ?_).mp ?_
+                use dbi
+                simp_all only [true_and, FOL.outVar, FirstOrder.Language.Term.realize_var, Sum.elim_inl]
+                have hz : FOL.ArityToTuple (fun i : Fin (dbi.schema rn).card ↦ t (RelationSchema.fromIndex i)) = t := by
+                  ext a v
+                  simp_all only [FOL.ArityToTuple, Option.map]
+                  split
+                  next opt x heq =>
+                    simp_all [RelationSchema.fromIndex, RelationSchema.index?, RelationSchema.ordering];
+                    obtain ⟨w, ⟨left, right_1⟩, right⟩ := heq
+                    subst right left
+                    simp_all only [Fin.coe_cast]
+                  next opt heq =>
+                    have hc : a ∉ t.Dom :=
+                      by simp_all [dbi.validSchema, (dbi.relations rn).validSchema t ht, RelationSchema.index?_none.mp heq]
+                    simp_all only [RelationSchema.index?_none, PFun.mem_dom, not_exists, Option.getD_none,
+                      Part.not_mem_none]
+                simp_all only
               . simp_all [PFun.ran, DatabaseInstance.domain]
                 intro v a h
                 use rn
@@ -47,31 +64,31 @@ theorem ra_to_fol_eval [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellType
             obtain ⟨left, right⟩ := h
             subst right
             sorry
-      case s a b posEq sq ih =>
-        . simp_all [selectionT]
-          sorry
-      case p rs sq ih =>
-        simp_all [ra_to_fol_query_p, ra_to_fol_outFn_p, projectionT]
-        ext t
-        simp_all only [Set.mem_setOf_eq]
-        sorry
-      case r f sq ih =>
-        simp_all only [forall_true_left, renameT, exists_eq_right', ra_to_fol_query_r,
-          ra_to_fol_outFn_r, Function.comp_apply]
-        ext t
-        simp_all only [forall_true_left, Set.mem_setOf_eq]
-        obtain ⟨left, right⟩ := h
-        apply Iff.intro
-        · intro a
-          obtain ⟨w, h⟩ := a
-          obtain ⟨left_1, right_1⟩ := h
-          use w
-          sorry
-        · intro a
-          obtain ⟨w, h⟩ := a
-          obtain ⟨left_1, right_1⟩ := h
-          subst right_1
-          sorry
+      -- case s a b posEq sq ih =>
+      --   . simp_all [selectionT]
+      --     sorry
+      -- case p rs sq ih =>
+      --   simp_all [ra_to_fol_query_p, ra_to_fol_outFn_p, projectionT]
+      --   ext t
+      --   simp_all only [Set.mem_setOf_eq]
+      --   sorry
+      -- case r f sq ih =>
+      --   simp_all only [forall_true_left, renameT, exists_eq_right', ra_to_fol_query_r,
+      --     ra_to_fol_outFn_r, Function.comp_apply]
+      --   ext t
+      --   simp_all only [forall_true_left, Set.mem_setOf_eq]
+      --   obtain ⟨left, right⟩ := h
+      --   apply Iff.intro
+      --   · intro a
+      --     obtain ⟨w, h⟩ := a
+      --     obtain ⟨left_1, right_1⟩ := h
+      --     use w
+      --     sorry
+      --   · intro a
+      --     obtain ⟨w, h⟩ := a
+      --     obtain ⟨left_1, right_1⟩ := h
+      --     subst right_1
+      --     sorry
       all_goals sorry
 
 theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :

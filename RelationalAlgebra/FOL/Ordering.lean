@@ -70,7 +70,7 @@ theorem RelationSchema.index?_isSome_eq_iff {rs : RelationSchema} {att : Attribu
   simp_all only [@Option.isSome_iff_exists]
 
 @[simp]
-theorem RelationSchema.index?_none {rs : RelationSchema} {att : Attribute} : att ∉ rs ↔ rs.index? att = .none := by
+theorem RelationSchema.index?_none {rs : RelationSchema} {att : Attribute} : rs.index? att = .none ↔ att ∉ rs := by
   simp [← RelationSchema.ordering_mem, RelationSchema.index?]
 
 -- Add index to RelationSchema
@@ -118,7 +118,7 @@ theorem RelationSchema.index?_inj {rs : RelationSchema} {i j : Attribute} : rs.i
       simp_all only
       unfold index? at *
       aesop
-    . simp_all only [Bool.not_eq_true, Option.not_isSome, Option.isNone_iff_eq_none, index?_none, and_self, or_true]
+    . simp_all only [Bool.not_eq_true, Option.not_isSome, Option.isNone_iff_eq_none, ← index?_none, and_self, or_true]
   · intro a
     cases a with
     | inl h =>
@@ -126,7 +126,7 @@ theorem RelationSchema.index?_inj {rs : RelationSchema} {i j : Attribute} : rs.i
       simp_all only
     | inr h_1 =>
       obtain ⟨left, right⟩ := h_1
-      simp_all only [index?_none]
+      simp_all only [← index?_none]
 
 @[simp]
 theorem RelationSchema.index?_inj_mem {rs : RelationSchema} {i j : Attribute} (h1 : i ∈ rs) (h2 : j ∈ rs) : rs.index? i = rs.index? j ↔ i = j := by

@@ -41,8 +41,8 @@ theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va 
     exact Iff.symm (Eq.to_iff (congrFun (id (Eq.symm h2)) att))
 
 @[simp]
-theorem arityToTuple_def {dbi: DatabaseInstance} {rn : RelationName} {i : Fin (Finset.card (dbi.schema rn))} {va : Fin (dbi.schema rn).card → Part Value}
-  : ArityToTuple va ((dbi.schema rn).fromIndex i) = va i
+theorem arityToTuple_def {dbs: DatabaseSchema} {rn : RelationName} {i : Fin (Finset.card (dbs rn))} {va : Fin (dbs rn).card → Part Value}
+  : ArityToTuple va ((dbs rn).fromIndex i) = va i
     := by
       simp_all [ArityToTuple, RelationSchema.index?, Option.map, RelationSchema.ordering, Option.getD, RelationSchema.fromIndex]
       split

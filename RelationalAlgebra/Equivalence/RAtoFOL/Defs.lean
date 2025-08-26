@@ -71,21 +71,13 @@ theorem ra_to_fol_outFn_eq_schema [FOL.folStruc] {raQ : RA.Query} {dbs} (h : raQ
       apply Iff.intro
       · intro a_1
         split at a_1
-        next h => simp_all only [true_or]
-        next h =>
-          simp_all only [RelationSchema.index?_none]
-          simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
+        all_goals simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
       · intro a_1
-        cases a_1 with
-        | inl h =>
-          simp_all only [↓reduceIte]
-          simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
-        | inr h_1 =>
+        cases a_1
+        all_goals (
           split
-          next h => simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
-          next h =>
-            simp_all only [RelationSchema.index?_none]
-            simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
+          all_goals simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
+        )
     case r f sq ih =>
       simp_all [renameSchema, Set.ext_iff]
       intro a
