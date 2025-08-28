@@ -28,6 +28,13 @@ def BoundedQuery.toFormula {n : ℕ} : (q : BoundedQuery n) → fol.BoundedFormu
   -- | .all q => .all q.toFormula
   -- | .not q => .not q.toFormula
 
+@[simp]
+theorem BoundedQuery.toFormula_exs {n} (q : BoundedQuery n) : q.exs.toFormula = q.toFormula.exs := by
+  induction n
+  . rfl
+  . rename_i a
+    apply a
+
 def BoundedQuery.Realize {n : ℕ} [folStruc] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
   | q, ov, iv => q.toFormula.Realize ov iv
 
