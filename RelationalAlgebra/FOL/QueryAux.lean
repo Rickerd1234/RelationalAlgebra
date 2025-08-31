@@ -9,6 +9,7 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute �
     (h : ∀ n, BoundedQuery (g (n + 1)) → BoundedQuery (g n + 1)) :
     ∀ {n}, BoundedQuery n → BoundedQuery (g n)
   | _n, .R dbs rn vMap  => .R dbs rn (λ i => ft _ (vMap i))
+  | _n, .eq a b         => .eq (ft _ a) (ft _ b)
   | _n, .and q1 q2      => .and (q1.mapTermRel ft h) (q2.mapTermRel ft h)
   | n,  .ex q           => (h n (q.mapTermRel ft h)).ex
   -- | n,  .all q          => (h n (q.mapTermRel ft h)).all
@@ -18,6 +19,7 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute �
 @[simp]
 def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery m → BoundedQuery n
   | _m, _n, h, .R dbs rn vMap => .R dbs rn (Term.relabel (Sum.map id (Fin.castLE h)) ∘ vMap)
+  | _m, _n, h, .eq a b => .eq (a.relabel (Sum.map id (Fin.castLE h))) (b.relabel (Sum.map id (Fin.castLE h)))
   | _m, _n, h, .and q₁ q₂ => (q₁.castLE h).and (q₂.castLE h)
   | _m, _n, h, .ex q => (q.castLE (add_le_add_right h 1)).ex
   -- | _m, _n, h, .all q => (q.castLE (add_le_add_right h 1)).all
@@ -28,7 +30,7 @@ theorem BoundedQuery.castLE_formula {m n} (_h : m ≤ n) (φ : BoundedQuery m) :
   (φ.castLE _h).toFormula = φ.toFormula.castLE _h := by
     revert n
     induction φ
-    all_goals intros; simp_all [BoundedQuery.toFormula]; rfl
+    all_goals intros; simp_all [BoundedQuery.toFormula]; try rfl
 
 @[simp]
 theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))

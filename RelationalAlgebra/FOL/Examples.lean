@@ -323,7 +323,7 @@ def t : EvaluableQuery (dbI) :=
       rw [h]
       exact FinsetCoe.fintype ?_,
     by
-      simp [BoundedQuery.variablesInQuery, G, brtr_G, inG, outG, RelationTermRestriction.outVars, Language.var, outVar?, RelationTermRestriction.vars, PFun.ran]
+      simp [BoundedQuery.attributesInQuery, G, brtr_G, inG, outG, RelationTermRestriction.outVars, Language.var, outVar?, RelationTermRestriction.vars, PFun.ran]
       ext
       simp_all only [Set.mem_toFinset, Set.mem_setOf_eq, Fin.isValue, Finset.mem_filterMap, outVar?]
       apply Iff.intro

@@ -9,11 +9,12 @@ def VariableAssignmentToTuple {dbs : DatabaseSchema} (q : EvaluableQuery dbs) (o
   := (λ att => ((q.outFn att).bind ov))
 
 theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
-  (h1 : var ∈ q.variablesInQuery) (h2 : q.Realize ov iv)
+  (h1 : var ∈ q.safeAttributes) (h2 : q.Realize ov iv)
   : (ov var).Dom := by
+    have h1' : var ∈ q.attributesInQuery := BoundedQuery.safeAtts_sub_attributesInQuery_mem q h1
     induction q with
     | R dbs rn h =>
-      simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize]
+      simp_all [BoundedQuery.attributesInQuery, BoundedQuery.toFormula, Relations.boundedFormula, BoundedFormula.Realize, BoundedQuery.safeAttributes]
       have ⟨dbi, h3⟩ := folStruc_apply_RelMap h2
       have h4 := (dbi.relations rn).validSchema
       obtain ⟨w, h_1⟩ := h1
@@ -33,15 +34,17 @@ theorem realize_relation_dom [folStruc] {n ov iv var} (q : BoundedQuery n)
         next x l _f ts heq => exact False.elim (folStruc_empty_fun _f)
       simp_all only
       exact h6
-    -- | eq t₁ t₂ =>
-    --   simp_all [BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize, inVar]
+    | eq t₁ t₂ =>
+      simp_all [BoundedQuery.attributesInQuery, BoundedQuery.toFormula, BoundedFormula.Realize, BoundedQuery.safeAttributes]
     | and q1 q2 q1_ih q2_ih =>
       simp only [BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_inf] at h2
-      simp only [BoundedQuery.variablesInQuery, Finset.union_empty, Finset.mem_union, BoundedFormula.freeVarFinset, BoundedQuery.toFormula] at h1
+      simp only [BoundedQuery.attributesInQuery, Finset.union_empty, Finset.mem_union, BoundedFormula.freeVarFinset, BoundedQuery.toFormula] at h1'
+      simp only [BoundedQuery.safeAttributes, BoundedQuery.attributesInQuery] at h1
       obtain ⟨left, right⟩ := h2
+      simp_all [BoundedQuery.safeAtts_sub_attributesInQuery_mem]
       aesop
     | ex qs qs_ih =>
-      simp_all only [BoundedQuery.Realize, BoundedQuery.variablesInQuery, BoundedQuery.toFormula, BoundedFormula.realize_ex, BoundedFormula.freeVarFinset]
+      simp_all only [BoundedQuery.Realize, BoundedQuery.attributesInQuery, BoundedQuery.toFormula, BoundedFormula.realize_ex, BoundedFormula.freeVarFinset]
       aesop
 
 def EvaluableQuery.schema {dbs : DatabaseSchema} (q : EvaluableQuery dbs) : RelationSchema :=
@@ -85,7 +88,7 @@ theorem realize_query_dom {ov : Attribute →. Value} {dbi : DatabaseInstance} [
               obtain ⟨left, right⟩ := h
               obtain ⟨left_1, right⟩ := right
               exact Exists.intro (fun x ↦ Part.none) left
-            -- next x t₁ t₂ heq => aesop
+            next x t₁ t₂ heq => aesop
             next x q1 q2 heq =>
               simp_all only [BoundedFormula.realize_inf]
               obtain ⟨left, right⟩ := h
@@ -105,7 +108,7 @@ theorem realize_query_dom {ov : Attribute →. Value} {dbi : DatabaseInstance} [
                 apply Exists.intro
                 · apply Exists.intro
                   · exact right_1
-              -- next x_1 sq t₁ t₂ => aesop
+              next x_1 sq t₁ t₂ => aesop
               next x_1 q1 q2 =>
                 simp_all only [BoundedFormula.realize_inf]
                 obtain ⟨left_2, right_1⟩ := right_1
@@ -125,7 +128,7 @@ theorem realize_query_dom {ov : Attribute →. Value} {dbi : DatabaseInstance} [
                   · apply Exists.intro
                     · exact h
           refine realize_relation_dom q.query ?_ hz
-          . simp_all only [query_realize_def, vars_in_query_def]
+          . simp_all only [query_realize_def, is_well_typed_query_def, vars_in_query_def]
             apply Exists.intro
             · exact h_1
       simp_all only [Part.get_some, Part.mem_some_iff, exists_eq]

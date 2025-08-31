@@ -8,7 +8,7 @@ namespace FOL
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
   | R {n} : (dbs : DatabaseSchema) → (rn : RelationName) → (Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) → BoundedQuery n
-  -- | eq {n} : (t₁ : Fin n) → (t₂ : fol.Term (Variable ⊕ (Fin n))) → BoundedQuery n
+  | eq {n} : (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) → BoundedQuery n
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
   -- | all {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
@@ -22,7 +22,7 @@ def BoundedQuery.exs : ∀ {n}, BoundedQuery n → Query
 
 def BoundedQuery.toFormula {n : ℕ} : (q : BoundedQuery n) → fol.BoundedFormula Attribute n
   | .R dbs name vMap => Relations.boundedFormula (fol.Rel dbs name) vMap
-  -- | .eq t₁ t₂ => .equal (inVar t₁) t₂
+  | .eq t₁ t₂ => .equal t₁ t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
   -- | .all q => .all q.toFormula
@@ -56,11 +56,11 @@ theorem query_realize_rel [folStruc] {n : ℕ} {dbi : DatabaseInstance} {rn : Re
   : (BoundedQuery.R dbi.schema rn vMap).RealizeDom dbi ov iv ↔ (Relations.boundedFormula (fol.Rel dbi.schema rn) vMap).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
     simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
 
--- @[simp]
--- theorem query_realize_eq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {t₁: Fin n} {t₂ : fol.Term (Variable ⊕ Fin n)} {ov : Variable →. Value} {iv : Fin n →. Value}
---   : (BoundedQuery.eq t₁ t₂).RealizeDom dbi ov iv ↔ (inVar t₁).realize (Sum.elim ov iv) = t₂.realize (Sum.elim ov iv) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
---     simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_bdEqual]
---     aesop
+@[simp]
+theorem query_realize_eq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (BoundedQuery.eq t₁ t₂).RealizeDom dbi ov iv ↔ t₁.realize (Sum.elim ov iv) = t₂.realize (Sum.elim ov iv) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
+    simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_bdEqual]
+    aesop
 
 @[simp]
 theorem query_realize_and [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q1 : BoundedQuery n} {q2 : BoundedQuery n} {ov : Attribute →. Value} {iv : Fin n →. Value}
@@ -84,17 +84,37 @@ theorem query_realize_ex [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : Boun
     simp_all [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
 
 -- Evaluation auxiliaries
-def BoundedQuery.variablesInQuery {n : ℕ} (q : BoundedQuery n) : Finset Attribute := q.toFormula.freeVarFinset
+def BoundedQuery.attributesInQuery {n : ℕ} (q : BoundedQuery n) : Finset Attribute := q.toFormula.freeVarFinset
+
+def BoundedQuery.safeAttributes {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
+  | .R dbs name vMap => (R dbs name vMap).attributesInQuery
+  | .eq t₁ t₂ => ∅
+  | .and q1 q2 => q1.safeAttributes ∪ q2.safeAttributes
+  | .ex q => q.safeAttributes
+
+theorem BoundedQuery.safeAtts_sub_attributesInQuery {n} (q : BoundedQuery n) : q.safeAttributes ⊆ q.attributesInQuery := by
+  induction q
+  all_goals simp_all [BoundedQuery.safeAttributes, attributesInQuery, BoundedQuery.toFormula, Finset.union_subset_union]
+
+theorem BoundedQuery.safeAtts_sub_attributesInQuery_mem {x n} (q : BoundedQuery n) : x ∈ q.safeAttributes → x ∈ q.attributesInQuery :=
+  fun a ↦ BoundedQuery.safeAtts_sub_attributesInQuery q a
+
+def BoundedQuery.isWellTyped {n} (q : BoundedQuery n) : Prop := q.safeAttributes = q.attributesInQuery
 
 structure EvaluableQuery (dbs : DatabaseSchema) where --@TODO Reconsider this
   query : Query
   outFn : Attribute →. Attribute -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
   fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
-  varsInQuery : outFn.ran.toFinset = query.variablesInQuery
+  varsInQuery : outFn.ran.toFinset = query.attributesInQuery
+  wellTyped : query.isWellTyped
 
 instance {dbs : DatabaseSchema} (q : EvaluableQuery dbs) : Fintype q.outFn.Dom := q.fintypeDom
 
 @[simp]
+theorem is_well_typed_query_def {dbs : DatabaseSchema} {q : EvaluableQuery dbs}
+  :  q.query.safeAttributes = q.query.attributesInQuery := q.wellTyped
+
+@[simp]
 theorem vars_in_query_def {var : Attribute} {dbs : DatabaseSchema} {q : EvaluableQuery dbs}
-  :  var ∈ q.query.variablesInQuery ↔ (∃ att, var ∈ q.outFn att) := by
+  :  var ∈ q.query.attributesInQuery ↔ (∃ att, var ∈ q.outFn att) := by
     simp_all only [← q.varsInQuery, PFun.ran, Set.mem_toFinset, Set.mem_setOf_eq]
