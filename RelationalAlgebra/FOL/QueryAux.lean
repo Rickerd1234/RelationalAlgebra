@@ -53,14 +53,20 @@ theorem BoundedQuery.relabel_formula (g : Attribute → Attribute ⊕ (Fin n)) {
   (φ.relabel g).toFormula = φ.toFormula.relabel g := by
     simp only [relabel, BoundedFormula.relabelAux, mapTermRel_formula, BoundedFormula.relabel]
 
--- @TODO: This proof
+@[simp]
 theorem fol.Term.relabelAux_sumInl {n k} (g : Attribute → Attribute ⊕ (Fin n)) {i a : Attribute} :
   BoundedFormula.relabelAux g k (Sum.inl i) = Sum.inl a ↔ g i = Sum.inl a := by
     simp [BoundedFormula.relabelAux]
     apply Iff.intro
     · intro a_1
       simp_all [Equiv.sumAssoc, finSumFinEquiv]
-      sorry
+      by_cases h : (g i).isLeft
+      . simp_all [Sum.isLeft_iff]
+        obtain ⟨w, h⟩ := h
+        simp_all only [Sum.elim_inl, Sum.map_inl, id_eq, Sum.inl.injEq]
+      . simp_all [Sum.isRight_iff]
+        obtain ⟨w, h⟩ := h
+        simp_all only [Sum.elim_inr, Function.comp_apply, Sum.map_inr, Sum.elim_inl, reduceCtorEq]
     · intro a_1
       simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq]
 

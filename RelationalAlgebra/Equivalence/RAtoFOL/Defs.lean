@@ -98,6 +98,23 @@ theorem ra_to_fol_outFn_schema_mem_iff [FOL.folStruc] {att : Attribute} {raQ : R
   att ∈ (ra_to_fol_outFn_def raQ dbs).Dom ↔ att ∈ raQ.schema dbs := by
     simp only [ra_to_fol_outFn_eq_schema, Finset.mem_coe, h]
 
+theorem ra_to_fol_outFn_ran_from_schema [FOL.folStruc] {raQ : RA.Query} {dbs} (h : raQ.isWellTyped dbs) :
+  x ∈ (ra_to_fol_outFn_def raQ dbs).ran ↔ ∃y ∈ (raQ.schema dbs), x ∈ (ra_to_fol_outFn_def raQ dbs) y := by
+    simp only [PFun.ran]
+    simp [← ra_to_fol_outFn_schema_mem_iff h]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h_1⟩ := a
+      use w
+      apply And.intro
+      · use x
+      · simp_all [← Part.eq_some_iff]
+    · intro a
+      obtain ⟨w, h_1⟩ := a
+      obtain ⟨left, right⟩ := h_1
+      obtain ⟨w_1, h_1⟩ := left
+      use w
+
 -- @TODO: See if these are required/useful
 -- instance ra_to_fol_outFn_def_Decidable_Dom {raQ : RA.Query} {dbs} [FOL.folStruc] (x : Attribute) (h : raQ.isWellTyped dbs)
 --   : Decidable (ra_to_fol_outFn_def raQ dbs x).Dom
@@ -106,11 +123,11 @@ theorem ra_to_fol_outFn_schema_mem_iff [FOL.folStruc] {att : Attribute} {raQ : R
 --     rw [ra_to_fol_outFn_schema_mem_iff h]
 --     exact Finset.decidableMem x (raQ.schema dbs)
 
--- instance ra_to_fol_outFn_def_Fintype_Dom {raQ : RA.Query} {dbs} [FOL.folStruc] (h : raQ.isWellTyped dbs)
---   : Fintype (ra_to_fol_outFn_def raQ dbs).Dom
---   := by
---     rw [ra_to_fol_outFn_eq_schema h]
---     exact FinsetCoe.fintype (raQ.schema dbs)
+instance ra_to_fol_outFn_def_Fintype_Dom {raQ : RA.Query} {dbs} [FOL.folStruc] (h : raQ.isWellTyped dbs)
+  : Fintype (ra_to_fol_outFn_def raQ dbs).Dom
+  := by
+    rw [ra_to_fol_outFn_eq_schema h]
+    exact FinsetCoe.fintype (raQ.schema dbs)
 
 @[simp]
 theorem ra_to_fol_query.variablesInQuery_R [FOL.folStruc] :
@@ -173,7 +190,17 @@ theorem ra_to_fol_query.variablesInQuery_p [FOL.folStruc] {rs dbs x} {sq : RA.Qu
   (h : (RA.Query.p rs sq).isWellTyped dbs)
   (h2 : (ra_to_fol_outFn_def sq dbs).ran = FOL.BoundedQuery.variablesInQuery (ra_to_fol_query_def sq dbs)) :
     x ∈ (ra_to_fol_query_def (.p rs sq) dbs).variablesInQuery ↔ x ∈ rs := by
-      sorry
+      simp [ra_to_fol_query_def, projectQuery]
+      have := ra_to_fol_outFn_def_Fintype_Dom h.1
+      have z : (ra_to_fol_outFn_def sq dbs).ran.toFinset = FOL.BoundedQuery.variablesInQuery (ra_to_fol_query_def sq dbs)
+        := by simp_all only [Finset.toFinset_coe]
+      rw [z.symm]
+      simp_all only [Finset.toFinset_coe]
+      apply Iff.intro
+      · intro a
+        sorry
+      · intro a
+        sorry
 
 -- @TODO: Verify this definition on paper
 @[simp]
@@ -192,15 +219,6 @@ theorem ra_to_fol_query.variablesInQuery_r [FOL.folStruc] {dbs x f} {sq : RA.Que
     x ∈ (ra_to_fol_query_def (.r f sq) dbs).variablesInQuery ↔ x ∈ (ra_to_fol_outFn_def sq dbs).ran.image f := by
       simp_all [FOL.BoundedQuery.variablesInQuery, FOL.BoundedQuery.toFormula, ra_to_fol_query_def]
 
--- @TODO: Verify this concept
-@[simp]
-theorem ra_to_fol_outFn_ran_from_schema [FOL.folStruc] {raQ : RA.Query} {dbs} (h : raQ.isWellTyped dbs) :
-  x ∈ (ra_to_fol_outFn_def raQ dbs).ran ↔ ∃y ∈ (raQ.schema dbs), some x = (ra_to_fol_outFn_def raQ dbs) y := by
-    simp only [PFun.ran]
-    simp [← ra_to_fol_outFn_schema_mem_iff h]
-    induction raQ
-    all_goals sorry
-
 open FirstOrder Language
 
 noncomputable def ra_to_fol_def [FOL.folStruc] {dbs} (raQ : RA.Query) (h : raQ.isWellTyped dbs) : FOL.EvaluableQuery dbs := ⟨
@@ -214,19 +232,50 @@ noncomputable def ra_to_fol_def [FOL.folStruc] {dbs} (raQ : RA.Query) (h : raQ.i
     case R rn =>
       simp [ra_to_fol_outFn_def, PFun.ran, PFun.res, PFun.restrict]
 
-    case s a b pos sq ih =>
-      ext a'
+    case s a' b pos sq ih =>
+      ext a
       rw [ra_to_fol_query.variablesInQuery_s h]
-      . simp_all [ra_to_fol_outFn_def, PFun.ran]
-        sorry
+      . simp
+        rw [ra_to_fol_outFn_ran_from_schema h, ra_to_fol_outFn_ran_from_schema h.1]
+        simp_all [ra_to_fol_outFn_def, RA.Query.schema, RA.Query.isWellTyped, ra_to_fol_outFn_ran_from_schema]
+        obtain ⟨left, right⟩ := h
+        obtain ⟨left_1, right⟩ := right
+        obtain ⟨left_2, right⟩ := right
+        apply Iff.intro
+        · intro a_1
+          obtain ⟨w, h⟩ := a_1
+          obtain ⟨left_3, right_1⟩ := h
+          apply And.intro
+          · split at right_1
+            next h =>
+              subst h
+              simp_all only
+              use a'
+            next h => use w
+          · apply Aesop.BuiltinRules.not_intro
+            intro a_1
+            subst a_1
+            split at right_1
+            next h =>
+              subst h
+              simp_all only
+              sorry
+            next h => sorry
+        · intro a_1
+          obtain ⟨left_3, right_1⟩ := a_1
+          obtain ⟨w, h⟩ := left_3
+          obtain ⟨left_3, right_2⟩ := h
+          sorry
       . have z2 := Finset.ext_iff.mp (ih h.1)
         ext y
         simp_all only [Set.mem_toFinset, Finset.mem_coe]
 
     case p rs sq ih =>
       ext a'
+      simp
       rw [ra_to_fol_query.variablesInQuery_p h]
-      . simp [ra_to_fol_outFn_def, PFun.ran]
+      . rw [ra_to_fol_outFn_ran_from_schema h]
+        simp_all only [RA.Query.isWellTyped, RA.Query.schema, ra_to_fol_outFn_def, forall_true_left]
         sorry
       . have z2 := Finset.ext_iff.mp (ih h.1)
         ext y
@@ -234,8 +283,10 @@ noncomputable def ra_to_fol_def [FOL.folStruc] {dbs} (raQ : RA.Query) (h : raQ.i
 
     case j q₁ q₂ ih₁ ih₂ =>
       ext a'
+      simp
       rw [ra_to_fol_query.variablesInQuery_j h]
-      . simp [ra_to_fol_outFn_def, PFun.ran]
+      . rw [ra_to_fol_outFn_ran_from_schema h]
+        simp [ra_to_fol_outFn_def, ra_to_fol_outFn_ran_from_schema h.1, ra_to_fol_outFn_ran_from_schema h.2]
         apply Iff.intro
         · intro a
           obtain ⟨w, h_1⟩ := a
@@ -243,26 +294,23 @@ noncomputable def ra_to_fol_def [FOL.folStruc] {dbs} (raQ : RA.Query) (h : raQ.i
           next h_2 =>
             apply Or.inl
             use w
+            simp_all only [true_or, true_and, and_self]
           next h_2 =>
             apply Or.inr
             use w
+            simp_all only [false_or, and_self]
         · intro a
           cases a with
           | inl h_1 =>
             obtain ⟨w, h_1⟩ := h_1
             use w
-            split
-            next h_2 => simp_all only
-            next h_2 =>
-              have z : w ∈ (ra_to_fol_outFn_def q₁ dbs).Dom := by simp [PFun.mem_dom]; use a'
-              have z2 : w ∈ (ra_to_fol_outFn_def q₁ dbs).Dom ↔ w ∈ q₁.schema dbs := ra_to_fol_outFn_schema_mem_iff h.1
-              simp_all only
+            simp_all only [true_or, ↓reduceIte, and_self]
           | inr h_2 =>
             obtain ⟨w, h_1⟩ := h_2
             use w
             split
             next h_2 => sorry
-            next h_2 => simp_all only
+            next h_2 => simp_all
       . have z2 := Finset.ext_iff.mp (ih₁ h.1)
         ext y
         simp_all only [Set.mem_toFinset, Finset.mem_coe]
@@ -272,8 +320,10 @@ noncomputable def ra_to_fol_def [FOL.folStruc] {dbs} (raQ : RA.Query) (h : raQ.i
 
     case r f sq ih =>
       ext a'
+      simp
       rw [ra_to_fol_query.variablesInQuery_r h]
-      . simp [ra_to_fol_outFn_def, PFun.ran]
+      . rw [ra_to_fol_outFn_ran_from_schema h]
+        simp [ra_to_fol_outFn_def, ra_to_fol_outFn_ran_from_schema h.1]
         sorry
       . have z2 := Finset.ext_iff.mp (ih h.1)
         ext y

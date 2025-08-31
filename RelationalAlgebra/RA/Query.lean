@@ -22,6 +22,26 @@ def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
   -- | .u sq1 _ => sq1.schema
   -- | .d sq1 _ => sq1.schema
 
+@[simp]
+theorem Query.schema_R (rn : RelationName) {dbs : DatabaseSchema} :
+  (R rn).schema dbs = dbs rn := rfl
+
+@[simp]
+theorem Query.schema_s {dbs : DatabaseSchema} :
+  (s a b pos sq).schema dbs = sq.schema dbs := rfl
+
+@[simp]
+theorem Query.schema_p (rs : RelationSchema) {dbs : DatabaseSchema} :
+  (p rs sq).schema dbs = rs := rfl
+
+@[simp]
+theorem Query.schema_j {dbs : DatabaseSchema} :
+  (j sq₁ sq₂).schema dbs = sq₁.schema dbs ∪ sq₂.schema dbs := rfl
+
+@[simp]
+theorem Query.schema_r {dbs : DatabaseSchema} :
+  (r f sq).schema dbs = (sq.schema dbs).image f := rfl
+
 def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
   | .R _ => (True)
@@ -59,19 +79,19 @@ def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.s
       | p rs sq ih =>
         intros
         simp_all [isWellTyped, evaluateT, projectionT, schema]
-        apply projectionDom ⟨sq.schema dbi.schema, evaluateT dbi sq, fun t h => ih t h⟩ ?_ h.2
+        apply projectionDom ⟨sq.schema dbi.schema, evaluateT dbi sq, ih⟩ ?_ h.2
         . simp_all only [projectionT, Set.mem_setOf_eq]
       | j sq1 sq2 ih1 ih2 =>
-        intros
-        simp_all [isWellTyped, evaluateT, joinT]
+        intros t h
+        simp_all only [isWellTyped, joinT, forall_const, Finset.coe_union]
         apply joinDom
-          ⟨sq1.schema dbi.schema, evaluateT dbi sq1, fun t h => ih1 t h⟩
-          ⟨sq2.schema dbi.schema, evaluateT dbi sq2, fun t h => ih2 t h⟩
-        . simp_all [joinT]
+          ⟨sq1.schema dbi.schema, evaluateT dbi sq1, ih1⟩
+          ⟨sq2.schema dbi.schema, evaluateT dbi sq2, ih2⟩
+          h
       | r f sq ih =>
         intros
         simp_all [isWellTyped, evaluateT, renameT, schema]
-        apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, fun t h => ih t h⟩ h.2
+        apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, ih⟩ h.2
         . simp_all only [renameT, exists_eq_right', Set.mem_setOf_eq]
       -- | u sq1 sq2 ih =>
       --   intro _ ht
