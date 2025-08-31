@@ -101,20 +101,11 @@ theorem BoundedQuery.safeAtts_sub_attributesInQuery_mem {x n} (q : BoundedQuery 
 
 def BoundedQuery.isWellTyped {n} (q : BoundedQuery n) : Prop := q.safeAttributes = q.attributesInQuery
 
-structure EvaluableQuery (dbs : DatabaseSchema) where --@TODO Reconsider this
+structure EvaluableQuery where --@TODO Reconsider this
   query : Query
-  outFn : Attribute →. Attribute -- @TODO: Check if this reversing makes it possible to mimic x = y through subst → x,x
-  fintypeDom : Fintype outFn.Dom -- Required, since otherwise there is no restriction on outFn in this direction
-  varsInQuery : outFn.ran.toFinset = query.attributesInQuery
   wellTyped : query.isWellTyped
 
-instance {dbs : DatabaseSchema} (q : EvaluableQuery dbs) : Fintype q.outFn.Dom := q.fintypeDom
 
 @[simp]
-theorem is_well_typed_query_def {dbs : DatabaseSchema} {q : EvaluableQuery dbs}
+theorem is_well_typed_query_def {q : EvaluableQuery}
   :  q.query.safeAttributes = q.query.attributesInQuery := q.wellTyped
-
-@[simp]
-theorem vars_in_query_def {var : Attribute} {dbs : DatabaseSchema} {q : EvaluableQuery dbs}
-  :  var ∈ q.query.attributesInQuery ↔ (∃ att, var ∈ q.outFn att) := by
-    simp_all only [← q.varsInQuery, PFun.ran, Set.mem_toFinset, Set.mem_setOf_eq]
