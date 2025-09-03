@@ -1,6 +1,6 @@
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.ModelTheoryExtensions
-import RelationalAlgebra.FOL.SubQuery
+import RelationalAlgebra.FOL.Subquery
 
 open FOL FirstOrder Language RM Term
 
