@@ -1,59 +1,8 @@
-import RelationalAlgebra.FOL.Query
+import RelationalAlgebra.FOL.ModelTheory
 
 open FOL FirstOrder Language Term RM
 
 namespace FOL
-
-/-- Maps bounded formulas along a map of terms and a map of relations. -/
-def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
-    (h : ∀ n, BoundedQuery (g (n + 1)) → BoundedQuery (g n + 1)) :
-    ∀ {n}, BoundedQuery n → BoundedQuery (g n)
-  | _n, .R dbs rn vMap  => .R dbs rn (λ i => ft _ (vMap i))
-  | _n, .eq a b         => .eq (ft _ a) (ft _ b)
-  | _n, .and q1 q2      => .and (q1.mapTermRel ft h) (q2.mapTermRel ft h)
-  | n,  .ex q           => (h n (q.mapTermRel ft h)).ex
-  -- | n,  .all q          => (h n (q.mapTermRel ft h)).all
-  -- | _n, .not q          => (q.mapTermRel ft h).not
-
-/-- Casts `L.BoundedFormula α m` as `L.BoundedFormula α n`, where `m ≤ n`. -/
-@[simp]
-def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery m → BoundedQuery n
-  | _m, _n, h, .R dbs rn vMap => .R dbs rn (Term.relabel (Sum.map id (Fin.castLE h)) ∘ vMap)
-  | _m, _n, h, .eq a b => .eq (a.relabel (Sum.map id (Fin.castLE h))) (b.relabel (Sum.map id (Fin.castLE h)))
-  | _m, _n, h, .and q₁ q₂ => (q₁.castLE h).and (q₂.castLE h)
-  | _m, _n, h, .ex q => (q.castLE (add_le_add_right h 1)).ex
-  -- | _m, _n, h, .all q => (q.castLE (add_le_add_right h 1)).all
-  -- | _m, _n, h, .not q => (q.castLE h).not
-
-@[simp]
-theorem BoundedQuery.castLE_formula {m n} (_h : m ≤ n) (φ : BoundedQuery m) :
-  (φ.castLE _h).toFormula = φ.toFormula.castLE _h := by
-    revert n
-    induction φ
-    all_goals intros; simp_all [BoundedQuery.toFormula]; try rfl
-
-@[simp]
-theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
-    (h : ∀n, g (n + 1) ≤ g n + 1) (φ : BoundedQuery m) :
-  (φ.mapTermRel ft (λ n => castLE (h n))).toFormula = φ.toFormula.mapTermRel ft (λ _ => id) (λ n => BoundedFormula.castLE (h n)) := by
-    induction φ
-    all_goals simp_all only [mapTermRel, castLE, BoundedQuery.toFormula, castLE_formula]; rfl
-
-/-- Raises all of the `Fin`-indexed variables of a formula greater than or equal to `m` by `n'`. -/
-def BoundedQuery.liftAt : ∀ {n : ℕ} (n' _m : ℕ), BoundedQuery n → BoundedQuery (n + n') :=
-  fun {_} n' m φ =>
-  φ.mapTermRel (fun _ t => t.liftAt n' m) fun _ =>
-    castLE (by rw [add_assoc, add_comm 1, add_assoc])
-
-/-- Relabels a bounded formula's variables along a particular function. -/
-def BoundedQuery.relabel (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery k) : BoundedQuery (n + k) :=
-  φ.mapTermRel (fun _ t => t.relabel (BoundedFormula.relabelAux g _)) fun _ =>
-    castLE (ge_of_eq (add_assoc _ _ _))
-
-@[simp]
-theorem BoundedQuery.relabel_formula (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery k) :
-  (φ.relabel g).toFormula = φ.toFormula.relabel g := by
-    simp only [relabel, BoundedFormula.relabelAux, mapTermRel_formula, BoundedFormula.relabel]
 
 @[simp]
 theorem fol.Term.relabelAux_sumInl {n k} (g : Attribute → Attribute ⊕ (Fin n)) {i a : Attribute} :
@@ -73,7 +22,35 @@ theorem fol.Term.relabelAux_sumInl {n k} (g : Attribute → Attribute ⊕ (Fin n
       simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq]
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft [folStruc] {k n} (g : Attribute → Attribute ⊕ (Fin n)) (t : fol.Term (Attribute ⊕ Fin k)) :
+theorem fol.Term.relabel_varFinsetLeft_id [folStruc] {k n} {f : Fin k → Fin n} {t : fol.Term (Attribute ⊕ Fin k)} :
+  (Term.relabel (Sum.map id f) t).varFinsetLeft = t.varFinsetLeft := by
+    ext a
+    unfold varFinsetLeft
+    apply Iff.intro
+    · intro a_1
+      split
+      next x i => simp_all only [relabel, Sum.map_inl, id_eq, Finset.mem_singleton]
+      next x _i => simp_all only [relabel, Sum.map_inr, Finset.not_mem_empty]
+      next x l _f ts => exact False.elim (folStruc_empty_fun _f)
+    · intro a_1
+      split
+      next x i heq =>
+        simp_all only [Finset.mem_singleton]
+        split at a_1
+        next x_1 i_1 => simp_all only [relabel, Sum.map_inl, id_eq, var.injEq, Sum.inl.injEq, Finset.mem_singleton]
+        next x_1 _i => simp_all only [relabel, Sum.map_inr, var.injEq, reduceCtorEq]
+        next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
+      next x _i heq =>
+        simp_all only [Finset.not_mem_empty]
+        split at a_1
+        next x_1 i => simp_all only [relabel, Sum.map_inl, id_eq, var.injEq, reduceCtorEq]
+        next x_1 _i_1 => simp_all only [relabel, Sum.map_inr, var.injEq, Sum.inr.injEq, Finset.not_mem_empty]
+        next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
+      next x l _f ts heq =>
+        exact False.elim (folStruc_empty_fun _f)
+
+@[simp]
+theorem fol.Term.relabel_varFinsetLeft_relabelAux [folStruc] {k n} (g : Attribute → Attribute ⊕ (Fin n)) (t : fol.Term (Attribute ⊕ Fin k)) :
   (Term.relabel (BoundedFormula.relabelAux g _) t).varFinsetLeft = t.varFinsetLeft.pimage (λ a => (g a).getLeft?) := by
     simp [Finset.pimage]
     ext a
@@ -149,25 +126,17 @@ theorem fol.Term.relabel_varFinsetLeft [folStruc] {k n} (g : Attribute → Attri
           exact False.elim (folStruc_empty_fun _f)
 
 @[simp]
-theorem BoundedFormula.exs_freeVarFinset {k} (φ : fol.BoundedFormula Attribute k) :
-  (φ.exs).freeVarFinset = φ.freeVarFinset := by
-    induction k
-    . simp [BoundedFormula.exs]
-    . simp [BoundedFormula.exs]
-      simp_all only [BoundedFormula.freeVarFinset, Finset.union_empty]
-
-@[simp]
 theorem BoundedFormula.relabel_freeVarFinset [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : fol.BoundedFormula Attribute k) :
   (φ.relabel g).freeVarFinset = (φ.freeVarFinset.pimage (λ a => (g a).getLeft?)) := by
-    simp_all only [BoundedQuery.relabel_formula, Finset.pimage]
+    simp_all only [Finset.pimage]
     induction φ
     . simp_all only [BoundedFormula.relabel_falsum, BoundedFormula.freeVarFinset.eq_1, BoundedFormula.freeVarFinset,
       Finset.biUnion_empty]
     . simp_all only [BoundedFormula.relabel, BoundedFormula.mapTermRel,
-        BoundedFormula.freeVarFinset, fol.Term.relabel_varFinsetLeft]
+        BoundedFormula.freeVarFinset, fol.Term.relabel_varFinsetLeft_relabelAux]
       aesop
     . simp_all only [BoundedFormula.relabel, BoundedFormula.mapTermRel,
-        BoundedFormula.freeVarFinset, fol.Term.relabel_varFinsetLeft]
+        BoundedFormula.freeVarFinset, fol.Term.relabel_varFinsetLeft_relabelAux]
       aesop
     . aesop
     . simp_all only [BoundedFormula.relabel_all, Nat.add_eq, BoundedFormula.freeVarFinset]

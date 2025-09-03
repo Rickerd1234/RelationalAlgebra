@@ -8,7 +8,7 @@ namespace FOL
 -- Query syntax
 inductive BoundedQuery : ℕ → Type
   | R {n} : (dbs : DatabaseSchema) → (rn : RelationName) → (Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) → BoundedQuery n
-  | eq {n} : (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) → BoundedQuery n
+  | tEq {n} : (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) → BoundedQuery n
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
   -- | all {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
@@ -16,17 +16,61 @@ inductive BoundedQuery : ℕ → Type
 
 abbrev Query := BoundedQuery 0
 
+def BoundedQuery.isTEq {n} : BoundedQuery n → Prop
+  | tEq _ _ => True
+  | _ => False
+
+@[simp]
+theorem BoundedQuery.isTEq_rel {n} {dbs : DatabaseSchema} {rn : RelationName} {vMap : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)} :
+  (R dbs rn vMap).isTEq = False := by rfl
+
+@[simp]
+theorem BoundedQuery.isTEq_tEq {n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} : (tEq t₁ t₂).isTEq = True := rfl
+
+@[simp]
+theorem BoundedQuery.isTEq_and {n} (q₁ q₂ : BoundedQuery n) : (q₁.and q₂).isTEq = False := rfl
+
+@[simp]
+theorem BoundedQuery.isTEq_ex {n} (q : BoundedQuery (n + 1)) : q.ex.isTEq = False := rfl
+
+@[simp]
+theorem BoundedQuery.isTEq_exists {n} {q : BoundedQuery n} (h : q.isTEq) : ∃ t₁ t₂, q = tEq t₁ t₂  := by
+  simp_all [isTEq];
+  split at h
+  next x t₁ t₂ => simp_all only [tEq.injEq, exists_and_left, exists_eq', and_true]
+  next x x_1 => simp_all only [implies_true]
+
 def BoundedQuery.exs : ∀ {n}, BoundedQuery n → Query
   | 0, φ => φ
   | _n + 1, φ => φ.ex.exs
 
+@[simp]
+theorem BoundedQuery.exs_0 (q : BoundedQuery 0) : q.exs = q := rfl
+
 def BoundedQuery.toFormula {n : ℕ} : (q : BoundedQuery n) → fol.BoundedFormula Attribute n
   | .R dbs name vMap => Relations.boundedFormula (fol.Rel dbs name) vMap
-  | .eq t₁ t₂ => .equal t₁ t₂
+  | .tEq t₁ t₂ => .equal t₁ t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
   -- | .all q => .all q.toFormula
   -- | .not q => .not q.toFormula
+
+@[simp]
+theorem BoundedQuery.toFormula_rel {n} {dbs : DatabaseSchema} {rn : RelationName} {vMap : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)} :
+  (R dbs rn vMap).toFormula = (Relations.boundedFormula (fol.Rel dbs rn) vMap) := by
+    rfl
+
+@[simp]
+theorem BoundedQuery.toFormula_tEq {n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} : (tEq t₁ t₂).toFormula = .equal t₁ t₂ := by
+  rfl
+
+@[simp]
+theorem BoundedQuery.toFormula_and {n} (q₁ q₂ : BoundedQuery n) : (q₁.and q₂).toFormula = q₁.toFormula ⊓ q₂.toFormula := by
+  rfl
+
+@[simp]
+theorem BoundedQuery.toFormula_ex {n} (q : BoundedQuery (n + 1)) : q.ex.toFormula = q.toFormula.ex := by
+  rfl
 
 @[simp]
 theorem BoundedQuery.toFormula_exs {n} (q : BoundedQuery n) : q.exs.toFormula = q.toFormula.exs := by
@@ -34,78 +78,3 @@ theorem BoundedQuery.toFormula_exs {n} (q : BoundedQuery n) : q.exs.toFormula = 
   . rfl
   . rename_i a
     apply a
-
-def BoundedQuery.Realize {n : ℕ} [folStruc] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
-  | q, ov, iv => q.toFormula.Realize ov iv
-
-def BoundedQuery.RealizeDom {n : ℕ} (dbi : DatabaseInstance) [folStruc] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
-  | ex q, ov, iv  => (∃a ∈ dbi.domain, q.toFormula.Realize ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
-  -- | all q, ov, iv => (∀a ∈ dbi.domain, q.toFormula.Realize ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
-  | q, ov, iv     => q.toFormula.Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain
-
-nonrec def Query.Realize (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Attribute → Part Value) : Prop :=
-  φ.RealizeDom dbi v (λ _ => .none)
-
-@[simp]
-theorem query_realize_def {n} [folStruc] {q : BoundedQuery n} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  :  (q.Realize ov iv ↔ q.toFormula.Realize ov iv) := by
-    simp_all [BoundedQuery.Realize, BoundedQuery.toFormula]
-
-@[simp]
-theorem query_realize_rel [folStruc] {n : ℕ} {dbi : DatabaseInstance} {rn : RelationName} {vMap : Fin (dbi.schema rn).card → fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.R dbi.schema rn vMap).RealizeDom dbi ov iv ↔ (Relations.boundedFormula (fol.Rel dbi.schema rn) vMap).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
-    simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
-
-@[simp]
-theorem query_realize_eq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.eq t₁ t₂).RealizeDom dbi ov iv ↔ t₁.realize (Sum.elim ov iv) = t₂.realize (Sum.elim ov iv) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
-    simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula, BoundedFormula.realize_bdEqual]
-    aesop
-
-@[simp]
-theorem query_realize_and [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q1 : BoundedQuery n} {q2 : BoundedQuery n} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (q1.and q2).RealizeDom dbi ov iv ↔ (q1.Realize ov iv ∧ q2.Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain) := by
-    simp_all only [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
-    aesop
-
--- @[simp]
--- theorem query_realize_not [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : BoundedQuery n} {ov : Variable →. Value} {iv : Fin n →. Value}
---   : (q.not).RealizeDom dbi ov iv ↔ ¬(q.Realize ov iv) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
---     simp_all [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
-
--- @[simp]
--- theorem query_realize_all [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : BoundedQuery (n + 1)} {ov : Variable →. Value} {iv : Fin n →. Value}
---   : (q.all).RealizeDom dbi ov iv ↔ (∀ a ∈ dbi.domain, q.RealizeDom dbi ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
---     simp_all [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
-
-@[simp]
-theorem query_realize_ex [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : BoundedQuery (n + 1)} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (q.ex).RealizeDom dbi ov iv ↔ (∃ a ∈ dbi.domain, q.Realize ov (Fin.snoc iv a)) ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
-    simp_all [BoundedQuery.RealizeDom, BoundedQuery.Realize, BoundedQuery.toFormula]
-
--- Evaluation auxiliaries
-def BoundedQuery.attributesInQuery {n : ℕ} (q : BoundedQuery n) : Finset Attribute := q.toFormula.freeVarFinset
-
-def BoundedQuery.safeAttributes {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
-  | .R dbs name vMap => (R dbs name vMap).attributesInQuery
-  | .eq t₁ t₂ => ∅
-  | .and q1 q2 => q1.safeAttributes ∪ q2.safeAttributes
-  | .ex q => q.safeAttributes
-
-theorem BoundedQuery.safeAtts_sub_attributesInQuery {n} (q : BoundedQuery n) : q.safeAttributes ⊆ q.attributesInQuery := by
-  induction q
-  all_goals simp_all [BoundedQuery.safeAttributes, attributesInQuery, BoundedQuery.toFormula, Finset.union_subset_union]
-
-theorem BoundedQuery.safeAtts_sub_attributesInQuery_mem {x n} (q : BoundedQuery n) : x ∈ q.safeAttributes → x ∈ q.attributesInQuery :=
-  fun a ↦ BoundedQuery.safeAtts_sub_attributesInQuery q a
-
-def BoundedQuery.isWellTyped {n} (q : BoundedQuery n) : Prop := q.safeAttributes = q.attributesInQuery
-
-structure EvaluableQuery where --@TODO Reconsider this
-  query : Query
-  wellTyped : query.isWellTyped
-
-
-@[simp]
-theorem is_well_typed_query_def {q : EvaluableQuery}
-  :  q.query.safeAttributes = q.query.attributesInQuery := q.wellTyped
