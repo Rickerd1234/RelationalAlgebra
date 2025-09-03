@@ -3,15 +3,15 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Defs
 open RM
 
 theorem ra_to_fol_eval [struc : FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  raQ.evaluate dbi h = (ra_to_fol_def raQ h).evaluate dbi := by
-    simp [FOL.EvaluableQuery.evaluate, RA.Query.evaluate, FOL.EvaluableQuery.schema]
-    apply And.intro
+  raQ.evaluate dbi h = (ra_to_fol_query raQ dbi.schema).evaluate (by aesop) dbi := by
+    simp [FOL.Query.evaluate, RA.Query.evaluate, FOL.BoundedQuery.schema]
+    -- apply And.intro
     -- . simp [ra_to_fol_outFn_eq_schema h, ra_to_fol_def]
     -- . induction raQ
     --   all_goals (
     --     simp only [RA.Query.isWellTyped] at h
     --     simp only [ra_to_fol_def]
-    --     simp_all only [RA.Query.evaluateT, FOL.EvaluableQuery.evaluateT, ra_to_fol_query_def,
+    --     simp_all only [RA.Query.evaluateT, FOL.EvaluableQuery.evaluateT, ra_to_fol_query,
     --       ra_to_fol_outFn_def, id_eq]
     --     simp
     --   )
@@ -91,10 +91,11 @@ theorem ra_to_fol_eval [struc : FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.is
     all_goals sorry
 
 theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  ∃folQ : FOL.EvaluableQuery, raQ.evaluate dbi h = folQ.evaluate dbi := by
-    use ra_to_fol_def raQ h
+  ∃folQ : FOL.Query, ∃(h' : folQ.isWellTyped), raQ.evaluate dbi h = folQ.evaluate h' dbi := by
+    use ra_to_fol_query raQ dbi.schema
     simp [ra_to_fol_eval]
+    exact ra_to_fol_query.isWellTyped raQ dbi.schema h
 
 
-theorem fol_to_ra [FOL.folStruc] {dbi} (folQ : FOL.EvaluableQuery) :
-  ∃raQ : RA.Query, (h : raQ.isWellTyped dbi.schema) → raQ.evaluate dbi h = folQ.evaluate dbi := by sorry
+theorem fol_to_ra [FOL.folStruc] {dbi} (folQ : FOL.Query) (h : folQ.isWellTyped) :
+  ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate h dbi := by sorry

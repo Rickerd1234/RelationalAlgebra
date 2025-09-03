@@ -9,7 +9,7 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute �
     (h : ∀ n, BoundedQuery (g (n + 1)) → BoundedQuery (g n + 1)) :
     ∀ {n}, BoundedQuery n → BoundedQuery (g n)
   | _n, .R dbs rn vMap  => .R dbs rn (λ i => ft _ (vMap i))
-  | _n, .tEq a b         => .tEq (ft _ a) (ft _ b)
+  | _n, .tEq q a b      => .tEq (q.mapTermRel ft h) (ft _ a) (ft _ b)
   | _n, .and q1 q2      => .and (q1.mapTermRel ft h) (q2.mapTermRel ft h)
   | n,  .ex q           => (h n (q.mapTermRel ft h)).ex
   -- | n,  .all q          => (h n (q.mapTermRel ft h)).all
@@ -19,7 +19,7 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute �
 @[simp]
 def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery m → BoundedQuery n
   | _m, _n, h, .R dbs rn vMap => .R dbs rn (Term.relabel (Sum.map id (Fin.castLE h)) ∘ vMap)
-  | _m, _n, h, .tEq a b => .tEq (a.relabel (Sum.map id (Fin.castLE h))) (b.relabel (Sum.map id (Fin.castLE h)))
+  | _m, _n, h, .tEq q a b => .tEq (q.castLE h) (a.relabel (Sum.map id (Fin.castLE h))) (b.relabel (Sum.map id (Fin.castLE h)))
   | _m, _n, h, .and q₁ q₂ => (q₁.castLE h).and (q₂.castLE h)
   | _m, _n, h, .ex q => (q.castLE (add_le_add_right h 1)).ex
   -- | _m, _n, h, .all q => (q.castLE (add_le_add_right h 1)).all
@@ -36,7 +36,7 @@ theorem BoundedQuery.castLE_formula {m n} (_h : m ≤ n) (φ : BoundedQuery m) :
 theorem castLE_rfl {n} (h : n ≤ n) (φ : BoundedQuery n) : φ.castLE h = φ := by
   induction φ with
   | R => simp [Fin.castLE_of_eq]
-  | tEq => simp [Fin.castLE_of_eq]
+  | tEq _ _ _ ih => simp [Fin.castLE_of_eq, ih]
   | and _ _ ih₁ ih₂ => simp [Fin.castLE_of_eq, ih₁, ih₂]
   | ex _ ih => simp [Fin.castLE_of_eq, ih]
 
@@ -64,8 +64,8 @@ theorem BoundedQuery.relabel.R_def (g : Attribute → Attribute ⊕ (Fin n)) :
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel.tEq_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (t₁ t₂ : fol.Term (Attribute ⊕ (Fin k))) :
-  (tEq t₁ t₂).relabel g = tEq (t₁.relabel (BoundedFormula.relabelAux g _)) (t₂.relabel (BoundedFormula.relabelAux g _)) := by
+theorem BoundedQuery.relabel.tEq_def (g : Attribute → Attribute ⊕ (Fin n)) {k} {q : BoundedQuery k} (t₁ t₂ : fol.Term (Attribute ⊕ (Fin k))) :
+  (tEq q t₁ t₂).relabel g = tEq (q.relabel g) (t₁.relabel (BoundedFormula.relabelAux g _)) (t₂.relabel (BoundedFormula.relabelAux g _)) := by
     rfl
 
 @[simp]

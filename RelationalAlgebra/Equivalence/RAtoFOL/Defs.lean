@@ -5,19 +5,19 @@ open RM
 
 -- @TODO: for negative select add (λ q => ite (pos) q (.not q)) to .s
 
-noncomputable def ra_to_fol_query_def [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query :=
+noncomputable def ra_to_fol_query [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query :=
   match raQ with
   | .R rn => .R dbs rn (FOL.outVar ∘ (dbs rn).fromIndex)
-  | .s a b pos sq => (ra_to_fol_query_def sq dbs).and (.tEq (FOL.outVar a) (FOL.outVar b))
-  | .p rs sq => projectQuery (ra_to_fol_query_def sq dbs) rs
-  | .j sq1 sq2 => .and (ra_to_fol_query_def sq1 dbs) (ra_to_fol_query_def sq2 dbs)
-  | .r f sq => (ra_to_fol_query_def sq dbs).relabel (Sum.inl ∘ f)
+  | .s a b pos sq => (.tEq (ra_to_fol_query sq dbs) (FOL.outVar a) (FOL.outVar b))
+  | .p rs sq => projectQuery (ra_to_fol_query sq dbs) rs
+  | .j sq1 sq2 => .and (ra_to_fol_query sq1 dbs) (ra_to_fol_query sq2 dbs)
+  | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
 
 @[simp]
 theorem ra_to_fol_query_schema [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) :
-  (ra_to_fol_query_def raQ dbs).schema = raQ.schema dbs := by
+  (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     induction raQ
-    all_goals simp_all [FOL.BoundedQuery.schema, ra_to_fol_query_def]
+    all_goals simp_all [FOL.BoundedQuery.schema, ra_to_fol_query]
     case R rn =>
       simp_all only [FOL.BoundedQuery.attributesInQuery, FOL.BoundedQuery.toFormula,
         FirstOrder.Language.Relations.boundedFormula,
@@ -36,50 +36,28 @@ theorem ra_to_fol_query_schema [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSc
     case p rs sq ih => sorry
     case r f sq ih => sorry
 
+@[simp]
 theorem ra_to_fol_query.isWellTyped [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
-  (ra_to_fol_query_def raQ dbs).isWellTyped := by
+  (ra_to_fol_query raQ dbs).isWellTyped := by
     induction raQ
-    -- all_goals (
-      -- simp_all only [FOL.BoundedQuery.isWellTyped, ra_to_fol_query_def, FOL.BoundedQuery.safeAttributes,
-      --   FOL.BoundedQuery.attributesInQuery, FOL.BoundedQuery.toFormula, RA.Query.isWellTyped]
-    -- )
-    case s a b pos sq ih =>
-      simp_all only [FOL.BoundedQuery.isWellTyped, ra_to_fol_query_def, FOL.BoundedQuery.schema,
-        FOL.BoundedQuery.attributesInQuery, FOL.BoundedQuery.toFormula, RA.Query.isWellTyped]
-      simp_all [FOL.outVar, ← ra_to_fol_query_schema]
-      obtain ⟨left, left_1, left_2, right⟩ := h
-      have z1 := FOL.BoundedQuery.schema_sub_attributesInQuery_mem (ra_to_fol_query_def sq dbs) left_1
-      have z2 := FOL.BoundedQuery.schema_sub_attributesInQuery_mem (ra_to_fol_query_def sq dbs) left_2
-      simp_all [FOL.BoundedQuery.attributesInQuery]
-      apply Finset.union_subset_iff.mpr
-      simp_all only [Finset.singleton_subset_iff, and_self]
+    case R dbs rn => exact h
+
+    case s q a b pos sq ih =>
+      simp_all only [RA.Query.isWellTyped, ← ra_to_fol_query_schema, ne_eq, ra_to_fol_query,
+        FOL.outVar, FOL.BoundedQuery.isWellTyped.tEq_def, FirstOrder.Language.Term.varFinsetLeft,
+        FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery,
+        FOL.BoundedQuery.attributesInQuery, Finset.union_subset_iff, Finset.singleton_subset_iff,
+        true_and, forall_const, and_self]
 
     case p rs sq ih =>
-      simp [RA.Query.isWellTyped] at h
-      obtain ⟨left, right⟩ := h
-      simp_all [FOL.outVar, ← ra_to_fol_query_schema, FOL.BoundedQuery.isWellTyped, ra_to_fol_query_def, FOL.BoundedQuery.schema, projectQuery, FOL.BoundedQuery.attributesInQuery]
-      ext a
-      simp_all only [Finset.mem_pimage, Part.mem_ofOption, Option.mem_def,
-        Sum.getLeft?_eq_some_iff]
-      rw [← ih] at right
-      apply Iff.intro
-      · intro a_1
-        use a
-        simp_all only [ra_to_fol_query_schema]
-        apply And.intro
-        · sorry
-        · sorry
-      · intro a_1
-        obtain ⟨w, h⟩ := a_1
-        obtain ⟨left_1, right_1⟩ := h
-        rw [← ih] at left_1
-        sorry
+      simp_all only [RA.Query.isWellTyped, ← ra_to_fol_query_schema, ra_to_fol_query,
+        projectQuery, FOL.BoundedQuery.attributesInQuery, Nat.add_zero,
+        FOL.BoundedQuery.isWellTyped.exs_def, FOL.BoundedQuery.relabel_isWellTyped]
 
-    all_goals sorry
+    case j q₁ q₂ q₁_ih q₂_ih =>
+      simp_all only [RA.Query.isWellTyped, ra_to_fol_query,
+        FOL.BoundedQuery.isWellTyped.and_def, and_self]
 
-open FirstOrder Language
-
-noncomputable def ra_to_fol_def [FOL.folStruc] {dbs} (raQ : RA.Query) (h : raQ.isWellTyped dbs) : FOL.EvaluableQuery := ⟨
-  ra_to_fol_query_def raQ dbs,
-  ra_to_fol_query.isWellTyped raQ dbs h
-⟩
+    case r f q q_ih =>
+      simp_all only [RA.Query.isWellTyped, ra_to_fol_query,
+        FOL.BoundedQuery.relabel_isWellTyped]

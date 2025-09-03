@@ -7,7 +7,7 @@ namespace FOL
 -- Realize a bounded query using Attribute and Fin n maps
 def BoundedQuery.Realize {n : ℕ} [folStruc] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
   | R dbs rn t, ov, iv => (R dbs rn t).toFormula.Realize ov iv ∧ ∀i : Fin (Finset.card (dbs rn)), ((t i).realize (Sum.elim ov iv)).Dom
-  | tEq t₁ t₂, ov, iv => (tEq t₁ t₂).toFormula.Realize ov iv ∧ (t₁.realize (Sum.elim ov iv)).Dom ∧ (t₂.realize (Sum.elim ov iv)).Dom
+  | tEq q t₁ t₂, ov, iv => (tEq q t₁ t₂).toFormula.Realize ov iv ∧ (t₁.realize (Sum.elim ov iv)).Dom ∧ (t₂.realize (Sum.elim ov iv)).Dom
   | q, ov, iv => q.toFormula.Realize ov iv
 
 @[simp]
@@ -16,8 +16,8 @@ theorem query_realize_rel_def [folStruc] {n : ℕ} {dbs : DatabaseSchema} {rn : 
     rfl
 
 @[simp]
-theorem query_realize_tEq_def [folStruc] {n : ℕ} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.tEq t₁ t₂).Realize ov iv ↔ (BoundedQuery.tEq t₁ t₂).toFormula.Realize ov iv ∧ (t₁.realize (Sum.elim ov iv)).Dom ∧ (t₂.realize (Sum.elim ov iv)).Dom := by
+theorem query_realize_tEq_def [folStruc] {n : ℕ} {q : BoundedQuery n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (BoundedQuery.tEq q t₁ t₂).Realize ov iv ↔ (BoundedQuery.tEq q t₁ t₂).toFormula.Realize ov iv ∧ (t₁.realize (Sum.elim ov iv)).Dom ∧ (t₂.realize (Sum.elim ov iv)).Dom := by
     rfl
 
 @[simp]
@@ -45,8 +45,8 @@ theorem query_realize_rel [folStruc] {n : ℕ} {dbi : DatabaseInstance} {rn : Re
     rfl
 
 @[simp]
-theorem query_realize_tEq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (BoundedQuery.tEq t₁ t₂).RealizeDom dbi ov iv ↔ (BoundedQuery.tEq t₁ t₂).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
+theorem query_realize_tEq [folStruc] {n : ℕ} {dbi : DatabaseInstance} {q : BoundedQuery n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (BoundedQuery.tEq q t₁ t₂).RealizeDom dbi ov iv ↔ (BoundedQuery.tEq q t₁ t₂).Realize ov iv ∧ ov.ran ⊆ dbi.domain ∧ iv.ran ⊆ dbi.domain := by
     rfl
 
 @[simp]

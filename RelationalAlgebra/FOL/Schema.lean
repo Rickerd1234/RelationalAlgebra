@@ -24,8 +24,8 @@ theorem BoundedQuery.attributesInQuery.R_def [folStruc] {n : ℕ} (t : Fin (dbs 
       Set.iUnion_true, Set.mem_iUnion, Finset.mem_coe, Set.mem_setOf_eq]
 
 @[simp]
-theorem BoundedQuery.attributesInQuery.tEq_def {n : ℕ} (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
-  (tEq t₁ t₂).attributesInQuery = t₁.varFinsetLeft ∪ t₂.varFinsetLeft := by simp_all [attributesInQuery, toFormula]
+theorem BoundedQuery.attributesInQuery.tEq_def {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
+  (tEq q t₁ t₂).attributesInQuery = q.attributesInQuery ∪ t₁.varFinsetLeft ∪ t₂.varFinsetLeft := by simp_all [attributesInQuery, toFormula]
 
 @[simp]
 theorem BoundedQuery.attributesInQuery.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) :
@@ -43,13 +43,14 @@ theorem BoundedQuery.attributesInQuery.exs_def {n : ℕ} (q : BoundedQuery n) :
 -- schema of query
 def BoundedQuery.schema {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
   | .R dbs name vMap => (R dbs name vMap).attributesInQuery
-  | .tEq t₁ t₂ => ∅
+  | .tEq q _ _ => q.schema
   | .and q1 q2 => q1.schema ∪ q2.schema
   | .ex q => q.schema
 
 theorem BoundedQuery.schema.sub_attributesInQuery {n} (q : BoundedQuery n) : q.schema ⊆ q.attributesInQuery := by
   induction q
   all_goals simp_all [BoundedQuery.schema, attributesInQuery, BoundedQuery.toFormula, Finset.union_subset_union]
+  . rw [Finset.subset_iff]; aesop
 
 theorem BoundedQuery.schema.sub_attributesInQuery_mem {x n} (q : BoundedQuery n) : x ∈ q.schema → x ∈ q.attributesInQuery :=
   fun a ↦ BoundedQuery.schema.sub_attributesInQuery q a
@@ -60,8 +61,8 @@ theorem BoundedQuery.schema.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card �
     simp_all [BoundedQuery.schema]
 
 @[simp]
-theorem BoundedQuery.schema.tEq_def {n : ℕ} (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
-  (tEq t₁ t₂).schema = ∅ := by simp_all [BoundedQuery.schema]
+theorem BoundedQuery.schema.tEq_def {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
+  (tEq q t₁ t₂).schema = q.schema := by simp_all [BoundedQuery.schema]
 
 @[simp]
 theorem BoundedQuery.schema.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) :
