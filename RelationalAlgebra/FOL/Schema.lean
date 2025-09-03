@@ -16,12 +16,20 @@ theorem BoundedFormula.exs.freeVarFinset {k} (φ : fol.BoundedFormula Attribute 
 def BoundedQuery.attributesInQuery {n : ℕ} (q : BoundedQuery n) : Finset Attribute := q.toFormula.freeVarFinset
 
 @[simp]
-theorem BoundedQuery.attributesInQuery.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
-  (R dbs rn t).attributesInQuery = {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft} := by
-    ext x
+theorem BoundedQuery.attributesInQuery.R_def_mem [folStruc] {n : ℕ} {x : Attribute} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
+  x ∈ (R dbs rn t).attributesInQuery ↔ ∃i : Fin (dbs rn).card, x ∈ (t i).varFinsetLeft := by
     simp_all only [attributesInQuery, toFormula, Relations.boundedFormula,
-      BoundedFormula.freeVarFinset.eq_3, Finset.coe_biUnion, Finset.coe_univ, Set.mem_univ,
-      Set.iUnion_true, Set.mem_iUnion, Finset.mem_coe, Set.mem_setOf_eq]
+      BoundedFormula.freeVarFinset, Finset.mem_biUnion, Finset.mem_univ, true_and]
+
+instance BoundedQuery.attributesInQuery.R_fintype [folStruc] {rn} {dbs : DatabaseSchema} {t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)} :
+  Fintype {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft} := by
+    apply Fintype.ofFinset ((BoundedQuery.R dbs rn t).attributesInQuery)
+    simp_all [BoundedQuery.attributesInQuery.R_def_mem]
+
+@[simp]
+theorem BoundedQuery.attributesInQuery.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
+  (R dbs rn t).attributesInQuery = {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft}.toFinset := by
+    exact Eq.symm (Set.toFinset_ofFinset (R dbs rn t).attributesInQuery R_fintype._proof_2)
 
 @[simp]
 theorem BoundedQuery.attributesInQuery.tEq_def {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
@@ -57,8 +65,7 @@ theorem BoundedQuery.schema.sub_attributesInQuery_mem {x n} (q : BoundedQuery n)
 
 @[simp]
 theorem BoundedQuery.schema.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
-  (R dbs rn t).schema = {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft} := by
-    simp_all [BoundedQuery.schema]
+  (R dbs rn t).schema = (R dbs rn t).attributesInQuery := by rfl
 
 @[simp]
 theorem BoundedQuery.schema.tEq_def {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
