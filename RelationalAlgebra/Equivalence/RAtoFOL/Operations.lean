@@ -55,7 +55,7 @@ theorem projectAttribute_not_mem {folQ rs a'} (h : a' ∈ folQ.attributesInQuery
     simp
 
 def projectQuery (folQ : FOL.Query) (rs : RelationSchema) : FOL.Query :=
-  (folQ.relabel (λ a' => (projectAttribute folQ rs a'))).exs
+  (folQ.relabel (projectAttribute folQ rs)).exs
 
 @[simp]
 theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.attributesInQuery) : (projectQuery folQ rs).attributesInQuery = rs := by

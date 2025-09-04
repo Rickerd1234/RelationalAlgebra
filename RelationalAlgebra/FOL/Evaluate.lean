@@ -7,7 +7,7 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-theorem realize_relation_dom_q[folStruc] {a dbi} {t : Tuple} (q : Query)
+theorem realize_relation_dom_q [folStruc] {a dbi} {t : Tuple} (q : Query)
   (h1 : a ∈ t.Dom) (h2 : q.Realize dbi t) (h3 : q.isWellTyped)
   : a ∈ q.schema := by
     simp_all [PFun.mem_dom]
