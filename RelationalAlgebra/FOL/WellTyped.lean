@@ -9,14 +9,14 @@ theorem Finset.empty.contra (s₁ : Finset Attribute) : (s₁ ≠ ∅) → (s₁
 namespace FOL
 
 def BoundedQuery.isWellTyped {n} : BoundedQuery n → Prop
-  | R _ _ _      => True
+  | R _ _ _   => True
   | tEq q t₁ t₂  => q.isWellTyped ∧ t₁.varFinsetLeft ∪ t₂.varFinsetLeft ⊆ q.schema
   | and q₁ q₂    => q₁.isWellTyped ∧ q₂.isWellTyped
   | ex q         => q.isWellTyped
 
 @[simp]
-theorem BoundedQuery.isWellTyped.R_def [folStruc] {dbs rn n} {t : Fin (Finset.card (dbs rn)) → fol.Term (Attribute ⊕ Fin n)} :
-  (R dbs rn t).isWellTyped := by simp [isWellTyped]
+theorem BoundedQuery.isWellTyped.R_def [folStruc] {dbs rn n} {f : Fin (Finset.card (dbs rn)) → fol.Term (Attribute ⊕ Fin n)} :
+  (R dbs rn f).isWellTyped := by simp [isWellTyped]
 
 @[simp]
 theorem BoundedQuery.isWellTyped.tEq_def [folStruc] {n} {q : BoundedQuery n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} :

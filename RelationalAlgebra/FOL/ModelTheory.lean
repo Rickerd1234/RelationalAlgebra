@@ -36,8 +36,8 @@ def ArityToTuple {dbs: DatabaseSchema} {rn : RelationName} (va : Fin (dbs rn).ca
 theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Part Value}
   (h: ArityToTuple va ∈ (dbi.relations rn).tuples)
   : (ArityToTuple va att).Dom ↔ att ∈ dbi.schema rn := by
-    simp_all [DatabaseInstance.validSchema]
     have h2 := RelationInstance.validSchema (dbi.relations rn) (ArityToTuple va) h
+    simp_all [DatabaseInstance.validSchema]
     exact Iff.symm (Eq.to_iff (congrFun (id (Eq.symm h2)) att))
 
 @[simp]

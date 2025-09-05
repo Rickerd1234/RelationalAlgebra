@@ -47,8 +47,7 @@ theorem projectAttribute_not_mem {folQ rs a'} (h : a' ∈ folQ.attributesInQuery
         := by
           simp_all
           apply RelationSchema.index?_isSome_eq_iff.mp
-          apply RelationSchema.index?_isSome
-          simp_all only [Finset.mem_sdiff, not_false_eq_true, and_true]
+          simp_all only [RelationSchema.index?_isSome, Finset.mem_sdiff, not_false_eq_true, and_self]
 
     use x
     rw [z2]

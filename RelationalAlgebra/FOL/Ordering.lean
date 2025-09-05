@@ -48,22 +48,11 @@ def RelationSchema.index? (rs : RelationSchema) (att : Attribute) : Option (Fin 
 
 -- Proof usefull properties for index?
 @[simp]
-theorem RelationSchema.index?_isSome {rs : RelationSchema} {att : Attribute} : (h : att ∈ rs) → (rs.index? att).isSome := by
+theorem RelationSchema.index?_isSome {rs : RelationSchema} {att : Attribute} : (rs.index? att).isSome ↔ att ∈ rs := by
   simp [← RelationSchema.ordering_mem, RelationSchema.index?]
   induction (RelationSchema.ordering rs) with
-  | nil =>
-    intro h
-    simp_all only [List.not_mem_nil]
-  | cons a as tail_ih =>
-    intro h
-    simp_all only [List.mem_cons, List.length_cons, List.finIdxOf?_cons, beq_iff_eq, Fin.zero_eta]
-    cases h with
-    | inl att_is_a => simp_all only [att_is_a, ↓reduceIte, Option.isSome_some]
-    | inr h_2 =>
-      simp_all only [forall_const]
-      split
-      next h => simp_all only [h, Option.isSome_some]
-      next h => simp_all only [Option.isSome_map']
+  | nil => simp_all
+  | cons a as tail_ih => aesop
 
 @[simp]
 theorem RelationSchema.index?_isSome_eq_iff {rs : RelationSchema} {att : Attribute} : (rs.index? att).isSome ↔ ∃i, rs.index? att = .some i := by
@@ -75,7 +64,7 @@ theorem RelationSchema.index?_none {rs : RelationSchema} {att : Attribute} : rs.
 
 -- Add index to RelationSchema
 def RelationSchema.index {rs : RelationSchema} {att : Attribute} (h : att ∈ rs) : Fin rs.card :=
-  (RelationSchema.index? rs att).get (RelationSchema.index?_isSome h)
+  (RelationSchema.index? rs att).get (index?_isSome.mpr h)
 
 -- Proof usefull properties for index
 @[simp]
@@ -154,16 +143,10 @@ theorem RelationSchema.index_inj {rs : RelationSchema} {i j : Attribute} (h1 : i
 
 @[simp]
 theorem RelationSchema.index_fromIndex_inj {rs : RelationSchema} {i j : Fin rs.card} : rs.index? (RelationSchema.fromIndex i) = rs.index? (RelationSchema.fromIndex j) ↔ i = j := by
-  have z := RelationSchema.fromIndex_mem i
-  have z2 := rs.index?_isSome z
-  rw [RelationSchema.index?_isSome_eq_iff] at z2
-  simp_all only [fromIndex_mem]
-  obtain ⟨w, h⟩ := z2
-  simp_all only [Option.some.injEq]
+  simp_all only [index?_inj, fromIndex_mem, not_true_eq_false, and_self, or_false]
   apply Iff.intro
   · intro a
-    simp_all only [index?_inj, fromIndex_mem, not_true_eq_false, and_self, or_false]
-    exact fromIndex_inj.mp h
+    exact fromIndex_inj.mp a
   · intro a
     subst a
     simp_all only
