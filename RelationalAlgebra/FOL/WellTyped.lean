@@ -9,7 +9,7 @@ theorem Finset.empty.contra (s₁ : Finset Attribute) : (s₁ ≠ ∅) → (s₁
 namespace FOL
 
 def BoundedQuery.isWellTyped {n} : BoundedQuery n → Prop
-  | R _ _ _   => True
+  | R dbs rn f   => True
   | tEq q t₁ t₂  => q.isWellTyped ∧ t₁.varFinsetLeft ∪ t₂.varFinsetLeft ⊆ q.schema
   | and q₁ q₂    => q₁.isWellTyped ∧ q₂.isWellTyped
   | ex q         => q.isWellTyped
