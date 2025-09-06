@@ -176,5 +176,25 @@ theorem RelationSchema.fromIndex_index_eq {att} {rs : RelationSchema} (h : att �
     simp_all only [Fin.coe_cast]
   next opt heq_1 => simp_all only [List.findFinIdx?_eq_none_iff, beq_iff_eq, reduceCtorEq]
 
+@[simp]
+theorem RelationSchema.index_fromIndex_eq {rs : RelationSchema} (i : Fin rs.card) : RelationSchema.index (RelationSchema.fromIndex_mem i) = i := by
+  unfold fromIndex index index? List.finIdxOf? Option.map Option.get
+  simp_all only [Option.isSome_some, List.get_eq_getElem, Fin.coe_cast]
+  induction i
+  simp_all only [Fin.cast_mk]
+  split
+  rename_i x x_1 x_2 x_3 heq heq_1
+  simp_all only [Fin.cast_mk, List.get_eq_getElem, heq_eq_eq]
+  simp_all only [Option.isSome_some]
+  split at heq
+  next opt x_3
+    heq_1 =>
+    simp_all only [List.findFinIdx?_eq_some_iff, Fin.getElem_fin, beq_iff_eq, Option.some.injEq]
+    subst heq
+    obtain ⟨left, right⟩ := heq_1
+    simp [Option.isSome_iff_exists] at x_1
+    exact index_fromIndex_inj.mp (congrArg rs.index? left)
+  next opt heq_1 =>
+    simp_all only [List.findFinIdx?_eq_none_iff, ordering_mem, beq_iff_eq, Finset.forall_mem_not_eq', reduceCtorEq]
 
 end order

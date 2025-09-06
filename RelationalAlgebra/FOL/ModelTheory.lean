@@ -32,6 +32,20 @@ open Language
 def ArityToTuple {dbs: DatabaseSchema} {rn : RelationName} (va : Fin (dbs rn).card → Part Value) : Tuple :=
   λ att => (((dbs rn).index? att).map va).getD Part.none
 
+theorem ArityToTuple.def_dite {dbs : DatabaseSchema} (va : Fin (dbs rn).card → Part Value) :
+  ArityToTuple va a = dite (a ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none) := by
+    simp_all [ArityToTuple]
+    split
+    . rename_i h
+      rw [← RelationSchema.index?_isSome, RelationSchema.index?_isSome_eq_iff] at h
+      simp [RelationSchema.index]
+      obtain ⟨w, h⟩ := h
+      simp [h]
+    . rename_i h
+      rw [← RelationSchema.index?_none] at h
+      simp [h]
+
+
 @[simp]
 theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Part Value}
   (h: ArityToTuple va ∈ (dbi.relations rn).tuples)
@@ -85,16 +99,17 @@ class folStruc extends fol.Structure (Part Value) where
       (dbs : DatabaseSchema)     →                        -- Every database schema
       (rn : RelationName)          →                      -- Every relation (and every arity)
       (va : Fin (dbs rn).card → Part Value) →             -- Every value assignment (for this arity)
-      (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
+
+        RelMap (.R dbs rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
+        (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
           ∃dbi : DatabaseInstance,
               dbi.schema = dbs ∧ ArityToTuple va ∈ (dbi.relations rn).tuples
         )
-          ↔ RelMap (.R dbs rn) va                         -- Then the RelationMap contains the relation for this value assignment
 
 @[simp]
-theorem folStruc_apply_RelMap [folStruc] {dbs} {rn va} (h : Structure.RelMap (fol.Rel dbs rn) va) :
-  ∃dbi : DatabaseInstance, dbi.schema = dbs ∧ ArityToTuple va ∈ (dbi.relations rn).tuples
-    := (folStruc.RelMap_R dbs rn va).mpr h
+theorem folStruc_apply_RelMap [folStruc] {dbs} {rn va} :
+  Structure.RelMap (fol.Rel dbs rn) va ↔ ∃dbi : DatabaseInstance, dbi.schema = dbs ∧ ArityToTuple va ∈ (dbi.relations rn).tuples
+    := (folStruc.RelMap_R dbs rn va)
 
 @[simp]
 theorem folStruc_empty_fun {n} [folStruc] (_f : fol.Functions n) : False := by
