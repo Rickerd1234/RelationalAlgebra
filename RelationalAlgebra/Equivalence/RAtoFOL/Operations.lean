@@ -101,7 +101,7 @@ theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dr
 
     | _ => aesop
 
-theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped) (h'' : rs ⊆ folQ.schema)
+theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
   : folQ.isWellTyped := by
     cases folQ with
 

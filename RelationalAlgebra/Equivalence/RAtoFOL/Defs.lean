@@ -35,8 +35,6 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
         simp only [ra_to_fol_query] at h'
         exact projectQuery.isWellTyped_def (ra_to_fol_query sq dbs) rs h'
       simp [sq_ih h.1 z, h.2, ra_to_fol_query, projectAttribute]
-      simp_all
-      simp_all only
       obtain ⟨left, right⟩ := h
       apply Iff.intro
       · intro a_1
