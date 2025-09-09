@@ -31,8 +31,28 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
 
     case p rs sq sq_ih =>
       ext a
-      have z : (ra_to_fol_query sq dbs).isWellTyped := by sorry
-      simp_all [ra_to_fol_query]
+      have z : (ra_to_fol_query sq dbs).isWellTyped := by
+        simp only [ra_to_fol_query] at h'
+        exact projectQuery.isWellTyped_def (ra_to_fol_query sq dbs) rs h'
+      simp [sq_ih h.1 z, h.2, ra_to_fol_query, projectAttribute]
+      simp_all
+      simp_all only
+      obtain ⟨left, right⟩ := h
+      apply Iff.intro
+      · intro a_1
+        obtain ⟨w, h_1⟩ := a_1
+        obtain ⟨left_1, right_1⟩ := h_1
+        simp_all only [true_and, dite_not]
+        split at right_1
+        next h_1 =>
+          simp_all only [FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery, forall_const,
+            RA.Query.isWellTyped.p_def, and_self, Sum.inl.injEq]
+        next h_1 => simp_all only [reduceCtorEq]
+      · intro a_1
+        use a
+        simp_all only [not_true_eq_false, and_false, ↓reduceDIte, and_true]
+        exact right a_1
+
 
     case r f sq ih =>
       obtain ⟨left, right⟩ := h

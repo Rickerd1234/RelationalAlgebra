@@ -5,92 +5,118 @@ import RelationalAlgebra.FOL.Properties
 open RM
 
 
-def projectAttribute (folQ : FOL.Query) (rs : RelationSchema) (a' : Attribute) : Attribute ⊕ Fin ((folQ.attributesInQuery \ rs).card) :=
-   ((RelationSchema.index? (folQ.attributesInQuery \ rs) a').map (Sum.inr)).getD (Sum.inl a')
+def projectAttribute (dropSet : RelationSchema) (a' : Attribute) : Attribute ⊕ Fin (dropSet.card) :=
+  dite (a' ∈ dropSet) (λ h' => Sum.inr (RelationSchema.index h')) (λ _ => Sum.inl a')
 
-theorem projectAttribute.def (folQ : FOL.Query) (rs : RelationSchema) (a' : Attribute) :
-  projectAttribute folQ rs a' = ((RelationSchema.index? (folQ.attributesInQuery \ rs) a').map (Sum.inr)).getD (Sum.inl a') := rfl
-
-@[simp]
-theorem projectAttribute_eq {folQ rs x y} : projectAttribute folQ rs x = Sum.inl y → x = y := by
-    simp [projectAttribute]
-    have ⟨z, hz⟩ : ∃z : Option (Attribute ⊕ Fin (Finset.card (FOL.BoundedQuery.attributesInQuery folQ \ rs))),
-      z = (Option.map Sum.inr ((RelationSchema.index? (folQ.attributesInQuery \ rs)) x))
-        := exists_apply_eq_apply (fun a ↦ a) (Option.map Sum.inr (RelationSchema.index? (FOL.BoundedQuery.attributesInQuery folQ \ rs) x))
-    by_cases h : z.isSome
-    . simp only [Option.isSome_iff_exists] at h
-      intro a
-      subst hz
-      simp_all only [Option.map_eq_some', Sum.exists, reduceCtorEq, and_false, exists_false, exists_const,
-        Sum.inr.injEq, exists_eq_right, false_or]
-      obtain ⟨w, h⟩ := h
-      simp_all only [Option.map_some', Option.getD_some, reduceCtorEq]
-    . simp at h
-      subst h
-      rw [hz.symm]
-      simp [Option.getD_none]
+theorem projectAttribute.def (dropSet : RelationSchema) (a' : Attribute) :
+  projectAttribute dropSet a' = dite (a' ∈ dropSet) (λ h' => Sum.inr (RelationSchema.index h')) (λ _ => Sum.inl a') := rfl
 
 @[simp]
-theorem projectAttribute_mem {folQ rs a'} (h : a' ∈ rs) : projectAttribute folQ rs a' = Sum.inl a' := by
-    simp [projectAttribute]
-    have z : (Option.map Sum.inr ((RelationSchema.index? (folQ.attributesInQuery \ rs)) a')) =
-      (Option.none : Option (Attribute ⊕ Fin (Finset.card (folQ.attributesInQuery \ rs))))
-        := by simp_all only [RelationSchema.index?_none, Finset.mem_sdiff, not_true_eq_false, and_false, not_false_eq_true, Option.map_eq_none']
-
-    rw [z]
-    simp
+theorem projectAttribute_eq {dropSet x y} : projectAttribute dropSet x = Sum.inl y → x = y := by
+    simp [projectAttribute.def]
+    intro a
+    split at a
+    next h => simp_all only [reduceCtorEq]
+    next h => simp_all only [not_and, Decidable.not_not, Sum.inl.injEq]
 
 @[simp]
-theorem projectAttribute_not_mem {folQ rs a'} (h : a' ∈ folQ.attributesInQuery) (h' : a' ∉ rs) :
-  ∃x, projectAttribute folQ rs a' = Sum.inr x := by
-    simp [projectAttribute]
+theorem projectAttribute_not_mem {dropSet a'} (h : a' ∉ dropSet) : projectAttribute dropSet a' = Sum.inl a' := by
+    simp [projectAttribute.def]
+    exact h
 
-    have ⟨x, z2⟩ : ∃x, (Option.map Sum.inr ((RelationSchema.index? (folQ.attributesInQuery \ rs)) a')) =
-      (Option.some (Sum.inr x) : Option (Attribute ⊕ Fin (Finset.card (folQ.attributesInQuery \ rs))))
-        := by
-          simp_all
-          apply RelationSchema.index?_isSome_eq_iff.mp
-          simp_all only [RelationSchema.index?_isSome, Finset.mem_sdiff, not_false_eq_true, and_self]
-
-    use x
-    rw [z2]
-    simp
-
-theorem projectAttribute.dite_def (folQ : FOL.Query) (rs : RelationSchema) (a' : Attribute) (h : rs ⊆ folQ.attributesInQuery) :
-  projectAttribute folQ rs a' = dite (a' ∈ folQ.attributesInQuery \ rs) (λ h' => Sum.inr (RelationSchema.index h')) (λ _ => Sum.inl a') := by
-    aesop
-    . sorry
-    . sorry
+@[simp]
+theorem projectAttribute_mem {dropSet a'} (h : a' ∈ dropSet) :
+  ∃x, projectAttribute dropSet a' = Sum.inr x := by
+    simp [projectAttribute.def]
+    simp_all only [not_false_eq_true, and_self, ↓reduceDIte, Sum.inr.injEq, exists_eq']
 
 def projectQuery (folQ : FOL.Query) (rs : RelationSchema) : FOL.Query :=
-  (folQ.relabel (projectAttribute folQ rs)).exs
+  (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs
 
 @[simp]
-theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute folQ rs)).exs := rfl
+theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs := rfl
 
 @[simp]
-theorem projectQuery.attributesInQuery_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.attributesInQuery) : (projectQuery folQ rs).attributesInQuery = rs := by
+theorem projectQuery.schema_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.schema) (h' : folQ.isWellTyped) : (projectQuery folQ rs).schema = rs := by
   ext a
   apply Iff.intro
   · intro a_1
-    simp [FOL.BoundedQuery.attributesInQuery, projectQuery] at a_1
+    simp [projectQuery] at a_1
     obtain ⟨w, h_1⟩ := a_1
     obtain ⟨left, right⟩ := h_1
     have z := projectAttribute_eq right
     subst z
     by_cases h : w ∈ rs
-    . simp_all only [projectAttribute_mem]
-    . have z := projectAttribute_not_mem left h
+    . simp_all only [projectAttribute_not_mem]
+    . have z : w ∈ (folQ.schema \ rs) := by simp_all
+      have z := projectAttribute_mem z
       simp_all only [reduceCtorEq, exists_false]
   · intro a_1
-    simp_all [FOL.BoundedQuery.attributesInQuery, projectQuery]
+    simp_all [projectQuery]
     use a
     apply And.intro
     · exact h a_1
-    · exact projectAttribute_mem a_1
+    · simp_all only [Finset.mem_sdiff, not_true_eq_false, and_false, not_false_eq_true, projectAttribute_not_mem]
 
-theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.attributesInQuery) (h' : (projectQuery folQ rs).isWellTyped)
+theorem projectQuery.not_sub_schema [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : (projectQuery folQ (rs ∩ folQ.schema)) = (projectQuery folQ rs) := by
+  simp_all
+  have z : (folQ.schema \ (rs ∩ folQ.schema)) = folQ.schema \ rs := by simp
+  rw [z]
+
+@[simp]
+theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
+  (φ.relabel (projectAttribute (dropSet))).isWellTyped → φ.isWellTyped := by
+    induction φ with
+    | tEq q t₁ t₂ q_ih =>
+      simp_all
+      intro a a_1
+      simp_all only [forall_const]
+      rw [@Finset.union_subset_iff] at a_1 ⊢
+      obtain ⟨left, right⟩ := a_1
+      apply And.intro
+      . apply Finset.subset_iff.mpr
+        intro x hx
+        by_cases h' : x ∈ dropSet
+        . simp_all [Finset.subset_iff]
+          sorry
+        . simp_all [Finset.subset_iff]
+          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.attributesInQuery, projectAttribute dropSet a = Sum.inl x := by simp_all [left x hx]
+          have z := projectAttribute_eq hx_2
+          subst z
+          exact hx_1
+
+      . apply Finset.subset_iff.mpr
+        intro x hx
+        by_cases h' : x ∈ dropSet
+        . simp_all [Finset.subset_iff]
+          sorry
+        . simp_all [Finset.subset_iff]
+          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.attributesInQuery, projectAttribute dropSet a = Sum.inl x := by simp_all [right x hx]
+          have z := projectAttribute_eq hx_2
+          subst z
+          exact hx_1
+
+    | and q₁ q₂ q₁_ih q₂_ih =>
+      simp_all
+
+    | _ => aesop
+
+theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped) (h'' : rs ⊆ folQ.schema)
   : folQ.isWellTyped := by
     cases folQ with
 
-    | _ => simp_all; aesop
+    | R _ _ _ => simp_all
+
+    | tEq q t₁ t₂ =>
+      simp_all only [projectQuery, FOL.BoundedQuery.isWellTyped.exs_def]
+      exact
+        BoundedQuery.relabel_isWellTyped_projectAttribute ((q.tEq t₁ t₂).schema \ rs)
+          (q.tEq t₁ t₂) h'
+
+    | and q₁ q₂ =>
+      simp_all only [projectQuery, FOL.BoundedQuery.isWellTyped.exs_def, FOL.BoundedQuery.isWellTyped.and_def]
+      exact BoundedQuery.relabel_isWellTyped_projectAttribute ((q₁.and q₂).schema \ rs) (q₁.and q₂) h'
+
+    | ex q =>
+      simp_all only [projectQuery, FOL.BoundedQuery.relabel.ex_def, FOL.BoundedQuery.isWellTyped.exs_def]
+      exact BoundedQuery.relabel_isWellTyped_projectAttribute (q.ex.schema \ rs) q h'
