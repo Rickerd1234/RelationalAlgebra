@@ -14,12 +14,11 @@ def Query.evaluateT [folStruc] (q : FOL.Query) (h : q.isWellTyped) (dbi : Databa
 theorem realize_query_dom {t : Attribute →. Value} [folStruc] {q : Query} (dbi : DatabaseInstance) (h_wt : q.isWellTyped) (h_realize : t ∈ q.evaluateT h_wt dbi) :
   t.Dom = q.schema := by
     ext a
-    simp_all [PFun.mem_dom, BoundedQuery.isWellTyped.schema_eq_attributesInQuery, Finset.mem_coe, Query.evaluateT]
+    simp_all [PFun.mem_dom, Finset.mem_coe, Query.evaluateT]
     obtain ⟨w, h⟩ := h_realize
     obtain ⟨w_1, h⟩ := h
     obtain ⟨left, right⟩ := h
-    simp_all only [PFun.mem_restrict, BoundedQuery.isWellTyped.schema_eq_attributesInQuery, Finset.mem_coe,
-      exists_and_left, and_iff_left_iff_imp]
+    simp_all only [PFun.mem_restrict, Finset.mem_coe, exists_and_left, and_iff_left_iff_imp]
     intro a_1
     obtain ⟨left, right⟩ := w_1
     obtain ⟨left, right_1⟩ := left

@@ -78,9 +78,9 @@ theorem Query.RealizeDom.isWellTyped_def {iv : Fin n →. Value} [folStruc]
     (t a).Dom := by
       induction φ with
       | R dbs rn f =>
-        simp_all [BoundedQuery.isWellTyped.R_def, BoundedQuery.Realize.R_def, Term.realizeSome.def,
-          BoundedQuery.toFormula_rel, BoundedFormula.realize_rel, folStruc_apply_RelMap,
-          BoundedQuery.attributesInQuery.R_def, Set.mem_toFinset, Set.mem_setOf_eq]
+        simp_all only [BoundedQuery.isWellTyped.R_def, BoundedQuery.Realize.R_def, realizeSome.def,
+          BoundedQuery.toFormula_rel, BoundedFormula.realize_rel, BoundedQuery.schema.R_def,
+          Set.mem_toFinset, Set.mem_setOf_eq]
         obtain ⟨left, right⟩ := h'
         obtain ⟨w, h⟩ := ha
         have z := Term.cases (f w)
@@ -99,7 +99,6 @@ theorem Query.RealizeDom.isWellTyped_def {iv : Fin n →. Value} [folStruc]
         simp_all
         obtain ⟨left, right⟩ := h
         obtain ⟨left_1, right_1⟩ := h'
-        simp_all only [BoundedQuery.isWellTyped.schema_eq_attributesInQuery]
         aesop
       | and => aesop
       | ex q q_ih => aesop
@@ -124,5 +123,4 @@ theorem Query.RealizeDom.isWellTyped_eq_Realize [folStruc]
           · apply And.intro
             · exact DatabaseInstance.t_ran_sub_domain h
             · simp_all [PFun.ran]
-        · simp_all [(dbi.relations rn).validSchema, DatabaseInstance.validSchema_def,
-          BoundedQuery.isWellTyped.schema_eq_attributesInQuery, Finset.coe_inj]
+        · simp_all [(dbi.relations rn).validSchema, DatabaseInstance.validSchema_def, Finset.coe_inj]

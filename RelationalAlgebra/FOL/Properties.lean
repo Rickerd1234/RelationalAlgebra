@@ -5,21 +5,22 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 @[simp]
-theorem BoundedQuery.relabel_attributesInQuery [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
-  (φ.relabel g).attributesInQuery = (φ.attributesInQuery.pimage (λ a => (g a).getLeft?)) := by
-    simp_all only [BoundedQuery.attributesInQuery, BoundedQuery.relabel_formula, BoundedFormula.relabel_freeVarFinset, Finset.pimage]
+theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
+  (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
+    induction φ with
+    | R =>
+      simp [Relations.boundedFormula]
+      aesop
+    | _ => aesop
 
 @[simp]
 theorem BoundedQuery.relabel_isWellTyped [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (h : φ.isWellTyped) :
   (φ.relabel g).isWellTyped := by
     induction φ with
-    | R dbs rn t => aesop
-
-    | tEq t₁ t₂ =>
-      simp_all only [isWellTyped.tEq_def, relabel.tEq_def, fol.Term.relabel_varFinsetLeft_relabelAux,
-        isWellTyped.schema_eq_attributesInQuery, relabel_attributesInQuery, true_and, forall_const]
+    | tEq q t₁ t₂ =>
+      simp_all only [isWellTyped.tEq_def, relabel.tEq_def,
+        fol.Term.relabel_varFinsetLeft_relabelAux, relabel_schema, true_and, forall_const]
       obtain ⟨left, right⟩ := h
-      simp_all only [isWellTyped.schema_eq_attributesInQuery]
       apply Finset.subset_iff.mpr
       intro x a
       simp_all only [Finset.mem_union, Finset.mem_pimage, Part.mem_ofOption, Option.mem_def, Sum.getLeft?_eq_some_iff]
@@ -43,9 +44,7 @@ theorem BoundedQuery.relabel_isWellTyped [folStruc] {n k} (g : Attribute → Att
           }
           simp_all only [Finset.mem_union, or_true]
 
-    | and q₁ q₂ q₁_ih q₂_ih => aesop
-
-    | ex q q_ih => aesop
+    | _ => aesop
 
 @[simp]
 theorem BoundedQuery.relabel_isWellTyped_sumInl [folStruc] {n k} (g : Attribute → Attribute) (h : g.Bijective) (φ : BoundedQuery k) :
@@ -61,10 +60,5 @@ theorem BoundedQuery.relabel_isWellTyped_sumInl [folStruc] {n k} (g : Attribute 
       apply And.intro
       . exact (Finset.image_subset_image_iff left).mp left_1
       . exact (Finset.image_subset_image_iff left).mp right_1
-    | _ => aesop
 
-@[simp]
-theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
-  (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
-    induction φ with
     | _ => aesop

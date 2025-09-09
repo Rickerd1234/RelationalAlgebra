@@ -43,8 +43,7 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
         simp_all only [true_and, dite_not]
         split at right_1
         next h_1 =>
-          simp_all only [FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery, forall_const,
-            RA.Query.isWellTyped.p_def, and_self, Sum.inl.injEq]
+          simp_all only [forall_const, RA.Query.isWellTyped.p_def, and_self, Sum.inl.injEq]
         next h_1 => simp_all only [reduceCtorEq]
       · intro a_1
         use a
@@ -56,7 +55,7 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
       obtain ⟨left, right⟩ := h
       have z : (ra_to_fol_query sq dbs).isWellTyped :=
         FOL.BoundedQuery.relabel_isWellTyped_sumInl f right (ra_to_fol_query sq dbs) h'
-      simp_all [ra_to_fol_query, FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery]
+      simp_all [ra_to_fol_query]
 
     all_goals simp_all [ra_to_fol_query]
 
@@ -64,23 +63,4 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
 theorem ra_to_fol_query.isWellTyped [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).isWellTyped := by
     induction raQ
-    case R dbs rn => exact h
-
-    case s q a b pos sq ih =>
-      simp_all [RA.Query.isWellTyped, ra_to_fol_query,
-        FOL.outVar, Finset.union_subset_iff]
-      rw [← ra_to_fol_query_schema] at h
-      . simp_all only [FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery, and_self]
-      . simp_all only
-      . simp_all only
-
-    case p rs sq ih =>
-      simp_all only [RA.Query.isWellTyped, ← ra_to_fol_query_schema, ra_to_fol_query,
-        projectQuery, FOL.BoundedQuery.isWellTyped.exs_def, FOL.BoundedQuery.relabel_isWellTyped]
-
-    case j q₁ q₂ q₁_ih q₂_ih =>
-      simp_all [RA.Query.isWellTyped, ra_to_fol_query,]
-
-    case r f q q_ih =>
-      simp_all only [RA.Query.isWellTyped, ra_to_fol_query,
-        FOL.BoundedQuery.relabel_isWellTyped]
+    all_goals simp_all [ra_to_fol_query, Finset.union_subset_iff]

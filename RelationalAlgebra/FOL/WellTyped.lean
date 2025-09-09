@@ -58,11 +58,3 @@ theorem BoundedQuery.isWellTyped.subQuery_def [folStruc] {n} {q : BoundedQuery n
       . have z : n < k := by exact Nat.lt_of_le_of_ne hk h'
         induction q
         all_goals simp_all [isQuery]; try sorry
-
-
-@[simp]
-theorem BoundedQuery.isWellTyped.schema_eq_attributesInQuery [folStruc] {n} {q : BoundedQuery n} (h : q.isWellTyped) :
-  q.schema = q.attributesInQuery
-    := by
-      induction q
-      all_goals aesop

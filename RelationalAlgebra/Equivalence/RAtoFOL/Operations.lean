@@ -65,7 +65,7 @@ theorem projectQuery.not_sub_schema [FOL.folStruc] (folQ : FOL.Query) (rs : Rela
 
 @[simp]
 theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
-  (φ.relabel (projectAttribute (dropSet))).isWellTyped → φ.isWellTyped := by
+  (φ.relabel (projectAttribute dropSet)).isWellTyped → φ.isWellTyped := by
     induction φ with
     | tEq q t₁ t₂ q_ih =>
       simp_all
@@ -80,7 +80,7 @@ theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dr
         . simp_all [Finset.subset_iff]
           sorry
         . simp_all [Finset.subset_iff]
-          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.attributesInQuery, projectAttribute dropSet a = Sum.inl x := by simp_all [left x hx]
+          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.schema, projectAttribute dropSet a = Sum.inl x := by simp_all [left x hx]
           have z := projectAttribute_eq hx_2
           subst z
           exact hx_1
@@ -91,7 +91,7 @@ theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dr
         . simp_all [Finset.subset_iff]
           sorry
         . simp_all [Finset.subset_iff]
-          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.attributesInQuery, projectAttribute dropSet a = Sum.inl x := by simp_all [right x hx]
+          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.schema, projectAttribute dropSet a = Sum.inl x := by simp_all [right x hx]
           have z := projectAttribute_eq hx_2
           subst z
           exact hx_1
