@@ -34,17 +34,26 @@ def DatabaseInstance.domain (dbi : DatabaseInstance) : Set Value :=
 
 -- Basic proofs
 @[simp]
-theorem RelationInstance.validSchema_def {t} {inst : RelationInstance} (h : t ∈ inst.tuples) :
+theorem RelationInstance.validSchema.def {t} {inst : RelationInstance} (h : t ∈ inst.tuples) :
   t.Dom = inst.schema := by simp_all [inst.validSchema]
 
 @[simp]
-theorem DatabaseInstance.validSchema_def {inst : DatabaseInstance} (rn : RelationName) :
-  (inst.relations rn).schema = inst.schema rn := by simp_all [inst.validSchema]
+theorem RelationInstance.validSchema.iff_def {a t} {inst : RelationInstance} (h : t ∈ inst.tuples) :
+  a ∈ inst.schema ↔ (t a).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, RelationInstance.validSchema.def h, Finset.mem_coe]
 
 @[simp]
-theorem DatabaseInstance.t_ran_sub_domain {inst : DatabaseInstance} {rn : RelationName} (h : t ∈ (inst.relations rn).tuples) :
-  t.ran ⊆ inst.domain := by
+theorem DatabaseInstance.validSchema_def {dbi : DatabaseInstance} (rn : RelationName) :
+  (dbi.relations rn).schema = dbi.schema rn := by simp_all [dbi.validSchema]
+
+@[simp]
+theorem DatabaseInstance.t_ran_sub_domain {dbi : DatabaseInstance} {rn : RelationName} (h : t ∈ (dbi.relations rn).tuples) :
+  t.ran ⊆ dbi.domain := by
     simp_all [domain, PFun.ran]
     intros v a h'
     use rn, a, t, h
     exact Part.eq_some_iff.mpr h'
+
+@[simp]
+theorem DatabaseInstance.default_ran_sub_domain {dbi : DatabaseInstance} :
+  (default : Fin 0 →. Value).ran ⊆ dbi.domain := by
+    simp [default, PFun.ran]

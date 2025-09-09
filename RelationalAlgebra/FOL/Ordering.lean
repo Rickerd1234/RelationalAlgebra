@@ -80,6 +80,12 @@ theorem RelationSchema.fromIndex_mem {rs : RelationSchema} (i : Fin rs.card) : r
   apply (RelationSchema.ordering_mem (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) rs)[i] rs).mp
   simp [RelationSchema.ordering]
 
+@[simp]
+theorem RelationSchema.fromIndex_Dom {dbi : DatabaseInstance} (h : t ∈ (dbi.relations rn).tuples) (i : Fin (dbi.schema rn).card) : (t ((dbi.schema rn).fromIndex i)).Dom := by
+  have z := (dbi.relations rn).validSchema t h
+  rw [dbi.validSchema_def rn] at z
+  have z'' : fromIndex i ∈ t.Dom := by simp_all
+  exact z''
 
 -- Proof uniqueness/injectivity for fromIndex and index functions
 theorem RelationSchema.fromIndex_inj {rs : RelationSchema} {i j : Fin rs.card} : RelationSchema.fromIndex i = RelationSchema.fromIndex j ↔ i = j := by
@@ -196,5 +202,19 @@ theorem RelationSchema.index_fromIndex_eq {rs : RelationSchema} (i : Fin rs.card
     exact index_fromIndex_inj.mp (congrArg rs.index? left)
   next opt heq_1 =>
     simp_all only [List.findFinIdx?_eq_none_iff, ordering_mem, beq_iff_eq, Finset.forall_mem_not_eq', reduceCtorEq]
+
+
+@[simp]
+theorem RelationSchema.Dom_sub_fromIndex {dbi : DatabaseInstance} : {a | ∃(i : Fin (dbi.schema rn).card), a = RelationSchema.fromIndex i} = dbi.schema rn := by
+  ext a
+  simp_all only [Set.mem_setOf_eq, Finset.mem_coe]
+  apply Iff.intro
+  · intro a_1
+    obtain ⟨w, h⟩ := a_1
+    subst h
+    simp_all only [fromIndex_mem]
+  · intro a_1
+    use (dbi.schema rn).index a_1
+    simp_all only [fromIndex_index_eq]
 
 end order

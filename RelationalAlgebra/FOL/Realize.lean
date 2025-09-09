@@ -43,12 +43,12 @@ theorem BoundedQuery.Realize.ex_def [folStruc] {n : ℕ} (q : BoundedQuery (n + 
 
 -- Realize a bounded query doamin, all values must be within dbi.domain and both assignments must have 'some' values for all used terms
 def BoundedQuery.RealizeValidDom (q : BoundedQuery n) (dbi : DatabaseInstance) (ov : Tuple) (iv : Fin n →. Value) : Prop :=
-  (∀a ∈ q.attributesInQuery, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧ (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
+  (∀a ∈ q.schema, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧ (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
 
 @[simp]
 theorem BoundedQuery.RealizeValidDom.def [folStruc] {n : ℕ} (q : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
   : q.RealizeValidDom dbi ov iv ↔
-      (∀a ∈ q.attributesInQuery, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧
+      (∀a ∈ q.schema, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧
         (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
   := by
     rfl
@@ -63,29 +63,26 @@ theorem BoundedQuery.RealizeDom.def [folStruc] {q : BoundedQuery n} :
 
 -- Realize a query considering the database domain, using just an Attribute map
 nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Attribute →. Value) : Prop :=
-  φ.RealizeDom dbi v default ∧ v.Dom ⊆ φ.attributesInQuery
+  φ.RealizeDom dbi v default ∧ v.Dom ⊆ φ.schema
 
 @[simp]
 theorem Query.RealizeDom.def [folStruc] (φ : Query)
-  : φ.RealizeDom dbi ov ↔ BoundedQuery.RealizeDom dbi φ ov default ∧ ov.Dom ⊆ φ.attributesInQuery := by rfl
+  : φ.RealizeDom dbi ov ↔ BoundedQuery.RealizeDom dbi φ ov default ∧ ov.Dom ⊆ φ.schema := by rfl
 
 theorem Query.RealizeDom.schema_sub_Dom [folStruc] (q : FOL.Query) (h : q.isWellTyped) (h': q.RealizeDom dbi ov) :
   ↑q.schema ⊆ ov.Dom := by simp_all; aesop
 
 @[simp]
 theorem Query.RealizeDom.isWellTyped_def {iv : Fin n →. Value} [folStruc]
-  (φ : BoundedQuery n) (h : φ.isWellTyped) (h' : φ.Realize t iv) (ha : a ∈ BoundedQuery.attributesInQuery φ):
+  (φ : BoundedQuery n) (h : φ.isWellTyped) (h' : φ.Realize t iv) (ha : a ∈ BoundedQuery.schema φ):
     (t a).Dom := by
       induction φ with
       | R dbs rn f =>
-        simp_all only [BoundedQuery.isWellTyped.R_def, BoundedQuery.Realize.R_def, Term.realizeSome.def,
+        simp_all [BoundedQuery.isWellTyped.R_def, BoundedQuery.Realize.R_def, Term.realizeSome.def,
           BoundedQuery.toFormula_rel, BoundedFormula.realize_rel, folStruc_apply_RelMap,
           BoundedQuery.attributesInQuery.R_def, Set.mem_toFinset, Set.mem_setOf_eq]
         obtain ⟨left, right⟩ := h'
         obtain ⟨w, h⟩ := ha
-        obtain ⟨w_1, h_1⟩ := right
-        obtain ⟨left_1, right⟩ := h_1
-        subst left_1
         have z := Term.cases (f w)
         simp_all [Sum.exists]
         cases z with

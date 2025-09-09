@@ -24,7 +24,6 @@ theorem realize_query_dom {t : Attribute →. Value} [folStruc] {q : Query} (dbi
     obtain ⟨left, right⟩ := w_1
     obtain ⟨left, right_1⟩ := left
     obtain ⟨left_1, right_1⟩ := right_1
-    obtain ⟨left_2, right_1⟩ := right_1
     exact Part.dom_iff_mem.mp (left_1 a a_1)
 
 def Query.evaluate [folStruc] {q : Query} (h : q.isWellTyped) (dbi : DatabaseInstance)

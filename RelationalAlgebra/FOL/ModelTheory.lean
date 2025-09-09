@@ -30,21 +30,28 @@ open Language
 -- Define variable indexing types
 
 def ArityToTuple {dbs: DatabaseSchema} {rn : RelationName} (va : Fin (dbs rn).card → Part Value) : Tuple :=
-  λ att => (((dbs rn).index? att).map va).getD Part.none
+  λ att => dite (att ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none)
 
 theorem ArityToTuple.def_dite {dbs : DatabaseSchema} (va : Fin (dbs rn).card → Part Value) :
-  ArityToTuple va a = dite (a ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none) := by
-    simp_all [ArityToTuple]
-    split
-    . rename_i h
-      rw [← RelationSchema.index?_isSome, RelationSchema.index?_isSome_eq_iff] at h
-      simp [RelationSchema.index]
-      obtain ⟨w, h⟩ := h
-      simp [h]
-    . rename_i h
-      rw [← RelationSchema.index?_none] at h
-      simp [h]
+  ArityToTuple va = λ a => dite (a ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none) := by
+    rfl
 
+theorem ArityToTuple.def_fromIndex {dbs : DatabaseSchema} (t : Tuple) (h : t.Dom = dbs rn) :
+  ArityToTuple (fun i ↦ t ((dbs rn).fromIndex i)) = t := by
+    simp_all [ArityToTuple.def_dite]
+    ext a v
+    apply Iff.intro
+    · intro a_1
+      split at a_1
+      next h_1 => simp_all only
+      next h_1 => simp_all only [Part.not_mem_none]
+    · intro a_1
+      split
+      next h_1 => simp_all only
+      next h_1 =>
+        simp_all only [Part.not_mem_none]
+        have z : a ∈ t.Dom := by apply Part.dom_iff_mem.mpr; use v
+        simp_all only [Finset.mem_coe]
 
 @[simp]
 theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Part Value}
@@ -57,59 +64,24 @@ theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va 
 @[simp]
 theorem arityToTuple_def {dbs: DatabaseSchema} {rn : RelationName} {i : Fin (Finset.card (dbs rn))} {va : Fin (dbs rn).card → Part Value}
   : ArityToTuple va ((dbs rn).fromIndex i) = va i
-    := by
-      simp_all [ArityToTuple, RelationSchema.index?, Option.map, RelationSchema.ordering, Option.getD, RelationSchema.fromIndex]
-      split
-      next opt x heq =>
-        split at heq
-        next opt_1 x_1 heq_1 =>
-          split at heq_1
-          next opt_2 x_2
-            heq_2 =>
-            simp_all only [Option.some.injEq, List.finIdxOf?_eq_some_iff, Fin.getElem_fin]
-            subst heq heq_1
-            obtain ⟨left, right⟩ := heq_2
-            -- Patch required for the aesop strategy used before
-            have z : x_2 = i.cast (by aesop) := by
-              simp_all [Fin.cast, Finset.length_sort];
-              refine (List.Nodup.get_inj_iff ?_).mp left
-              simp_all only [Finset.sort_nodup]
-            subst z
-            simp_all only [Fin.coe_cast, Fin.cast_trans, Fin.cast_eq_self]
-          next opt_2 heq_2 =>
-            simp_all only [Option.some.injEq, List.finIdxOf?_eq_none_iff, List.getElem_mem, not_true_eq_false]
-        next opt_1 heq_1 =>
-          split at heq_1
-          next opt_2 x_1 heq_2 => simp_all only [reduceCtorEq]
-          next opt_2 heq_2 => simp_all only [reduceCtorEq]
-      next opt heq =>
-        split at heq
-        next opt_1 x heq_1 =>
-          split at heq_1
-          next opt_2 x_1 heq_2 => simp_all only [reduceCtorEq]
-          next opt_2 heq_2 => simp_all only [reduceCtorEq]
-        next opt_1 heq_1 =>
-          split at heq_1
-          next opt_2 x heq_2 => simp_all only [List.finIdxOf?_eq_some_iff, Fin.getElem_fin, reduceCtorEq]
-          next opt_2 heq_2 => simp_all only [List.finIdxOf?_eq_none_iff, List.getElem_mem, not_true_eq_false]
+    := by simp [ArityToTuple]
 
 -- Explore relation concepts
 class folStruc extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
-      (dbs : DatabaseSchema)     →                        -- Every database schema
+      (dbi : DatabaseInstance)     →                        -- Every database schema
       (rn : RelationName)          →                      -- Every relation (and every arity)
-      (va : Fin (dbs rn).card → Part Value) →             -- Every value assignment (for this arity)
+      (va : Fin (dbi.schema rn).card → Part Value) →             -- Every value assignment (for this arity)
 
-        RelMap (.R dbs rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
+        RelMap (.R dbi.schema rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
         (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
-          ∃dbi : DatabaseInstance,
-              dbi.schema = dbs ∧ ArityToTuple va ∈ (dbi.relations rn).tuples
+          ArityToTuple va ∈ (dbi.relations rn).tuples
         )
 
 @[simp]
-theorem folStruc_apply_RelMap [folStruc] {dbs} {rn va} :
-  Structure.RelMap (fol.Rel dbs rn) va ↔ ∃dbi : DatabaseInstance, dbi.schema = dbs ∧ ArityToTuple va ∈ (dbi.relations rn).tuples
-    := (folStruc.RelMap_R dbs rn va)
+theorem folStruc_apply_RelMap [folStruc] {dbi : DatabaseInstance} {rn va} :
+  Structure.RelMap (fol.Rel dbi.schema rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
+    := (folStruc.RelMap_R dbi rn va)
 
 @[simp]
 theorem folStruc_empty_fun {n} [folStruc] (_f : fol.Functions n) : False := by

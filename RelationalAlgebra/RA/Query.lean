@@ -111,7 +111,7 @@ def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.s
       | R rn =>
         intro t h_t
         simp_all only [isWellTyped, evaluateT, schema, ← DatabaseInstance.validSchema]
-        exact RelationInstance.validSchema_def h_t
+        exact RelationInstance.validSchema.def h_t
       | s a b i sq ih =>
         simp_all only [isWellTyped, evaluateT, selectionT, schema]
         simp_all only [forall_const, Part.coe_some, bind_pure_comp, ne_eq, Set.mem_setOf_eq,

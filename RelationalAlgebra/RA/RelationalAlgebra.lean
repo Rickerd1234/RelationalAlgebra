@@ -12,7 +12,7 @@ open RM
 -- Selection and Difference are 'trivial', hence they do not include proofs yet
 
 def selectionT (inTuples : Set Tuple) (x y : Attribute) (positiveEq : Bool) : Set Tuple :=
-  {t | t ∈ inTuples ∧ ite positiveEq (t x = t y) (t x ≠ t y)}
+  {t | t ∈ inTuples ∧ ite true (t x = t y) (t x ≠ t y)}
 
 theorem selectionDom {x y t} {not : Bool} {inst : RelationInstance} (h : t ∈ selectionT inst.tuples x y not) :
   PFun.Dom t = inst.schema := by

@@ -2,93 +2,173 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Defs
 
 open RM
 
-theorem ra_to_fol_eval [struc : FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  raQ.evaluate dbi h = (ra_to_fol_query raQ dbi.schema).evaluate (by aesop) dbi := by
-    simp [FOL.Query.evaluate, RA.Query.evaluate, FOL.BoundedQuery.schema]
-    -- apply And.intro
-    -- . simp [ra_to_fol_outFn_eq_schema h, ra_to_fol_def]
-    -- . induction raQ
-    --   all_goals (
-    --     simp only [RA.Query.isWellTyped] at h
-    --     simp only [ra_to_fol_def]
-    --     simp_all only [RA.Query.evaluateT, FOL.EvaluableQuery.evaluateT, ra_to_fol_query,
-    --       ra_to_fol_outFn_def, id_eq]
-    --     simp
-    --   )
-    --   case R rn =>
-    --     ext t
-    --     simp_all only [Set.mem_setOf_eq]
-    --     apply Iff.intro
-    --     · intro ht
-    --       use λ v => t v
-    --       apply And.intro
-    --       · simp_all [FOL.BoundedQuery.RealizeDom, FOL.Query.Realize]
-    --         apply And.intro
-    --         · simp_all [FOL.BoundedQuery.toFormula]
-    --           refine (struc.RelMap_R dbi.schema rn ?_).mp ?_
-    --           use dbi
-    --           simp_all only [true_and, FOL.outVar, FirstOrder.Language.Term.realize_var, Sum.elim_inl]
-    --           have hz : FOL.ArityToTuple (fun i : Fin (dbi.schema rn).card ↦ t (RelationSchema.fromIndex i)) = t := by
-    --             ext a v
-    --             simp_all only [FOL.ArityToTuple, Option.map]
-    --             split
-    --             next opt x heq =>
-    --               simp_all [RelationSchema.fromIndex, RelationSchema.index?, RelationSchema.ordering];
-    --               obtain ⟨w, ⟨left, right_1⟩, right⟩ := heq
-    --               subst right left
-    --               simp_all only [Fin.coe_cast]
-    --             next opt heq =>
-    --               have hc : a ∉ t.Dom :=
-    --                 by simp_all [dbi.validSchema, (dbi.relations rn).validSchema t ht, RelationSchema.index?_none.mp heq]
-    --               simp_all only [RelationSchema.index?_none, PFun.mem_dom, not_exists, Option.getD_none,
-    --                 Part.not_mem_none]
-    --           simp_all only
-    --         . simp_all [PFun.ran, DatabaseInstance.domain]
-    --           intro v a h
-    --           use rn
-    --           use a
-    --           use t
-    --           simp_all only [Part.eq_some_iff, true_and]
-    --       · simp_all [PFun.res, PFun.restrict, Part.restrict, Part.bind]
-    --         ext a v
-    --         simp_all only [Part.mem_assert_iff, Finset.mem_coe, exists_prop, iff_and_self]
-    --         intro a_1
-    --         rw [DatabaseInstance.validSchema]
-    --         have hz : a ∈ t.Dom → a ∈ (dbi.relations rn).schema := by simp [(dbi.relations rn).validSchema t ht]
-    --         apply hz
-    --         apply (PFun.mem_dom t a).mpr
-    --         use v
-    --     · intro a
-    --       obtain ⟨w, h⟩ := a
-    --       obtain ⟨left, right⟩ := h
-    --       subst right
-    --       sorry
-      -- case s a b posEq sq ih =>
-      --   . simp_all [selectionT]
-      --     sorry
-      -- case p rs sq ih =>
-      --   simp_all [ra_to_fol_query_p, ra_to_fol_outFn_p, projectionT]
-      --   ext t
-      --   simp_all only [Set.mem_setOf_eq]
-      --   sorry
-      -- case r f sq ih =>
-      --   simp_all only [forall_true_left, renameT, exists_eq_right', ra_to_fol_query_r,
-      --     ra_to_fol_outFn_r, Function.comp_apply]
-      --   ext t
-      --   simp_all only [forall_true_left, Set.mem_setOf_eq]
-      --   obtain ⟨left, right⟩ := h
-      --   apply Iff.intro
-      --   · intro a
-      --     obtain ⟨w, h⟩ := a
-      --     obtain ⟨left_1, right_1⟩ := h
-      --     use w
-      --     sorry
-      --   · intro a
-      --     obtain ⟨w, h⟩ := a
-      --     obtain ⟨left_1, right_1⟩ := h
-      --     subst right_1
-      --     sorry
-    all_goals sorry
+theorem ra_to_fol_evalT.eq [struc : FOL.folStruc] (dbi : DatabaseInstance) (raQ : RA.Query) (folQ : FOL.Query) (h : raQ.isWellTyped dbi.schema) (h' : folQ.isWellTyped) (h'' : raQ.schema dbi.schema = folQ.schema) :
+  raQ.evaluate dbi h = folQ.evaluate h' dbi ↔
+    (∀t, t ∈ raQ.evaluateT dbi ↔ folQ.RealizeDom dbi t) := by
+      simp_all only [FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery, RA.Query.evaluate,
+        FOL.Query.evaluate, RelationInstance.mk.injEq, true_and]
+      apply Iff.intro
+      . intro h_iff t
+        rw [h_iff]
+        simp only [FOL.Query.evaluateT]
+        simp
+        sorry
+      . intro h_iff
+        ext t
+        rw [h_iff t]
+        simp only [FOL.Query.evaluateT]
+        sorry
+
+theorem ra_to_fol_eval [struc : FOL.folStruc] {dbi} (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
+  raQ.evaluate dbi h_ra_wt = (ra_to_fol_query raQ dbi.schema).evaluate (ra_to_fol_query.isWellTyped raQ dbi.schema h_ra_wt) dbi := by
+    have h_fol_wt := ra_to_fol_query.isWellTyped raQ dbi.schema h_ra_wt
+    have h_schema_eq := (ra_to_fol_query_schema raQ dbi.schema h_ra_wt (h_fol_wt)).symm
+    apply (ra_to_fol_evalT.eq dbi raQ (ra_to_fol_query raQ dbi.schema) h_ra_wt h_fol_wt h_schema_eq).mpr
+
+    induction raQ with
+    | R rn =>
+      simp only [ra_to_fol_query]
+      simp_all only [RA.Query.isWellTyped.R_def, ra_to_fol_query.isWellTyped, RA.Query.schema_R,
+        FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery, RA.Query.evaluateT.R_def, FOL.Query.RealizeDom.def,
+        FOL.BoundedQuery.RealizeDom.def, FOL.BoundedQuery.Realize.R_def, Function.comp_apply,
+        FOL.Term.realizeSome.def, FOL.BoundedQuery.toFormula_rel, FirstOrder.Language.BoundedFormula.realize_rel,
+        FOL.folStruc_apply_RelMap, FOL.BoundedQuery.RealizeValidDom.def, FOL.BoundedQuery.attributesInQuery.R_def,
+        Set.mem_toFinset, Set.mem_setOf_eq, forall_exists_index, IsEmpty.forall_iff, true_and, Set.coe_toFinset]
+      simp_all only [FOL.outVar.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
+        FirstOrder.Language.Term.varFinsetLeft.eq_1, Finset.mem_singleton]
+      intro t
+      apply Iff.intro
+      · intro ht
+        simp_all only [RelationSchema.fromIndex_Dom, implies_true, true_and]
+        apply And.intro
+        · apply And.intro
+          · rw [FOL.ArityToTuple.def_fromIndex t]
+            . exact ht
+            . simp [(dbi.relations rn).validSchema t ht]
+          · apply And.intro
+            . intro a ha
+              simp at ha
+              rw [← DatabaseInstance.validSchema_def rn] at ha
+              exact (RelationInstance.validSchema.iff_def ht).mp ha
+            . apply And.intro
+              · exact DatabaseInstance.t_ran_sub_domain ht
+              · exact DatabaseInstance.default_ran_sub_domain
+        · simp [(dbi.relations rn).validSchema t ht]
+      · intro a
+        obtain ⟨left, right⟩ := a
+        obtain ⟨left, right_1⟩ := left
+        obtain ⟨left, right_2⟩ := left
+        obtain ⟨left_1, right_1⟩ := right_1
+        obtain ⟨left_2, right_1⟩ := right_1
+        rw [FOL.ArityToTuple.def_fromIndex] at right_2
+        . exact right_2
+        . simp at right
+          apply Set.Subset.antisymm right
+          intro a ha
+          simp_all [Part.dom_iff_mem]
+
+
+    | s a b p q q_ih =>
+      simp only [ra_to_fol_query]
+      simp only [RA.Query.evaluateT.s_def, FOL.outVar.def, FOL.Query.RealizeDom.def,
+        FOL.BoundedQuery.RealizeDom.def, FOL.BoundedQuery.Realize.tEq_def, FOL.Term.realizeSome.def,
+        FirstOrder.Language.Term.realize_var, Sum.elim_inl, FOL.BoundedQuery.RealizeValidDom.def,
+        FOL.BoundedQuery.attributesInQuery.tEq_def, FirstOrder.Language.Term.varFinsetLeft,
+        Finset.union_assoc, Finset.mem_union, Finset.mem_singleton, IsEmpty.forall_iff,
+        DatabaseInstance.default_ran_sub_domain, and_self, and_true, Finset.coe_union,
+        Finset.coe_singleton, Set.union_singleton, Set.union_insert]
+      intro t
+      apply Iff.intro
+      · intro a_1
+        apply And.intro
+        · apply And.intro
+          · apply And.intro
+            · sorry
+            · apply And.intro
+              · sorry
+              · apply And.intro
+                · sorry
+                · simp [FirstOrder.Language.BoundedFormula.Realize, selectionT] at a_1 ⊢
+                  exact a_1.2
+          · apply And.intro
+            · intro a_2 a_3
+              simp_all only [ra_to_fol_query.isWellTyped, FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery,
+                FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def, FOL.BoundedQuery.RealizeValidDom.def,
+                IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, forall_const,
+                RA.Query.isWellTyped.s_def, RA.Query.schema_s, FOL.BoundedQuery.schema.tEq_def, implies_true, true_and]
+              sorry
+            · simp [selectionT] at a_1
+              sorry
+        · sorry
+      · intro a_1
+        obtain ⟨left, right⟩ := a_1
+        obtain ⟨left, right_1⟩ := left
+        obtain ⟨left, right_2⟩ := left
+        obtain ⟨left_1, right_1⟩ := right_1
+        obtain ⟨left_2, right_2⟩ := right_2
+        obtain ⟨left_3, right_2⟩ := right_2
+        simp [selectionT]
+        apply And.intro
+        . rw [q_ih]
+          . simp_all
+          . simp_all
+          . simp_all
+          . simp_all [ra_to_fol_query]
+        . exact right_2
+
+    | j q₁ q₂ q₁_ih q₂_ih =>
+      simp only [ra_to_fol_query]
+      simp only [ra_to_fol_query.isWellTyped, FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery,
+        FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def, FOL.BoundedQuery.RealizeValidDom.def,
+        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, forall_const,
+        RA.Query.isWellTyped.j_def, RA.Query.schema_j, RA.Query.evaluateT.j_def, FOL.BoundedQuery.Realize.and_def,
+        FOL.BoundedQuery.isWellTyped.and_def, FOL.BoundedQuery.attributesInQuery.and_def, Finset.mem_union,
+        Finset.coe_union, implies_true]
+      obtain ⟨left, right⟩ := h_ra_wt
+      intro t
+      apply Iff.intro
+      · intro a
+        apply And.intro
+        · apply And.intro
+          · apply And.intro
+            · simp [joinT] at a
+              sorry
+            · simp [joinT] at a
+              sorry
+          · apply And.intro
+            · intro a_1 a_2
+              simp_all only [ra_to_fol_query.isWellTyped, FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery,
+                FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def, FOL.BoundedQuery.RealizeValidDom.def,
+                IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, forall_const,
+                RA.Query.isWellTyped.j_def, RA.Query.schema_j, FOL.BoundedQuery.isWellTyped.and_def,
+                FOL.BoundedQuery.attributesInQuery.and_def, Finset.mem_union]
+              cases a_2 with
+              | inl h => sorry
+              | inr h_1 => sorry
+            · sorry
+        · sorry
+      · intro a
+        obtain ⟨left_1, right_1⟩ := a
+        obtain ⟨left_1, right_2⟩ := left_1
+        obtain ⟨left_1, right_3⟩ := left_1
+        obtain ⟨left_2, right_2⟩ := right_2
+        simp [joinT]
+        use t
+        sorry
+        -- rw [q₁_ih]
+        -- . apply And.intro
+        --   . sorry
+        --   . use t
+        --     rw [q₂_ih]
+        --     . sorry
+        --     . sorry
+        --     . simp_all [ra_to_fol_query]
+        --     . simp_all
+        -- . simp_all
+        -- . simp_all
+        -- . simp_all
+
+    | _ => sorry
 
 theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
   ∃folQ : FOL.Query, ∃(h' : folQ.isWellTyped), raQ.evaluate dbi h = folQ.evaluate h' dbi := by
