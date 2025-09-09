@@ -14,13 +14,12 @@ noncomputable def ra_to_fol_query [FOL.folStruc] (raQ : RA.Query) (dbs : Databas
   | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
 
 @[simp]
-theorem ra_to_fol_query_schema [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) :
+theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     induction raQ
-    all_goals simp_all [FOL.BoundedQuery.schema, ra_to_fol_query]
     case R rn =>
       ext a
-      simp_all only [FOL.outVar, FirstOrder.Language.Term.varFinsetLeft, Finset.mem_singleton,
+      simp_all [ra_to_fol_query, FOL.outVar, FirstOrder.Language.Term.varFinsetLeft, Finset.mem_singleton,
         Set.mem_toFinset, Set.mem_setOf_eq]
       apply Iff.intro
       · intro ⟨w, h⟩
@@ -29,8 +28,19 @@ theorem ra_to_fol_query_schema [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSc
       · intro a_1
         use RelationSchema.index a_1
         exact Eq.symm (RelationSchema.fromIndex_index_eq a_1)
-    case p rs sq ih => sorry
-    case r f sq ih => sorry
+
+    case p rs sq sq_ih =>
+      ext a
+      have z : (ra_to_fol_query sq dbs).isWellTyped := by sorry
+      simp_all [ra_to_fol_query]
+
+    case r f sq ih =>
+      obtain ⟨left, right⟩ := h
+      have z : (ra_to_fol_query sq dbs).isWellTyped :=
+        FOL.BoundedQuery.relabel_isWellTyped_sumInl f right (ra_to_fol_query sq dbs) h'
+      simp_all [ra_to_fol_query, FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery]
+
+    all_goals simp_all [ra_to_fol_query]
 
 @[simp]
 theorem ra_to_fol_query.isWellTyped [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
@@ -39,8 +49,12 @@ theorem ra_to_fol_query.isWellTyped [FOL.folStruc] (raQ : RA.Query) (dbs : Datab
     case R dbs rn => exact h
 
     case s q a b pos sq ih =>
-      simp_all [RA.Query.isWellTyped, ← ra_to_fol_query_schema, ra_to_fol_query,
+      simp_all [RA.Query.isWellTyped, ra_to_fol_query,
         FOL.outVar, Finset.union_subset_iff]
+      rw [← ra_to_fol_query_schema] at h
+      . simp_all only [FOL.BoundedQuery.isWellTyped.schema_eq_attributesInQuery, and_self]
+      . simp_all only
+      . simp_all only
 
     case p rs sq ih =>
       simp_all only [RA.Query.isWellTyped, ← ra_to_fol_query_schema, ra_to_fol_query,

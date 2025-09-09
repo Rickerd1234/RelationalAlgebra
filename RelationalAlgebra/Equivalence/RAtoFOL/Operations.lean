@@ -8,6 +8,9 @@ open RM
 def projectAttribute (folQ : FOL.Query) (rs : RelationSchema) (a' : Attribute) : Attribute ⊕ Fin ((folQ.attributesInQuery \ rs).card) :=
    ((RelationSchema.index? (folQ.attributesInQuery \ rs) a').map (Sum.inr)).getD (Sum.inl a')
 
+theorem projectAttribute.def (folQ : FOL.Query) (rs : RelationSchema) (a' : Attribute) :
+  projectAttribute folQ rs a' = ((RelationSchema.index? (folQ.attributesInQuery \ rs) a').map (Sum.inr)).getD (Sum.inl a') := rfl
+
 @[simp]
 theorem projectAttribute_eq {folQ rs x y} : projectAttribute folQ rs x = Sum.inl y → x = y := by
     simp [projectAttribute]
@@ -53,11 +56,20 @@ theorem projectAttribute_not_mem {folQ rs a'} (h : a' ∈ folQ.attributesInQuery
     rw [z2]
     simp
 
+theorem projectAttribute.dite_def (folQ : FOL.Query) (rs : RelationSchema) (a' : Attribute) (h : rs ⊆ folQ.attributesInQuery) :
+  projectAttribute folQ rs a' = dite (a' ∈ folQ.attributesInQuery \ rs) (λ h' => Sum.inr (RelationSchema.index h')) (λ _ => Sum.inl a') := by
+    aesop
+    . sorry
+    . sorry
+
 def projectQuery (folQ : FOL.Query) (rs : RelationSchema) : FOL.Query :=
   (folQ.relabel (projectAttribute folQ rs)).exs
 
 @[simp]
-theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.attributesInQuery) : (projectQuery folQ rs).attributesInQuery = rs := by
+theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute folQ rs)).exs := rfl
+
+@[simp]
+theorem projectQuery.attributesInQuery_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.attributesInQuery) : (projectQuery folQ rs).attributesInQuery = rs := by
   ext a
   apply Iff.intro
   · intro a_1
@@ -76,3 +88,9 @@ theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema)
     apply And.intro
     · exact h a_1
     · exact projectAttribute_mem a_1
+
+theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.attributesInQuery) (h' : (projectQuery folQ rs).isWellTyped)
+  : folQ.isWellTyped := by
+    cases folQ with
+
+    | _ => simp_all; aesop
