@@ -114,3 +114,6 @@ theorem folStruc_apply_RelMap [folStruc] {dbs} {rn va} :
 @[simp]
 theorem folStruc_empty_fun {n} [folStruc] (_f : fol.Functions n) : False := by
   exact Aesop.BuiltinRules.empty_false _f
+
+theorem Term.cases [folStruc] (t : fol.Term (Attribute ⊕ (Fin n))) : ∃k, t = var k := by
+  cases t with | var k => use k | func _f _ => exact False.elim (folStruc_empty_fun _f)
