@@ -1,6 +1,5 @@
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.ModelTheoryExtensions
-import RelationalAlgebra.FOL.Subquery
 
 open FOL FirstOrder Language RM Term
 
@@ -46,15 +45,3 @@ theorem BoundedQuery.isWellTyped.and_comm [folStruc] {n} {q₁ q₂ : BoundedQue
 theorem BoundedQuery.isWellTyped.and_from_both [folStruc] {n} {q₁ q₂ : BoundedQuery n} (h₁ : q₁.isWellTyped) (h₂ : q₂.isWellTyped) :
   (and q₁ q₂).isWellTyped
     := by simp_all only [and_def, and_self]
-
--- @TODO: Check from here whether this is useful
-theorem BoundedQuery.isWellTyped.subQuery_def [folStruc] {n} {q : BoundedQuery n} {sq : BoundedQuery k} {hk : n ≤ k} (h : q.isWellTyped) :
-  q.hasSubQuery hk sq → (sq.isWellTyped)
-    := by
-      intro hs
-      by_cases h' : n = k
-      . induction q
-        all_goals aesop
-      . have z : n < k := by exact Nat.lt_of_le_of_ne hk h'
-        induction q
-        all_goals simp_all [isQuery]; try sorry

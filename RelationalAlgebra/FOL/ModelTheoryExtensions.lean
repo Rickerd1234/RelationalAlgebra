@@ -22,6 +22,26 @@ theorem fol.Term.relabelAux_sumInl {n k} (g : Attribute → Attribute ⊕ (Fin n
       simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq]
 
 @[simp]
+theorem fol.Term.relabelAux_castLE {n} [folStruc] {g : Attribute → Attribute ⊕ Fin k} {t : fol.Term (Attribute ⊕ Fin n)} :
+  (Term.relabel (Sum.map id (Fin.castLE (Nat.le_add_right (k + n) 1)) ∘ BoundedFormula.relabelAux g n) t) =
+    (Term.relabel (BoundedFormula.relabelAux g (n + 1) ∘ Sum.map id (Fin.castLE (Nat.le_add_right n 1))) t) := by
+      -- induction t
+      have ⟨t, ht⟩ := Term.cases t
+      subst ht
+      simp_all only [relabel, Function.comp_apply, var.injEq]
+      cases t with
+      | inl val =>
+        simp_all only [Sum.map_inl, id_eq, BoundedFormula.relabelAux]
+        by_cases h : (g val).isLeft
+        . simp_all [Sum.isLeft_iff]
+          aesop
+        . simp_all [Sum.isRight_iff]
+          aesop
+      | inr val_1 =>
+        simp_all only [Sum.map_inr]
+        rfl
+
+@[simp]
 theorem fol.Term.relabel_varFinsetLeft_id [folStruc] {k n} {f : Fin k → Fin n} {t : fol.Term (Attribute ⊕ Fin k)} :
   (Term.relabel (Sum.map id f) t).varFinsetLeft = t.varFinsetLeft := by
     ext a

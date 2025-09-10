@@ -13,36 +13,28 @@ theorem BoundedFormula.exs.freeVarFinset {k} (φ : fol.BoundedFormula Attribute 
     . simp [BoundedFormula.exs]
       simp_all only [BoundedFormula.freeVarFinset, Finset.union_empty]
 
-def BoundedQuery.hasSafeTerm {n : ℕ} (t : fol.Term (Attribute ⊕ Fin k)) : (q : BoundedQuery n) → Prop
-  | .R _ _ vMap => dite (k = n) (λ h => ∃i, (vMap i) = t.relabel (Sum.map id (Fin.castLE (Nat.le_of_eq h)))) (λ _ => False)
+def BoundedQuery.hasSafeTerm {n : ℕ} (t : fol.Term (Attribute ⊕ Fin n)) : (q : BoundedQuery n) → Prop
+  | .R _ _ vMap => ∃i, (vMap i) = t
   | .tEq q _ _ => q.hasSafeTerm t
   | .and q1 q2 => q1.hasSafeTerm t ∨ q2.hasSafeTerm t
-  | .ex q => q.hasSafeTerm t
+  | .ex q => q.hasSafeTerm (t.relabel (Sum.map id (Fin.castLE (Nat.le_add_right n 1))))
+
 
 @[simp]
-theorem BoundedQuery.hasSafeTerm.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k)) :
-  (R dbs rn t).hasSafeTerm t' = dite (k = n) (λ h => ∃i, (t i) = t'.relabel (Sum.map id (Fin.castLE (Nat.le_of_eq h)))) (λ _ => False) := by rfl
+theorem BoundedQuery.hasSafeTerm.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin n)) :
+  (R dbs rn t).hasSafeTerm t' = ∃i, (t i) = t' := by rfl
 
 @[simp]
-theorem BoundedQuery.hasSafeTerm.R_def_eq [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k)) (h : k = n) :
-  (R dbs rn t).hasSafeTerm t' = ∃i, (t i) = t'.relabel (Sum.map id (Fin.castLE (Nat.le_of_eq h))) := by simp_all
-
-@[simp]
-theorem BoundedQuery.hasSafeTerm.R_def_neq [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k)) (h : k ≠ n):
-  (R dbs rn t).hasSafeTerm t' = False := by simp_all
-
-@[simp]
-theorem BoundedQuery.hasSafeTerm.tEq_def {n k : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k))  :
+theorem BoundedQuery.hasSafeTerm.tEq_def {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin n))  :
   (tEq q t₁ t₂).hasSafeTerm t' = q.hasSafeTerm t' := by rfl
 
 @[simp]
-theorem BoundedQuery.hasSafeTerm.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) (t' : fol.Term (Attribute ⊕ Fin k)) :
+theorem BoundedQuery.hasSafeTerm.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) (t' : fol.Term (Attribute ⊕ Fin n)) :
   (and q₁ q₂).hasSafeTerm t' = (q₁.hasSafeTerm t' ∨ q₂.hasSafeTerm t') := by rfl
 
 @[simp]
-theorem BoundedQuery.hasSafeTerm.ex_def {n : ℕ} (q : BoundedQuery (n + 1)) (t' : fol.Term (Attribute ⊕ Fin k)) :
-  (ex q).hasSafeTerm t' = q.hasSafeTerm t' := by rfl
-
+theorem BoundedQuery.hasSafeTerm.ex_def {n : ℕ} (q : BoundedQuery (n + 1)) (t' : fol.Term (Attribute ⊕ Fin n)) :
+  (ex q).hasSafeTerm t' = q.hasSafeTerm (t'.relabel (Sum.map id (Fin.castLE (Nat.le_add_right n 1)))) := by rfl
 
 -- schema of query
 def BoundedQuery.schema {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
@@ -88,30 +80,23 @@ theorem BoundedQuery.schema.exs_def {n : ℕ} (q : BoundedQuery n) :
 -- Some theorems to connect schema and hasSafeTerm
 @[simp]
 theorem BoundedQuery.hasSafeTerm_mem_schema [folStruc] (q : BoundedQuery n) :
-  q.hasSafeTerm (var (Sum.inl a) : fol.Term (Attribute ⊕ Fin k)) ↔ a ∈ q.schema := by
+  q.hasSafeTerm (var (Sum.inl a)) ↔ a ∈ q.schema := by
     induction q with
     | R dbs rn t =>
       rename_i n'
-      simp_all only [outVar.def, hasSafeTerm.R_def, relabel, Sum.map_inl, id_eq, dite_eq_ite, if_false_right]
-      -- simp_all only [true_and]
+      simp_all only [hasSafeTerm.R_def, schema.R_def, Set.mem_toFinset, Set.mem_setOf_eq]
       apply Iff.intro
       · intro a_1
-        obtain ⟨left, right⟩ := a_1
-        obtain ⟨w, h⟩ := right
-        subst left
-        simp [schema, Relations.boundedFormula]
-        use w
-        simp_all
-      · intro a_1
-        simp_all [schema, Relations.boundedFormula]
         obtain ⟨w, h⟩ := a_1
-        apply And.intro
-        · sorry
-        · use w
-          have ⟨t', ht'⟩ := Term.cases (t w)
-          simp_all only [var.injEq]
-          cases t' with
-          | inl val => simp_all only [varFinsetLeft, Finset.mem_singleton]
-          | inr val_1 => simp_all only [varFinsetLeft, Finset.not_mem_empty]
+        use w
+        simp_all only [varFinsetLeft.eq_1, Finset.mem_singleton]
+      · intro a_1
+        obtain ⟨w, h⟩ := a_1
+        use w
+        have ⟨t', ht'⟩ := Term.cases (t w)
+        simp_all only [var.injEq]
+        cases t' with
+        | inl val => simp_all only [varFinsetLeft, Finset.mem_singleton]
+        | inr val_1 => simp_all only [varFinsetLeft, Finset.not_mem_empty]
 
     | _ => simp_all

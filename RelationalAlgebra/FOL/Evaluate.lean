@@ -7,11 +7,11 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-def Query.evaluateT [folStruc] (q : FOL.Query) (h : q.isWellTyped) (dbi : DatabaseInstance) : Set Tuple :=
-  {t | ∃ov : Tuple, ∃h' : q.RealizeDom dbi ov, t = (ov.restrict (Query.RealizeDom.schema_sub_Dom q h h'))}
+def Query.evaluateT [folStruc] (q : FOL.Query) (dbi : DatabaseInstance) : Set Tuple :=
+  {t | ∃ov : Tuple, ∃h' : q.RealizeDom dbi ov, t = (ov.restrict (Query.RealizeDom.schema_sub_Dom q h'))}
 
 @[simp]
-theorem realize_query_dom {t : Attribute →. Value} [folStruc] {q : Query} (dbi : DatabaseInstance) (h_wt : q.isWellTyped) (h_realize : t ∈ q.evaluateT h_wt dbi) :
+theorem realize_query_dom {t : Attribute →. Value} [folStruc] {q : Query} (dbi : DatabaseInstance) (h_realize : t ∈ q.evaluateT dbi) :
   t.Dom = q.schema := by
     ext a
     simp_all [PFun.mem_dom, Finset.mem_coe, Query.evaluateT]
@@ -25,5 +25,5 @@ theorem realize_query_dom {t : Attribute →. Value} [folStruc] {q : Query} (dbi
     obtain ⟨left_1, right_1⟩ := right_1
     exact Part.dom_iff_mem.mp (left_1 a a_1)
 
-def Query.evaluate [folStruc] {q : Query} (h : q.isWellTyped) (dbi : DatabaseInstance)
-  : RelationInstance := ⟨q.schema, q.evaluateT h dbi, λ _ ht ↦ realize_query_dom dbi h ht⟩
+def Query.evaluate [folStruc] {q : Query} (dbi : DatabaseInstance)
+  : RelationInstance := ⟨q.schema, q.evaluateT dbi, λ _ ht ↦ realize_query_dom dbi ht⟩

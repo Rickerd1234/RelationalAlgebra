@@ -69,11 +69,11 @@ nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc] (v 
 theorem Query.RealizeDom.def [folStruc] (φ : Query)
   : φ.RealizeDom dbi ov ↔ BoundedQuery.RealizeDom dbi φ ov default ∧ ov.Dom ⊆ φ.schema := by rfl
 
-theorem Query.RealizeDom.schema_sub_Dom [folStruc] (q : FOL.Query) (h : q.isWellTyped) (h': q.RealizeDom dbi ov) :
+theorem Query.RealizeDom.schema_sub_Dom [folStruc] (q : FOL.Query) (h: q.RealizeDom dbi ov) :
   ↑q.schema ⊆ ov.Dom := by simp_all; aesop
 
 @[simp]
-theorem Query.RealizeDom.isWellTyped_def {iv : Fin n →. Value} [folStruc]
+theorem Query.Realize.isWellTyped_def {iv : Fin n →. Value} [folStruc]
   (φ : BoundedQuery n) (h : φ.isWellTyped) (h' : φ.Realize t iv) (ha : a ∈ BoundedQuery.schema φ):
     (t a).Dom := by
       induction φ with
@@ -108,19 +108,11 @@ theorem Query.RealizeDom.isWellTyped_eq_Realize [folStruc]
   (φ : Query) (h : t ∈ (dbi.relations rn).tuples)
   (h' : φ.isWellTyped) (h'' : t.Dom ⊆ ↑φ.schema) :
     φ.RealizeDom dbi t = φ.Realize t default := by
-      simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.Realize,
-        BoundedQuery.RealizeValidDom.def, zero_le, Part.not_none_dom, IsEmpty.forall_iff, true_and,
-        eq_iff_iff, and_iff_left_iff_imp, and_imp]
-      apply Iff.intro
-      · intro a
-        simp_all only
-      · intro h''
-        simp_all only [true_and]
-        apply And.intro
-        · apply And.intro
-          · intro a h
-            exact isWellTyped_def φ h' h'' h
-          · apply And.intro
-            · exact DatabaseInstance.t_ran_sub_domain h
-            · simp_all [PFun.ran]
-        · simp_all [(dbi.relations rn).validSchema, DatabaseInstance.validSchema_def, Finset.coe_inj]
+      simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.RealizeValidDom.def,
+        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, eq_iff_iff,
+        and_iff_left_iff_imp]
+      intro h'''
+      apply And.intro
+      · intro a h
+        exact Realize.isWellTyped_def φ h' h''' h
+      · exact DatabaseInstance.t_ran_sub_domain h

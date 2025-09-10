@@ -1,4 +1,5 @@
 import RelationalAlgebra.FOL.WellTyped
+import RelationalAlgebra.FOL.Relabel
 
 open FOL FirstOrder Language RM Term
 
@@ -98,7 +99,6 @@ theorem relabel.Injective_relabelAux [folStruc] {k n : ℕ} {g : Attribute → (
       · intro b_1 a
         simp_all [BoundedFormula.relabelAux]
 
-
 @[simp]
 theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
@@ -109,7 +109,7 @@ theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribut
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_hasSafeTerm [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (t : fol.Term (Attribute ⊕ Fin (k))) (h : g.Injective):
+theorem BoundedQuery.relabel_hasSafeTerm [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (t : fol.Term (Attribute ⊕ Fin k)) (h : g.Injective):
   (φ.relabel g).hasSafeTerm (t.relabel (BoundedFormula.relabelAux g k)) = φ.hasSafeTerm t := by
     induction φ with
     | R dbs rn a =>
@@ -125,7 +125,9 @@ theorem BoundedQuery.relabel_hasSafeTerm [folStruc] {n k} (g : Attribute → Att
           try apply rel_inj
           simp_all only [Term.relabel]
 
-    | ex q => sorry
+    | ex q q_ih =>
+      have z := (q_ih (Term.relabel (Sum.map id (Fin.castLE (by simp))) t))
+      simp_all [z.symm]
 
     | _ => aesop
 
