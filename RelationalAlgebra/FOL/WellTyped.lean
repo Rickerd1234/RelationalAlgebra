@@ -10,7 +10,7 @@ namespace FOL
 
 def BoundedQuery.isWellTyped {n} : BoundedQuery n → Prop
   | R _ _ _      => True
-  | tEq q t₁ t₂  => q.isWellTyped ∧ t₁.varFinsetLeft ∪ t₂.varFinsetLeft ⊆ q.schema
+  | tEq q t₁ t₂  => q.isWellTyped ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂
   | and q₁ q₂    => q₁.isWellTyped ∧ q₂.isWellTyped
   | ex q         => q.isWellTyped
 
@@ -20,7 +20,7 @@ theorem BoundedQuery.isWellTyped.R_def [folStruc] {dbs rn n} {f : Fin (Finset.ca
 
 @[simp]
 theorem BoundedQuery.isWellTyped.tEq_def [folStruc] {n} {q : BoundedQuery n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} :
-  (tEq q t₁ t₂).isWellTyped = (q.isWellTyped ∧ (t₁.varFinsetLeft ∪ t₂.varFinsetLeft ⊆ q.schema)) := rfl
+  (tEq q t₁ t₂).isWellTyped = (q.isWellTyped ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂) := rfl
 
 @[simp]
 theorem BoundedQuery.isWellTyped.and_def [folStruc] {n} {q₁ q₂ : BoundedQuery n} :

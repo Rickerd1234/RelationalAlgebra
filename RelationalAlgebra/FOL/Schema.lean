@@ -13,6 +13,37 @@ theorem BoundedFormula.exs.freeVarFinset {k} (φ : fol.BoundedFormula Attribute 
     . simp [BoundedFormula.exs]
       simp_all only [BoundedFormula.freeVarFinset, Finset.union_empty]
 
+def BoundedQuery.hasSafeTerm {n : ℕ} (t : fol.Term (Attribute ⊕ Fin k)) : (q : BoundedQuery n) → Prop
+  | .R _ _ vMap => dite (k = n) (λ h => ∃i, (vMap i) = t.relabel (Sum.map id (Fin.castLE (Nat.le_of_eq h)))) (λ _ => False)
+  | .tEq q _ _ => q.hasSafeTerm t
+  | .and q1 q2 => q1.hasSafeTerm t ∨ q2.hasSafeTerm t
+  | .ex q => q.hasSafeTerm t
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k)) :
+  (R dbs rn t).hasSafeTerm t' = dite (k = n) (λ h => ∃i, (t i) = t'.relabel (Sum.map id (Fin.castLE (Nat.le_of_eq h)))) (λ _ => False) := by rfl
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.R_def_eq [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k)) (h : k = n) :
+  (R dbs rn t).hasSafeTerm t' = ∃i, (t i) = t'.relabel (Sum.map id (Fin.castLE (Nat.le_of_eq h))) := by simp_all
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.R_def_neq [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k)) (h : k ≠ n):
+  (R dbs rn t).hasSafeTerm t' = False := by simp_all
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.tEq_def {n k : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin k))  :
+  (tEq q t₁ t₂).hasSafeTerm t' = q.hasSafeTerm t' := by rfl
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) (t' : fol.Term (Attribute ⊕ Fin k)) :
+  (and q₁ q₂).hasSafeTerm t' = (q₁.hasSafeTerm t' ∨ q₂.hasSafeTerm t') := by rfl
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.ex_def {n : ℕ} (q : BoundedQuery (n + 1)) (t' : fol.Term (Attribute ⊕ Fin k)) :
+  (ex q).hasSafeTerm t' = q.hasSafeTerm t' := by rfl
+
+
 -- schema of query
 def BoundedQuery.schema {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
   | .R dbs name vMap => (R dbs name vMap).toFormula.freeVarFinset
@@ -53,3 +84,34 @@ theorem BoundedQuery.schema.exs_def {n : ℕ} (q : BoundedQuery n) :
     induction n with
     | zero => rfl
     | succ n' ih => exact ih q.ex
+
+-- Some theorems to connect schema and hasSafeTerm
+@[simp]
+theorem BoundedQuery.hasSafeTerm_mem_schema [folStruc] (q : BoundedQuery n) :
+  q.hasSafeTerm (var (Sum.inl a) : fol.Term (Attribute ⊕ Fin k)) ↔ a ∈ q.schema := by
+    induction q with
+    | R dbs rn t =>
+      rename_i n'
+      simp_all only [outVar.def, hasSafeTerm.R_def, relabel, Sum.map_inl, id_eq, dite_eq_ite, if_false_right]
+      -- simp_all only [true_and]
+      apply Iff.intro
+      · intro a_1
+        obtain ⟨left, right⟩ := a_1
+        obtain ⟨w, h⟩ := right
+        subst left
+        simp [schema, Relations.boundedFormula]
+        use w
+        simp_all
+      · intro a_1
+        simp_all [schema, Relations.boundedFormula]
+        obtain ⟨w, h⟩ := a_1
+        apply And.intro
+        · sorry
+        · use w
+          have ⟨t', ht'⟩ := Term.cases (t w)
+          simp_all only [var.injEq]
+          cases t' with
+          | inl val => simp_all only [varFinsetLeft, Finset.mem_singleton]
+          | inr val_1 => simp_all only [varFinsetLeft, Finset.not_mem_empty]
+
+    | _ => simp_all

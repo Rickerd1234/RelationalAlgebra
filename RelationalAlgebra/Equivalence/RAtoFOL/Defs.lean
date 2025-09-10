@@ -19,7 +19,7 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
     induction raQ
     case R rn =>
       ext a
-      simp_all [ra_to_fol_query, FOL.outVar, FirstOrder.Language.Term.varFinsetLeft, Finset.mem_singleton,
+      simp_all [ra_to_fol_query, Finset.mem_singleton,
         Set.mem_toFinset, Set.mem_setOf_eq]
       apply Iff.intro
       · intro ⟨w, h⟩
@@ -52,9 +52,8 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
 
 
     case r f sq ih =>
-      obtain ⟨left, right⟩ := h
       have z : (ra_to_fol_query sq dbs).isWellTyped :=
-        FOL.BoundedQuery.relabel_isWellTyped_sumInl f right (ra_to_fol_query sq dbs) h'
+        FOL.BoundedQuery.relabel_isWellTyped_sumInl f h.2.1 (ra_to_fol_query sq dbs) h'
       simp_all [ra_to_fol_query]
 
     all_goals simp_all [ra_to_fol_query]
@@ -63,4 +62,7 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
 theorem ra_to_fol_query.isWellTyped [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).isWellTyped := by
     induction raQ
-    all_goals simp_all [ra_to_fol_query, Finset.union_subset_iff]
+    all_goals simp_all [RA.Query.isWellTyped, ra_to_fol_query]
+
+    case r f q q_ih =>
+      exact FOL.BoundedQuery.relabel_isWellTyped (Sum.inl ∘ f) (FOL.Sum.Injective f h.2.1) (ra_to_fol_query q dbs) q_ih

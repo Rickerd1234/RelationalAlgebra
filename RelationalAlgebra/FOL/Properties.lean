@@ -5,6 +5,101 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 @[simp]
+theorem relabel.Injective_def [folStruc] {k n : ℕ} {g : (Attribute ⊕ Fin k) → (Attribute ⊕ Fin n)} (h : g.Injective) :
+  Function.Injective (Term.relabel g : fol.Term (Attribute ⊕ Fin k) → fol.Term (Attribute ⊕ Fin n)) := by
+    simp_all [Function.Injective]
+    intros t₁ t₂ h'
+    have ⟨t₁, ht₁⟩ := Term.cases t₁
+    have ⟨t₂, ht₂⟩ := Term.cases t₂
+    subst ht₁ ht₂
+    simp_all only [relabel, var.injEq]
+    obtain ⟨left, right⟩ := h
+    cases t₁ with
+    | inl val =>
+      cases t₂ with
+      | inl val_1 =>
+        simp_all only [Sum.inl.injEq]
+        exact (left val).1 val_1 h'
+      | inr val_2 => simp_all only
+    | inr val_1 =>
+      cases t₂ with
+      | inl val => simp_all only
+      | inr val_2 =>
+        simp_all only [Sum.inr.injEq]
+        exact (right val_1).2 val_2 h'
+
+@[simp]
+theorem relabel.Injective_relabelAux [folStruc] {k n : ℕ} {g : Attribute → (Attribute ⊕ Fin n)} (h : g.Injective) :
+  Function.Injective (BoundedFormula.relabelAux g k) := by
+    simp_all [Function.Injective]
+    apply And.intro
+    · intro a
+      apply And.intro
+      · intro a_1 a_2
+        by_cases h' : (g a_1).isLeft
+        . simp_all [Sum.isLeft_iff]
+          nth_rewrite 2 [BoundedFormula.relabelAux] at a_2
+          aesop
+        . simp_all [Sum.isRight_iff, BoundedFormula.relabelAux]
+          by_cases h' : (g a).isLeft
+          . simp_all [Sum.isLeft_iff]
+            aesop
+          . simp_all [Sum.isRight_iff]
+            aesop
+      · intro b
+        apply Aesop.BuiltinRules.not_intro
+        intro a_1
+        by_cases h' : (g a).isLeft
+        . simp_all [Sum.isLeft_iff]
+          simp_all [BoundedFormula.relabelAux]
+          aesop
+        . simp_all [Sum.isRight_iff, BoundedFormula.relabelAux]
+          obtain ⟨w, h_2⟩ := h'
+          simp_all
+          induction n with
+          | zero =>
+            simp_all [Fin.cast, Fin.castAdd, Fin.castLE]
+            exact Fin.elim0 w
+          | succ n' ih =>
+            simp_all [Fin.cast, Fin.castAdd, Fin.natAdd, Fin.castLE]
+            rw [@Nat.le_antisymm_iff] at a_1
+            have ⟨a_1, hc⟩ := a_1
+            simp only [← Nat.not_gt_eq] at hc
+            apply hc
+            simp_all only [true_and, gt_iff_lt, not_lt]
+            apply Fin.val_lt_of_le w
+            simp
+
+    · intro b
+      apply And.intro
+      · intro a
+        apply Aesop.BuiltinRules.not_intro
+        intro a_1
+        by_cases h' : (g a).isLeft
+        . simp_all [Sum.isLeft_iff]
+          simp_all [BoundedFormula.relabelAux]
+          aesop
+        . simp_all [Sum.isRight_iff, BoundedFormula.relabelAux]
+          obtain ⟨w, h_2⟩ := h'
+          simp_all
+          induction n with
+          | zero =>
+            simp_all [Fin.cast, Fin.castAdd, Fin.castLE]
+            exact Fin.elim0 w
+          | succ n' ih =>
+            simp_all [Fin.cast, Fin.castAdd, Fin.natAdd, Fin.castLE]
+            rw [@Nat.le_antisymm_iff] at a_1
+            have ⟨hc, a_1⟩ := a_1
+            simp only [← Nat.not_gt_eq] at hc
+            apply hc
+            simp_all only [true_and, gt_iff_lt, not_lt]
+            apply Fin.val_lt_of_le w
+            simp
+      · intro b_1 a
+        simp_all [BoundedFormula.relabelAux]
+
+
+@[simp]
 theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
@@ -14,51 +109,38 @@ theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribut
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (h : φ.isWellTyped) :
-  (φ.relabel g).isWellTyped := by
+theorem BoundedQuery.relabel_hasSafeTerm [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (t : fol.Term (Attribute ⊕ Fin (k))) (h : g.Injective):
+  (φ.relabel g).hasSafeTerm (t.relabel (BoundedFormula.relabelAux g k)) = φ.hasSafeTerm t := by
     induction φ with
-    | tEq q t₁ t₂ =>
-      simp_all only [isWellTyped.tEq_def, relabel.tEq_def,
-        fol.Term.relabel_varFinsetLeft_relabelAux, relabel_schema, true_and, forall_const]
-      obtain ⟨left, right⟩ := h
-      apply Finset.subset_iff.mpr
-      intro x a
-      simp_all only [Finset.mem_union, Finset.mem_pimage, Part.mem_ofOption, Option.mem_def, Sum.getLeft?_eq_some_iff]
-      cases a with
-      | inl h =>
-        obtain ⟨w, h⟩ := h
-        obtain ⟨left_1, right_1⟩ := h
-        apply Exists.intro
-        · apply And.intro
-          apply right
-          on_goal 2 => {exact right_1
-          }
-          simp_all only [Finset.mem_union, true_or]
-      | inr h_1 =>
-        obtain ⟨w, h⟩ := h_1
-        obtain ⟨left_1, right_1⟩ := h
-        apply Exists.intro
-        · apply And.intro
-          apply right
-          on_goal 2 => {exact right_1
-          }
-          simp_all only [Finset.mem_union, or_true]
+    | R dbs rn a =>
+      rename_i k'
+      simp [Relations.boundedFormula]
+      have rel_inj : Function.Injective (Term.relabel (BoundedFormula.relabelAux g k')) := relabel.Injective_def (relabel.Injective_relabelAux h)
+      cases k
+      all_goals
+        apply Iff.intro
+        all_goals
+        · intro ⟨w, h_1⟩
+          use w
+          try apply rel_inj
+          simp_all only [Term.relabel]
+
+    | ex q => sorry
 
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped_sumInl [folStruc] {n k} (g : Attribute → Attribute) (h : g.Bijective) (φ : BoundedQuery k) :
+theorem BoundedQuery.relabel_isWellTyped [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery k) (h : φ.isWellTyped) :
+  (φ.relabel g).isWellTyped := by
+    induction φ with
+    | _ => simp_all
+
+@[simp]
+theorem Sum.Injective (g : α → α) (h : g.Injective) :
+  (Sum.inl ∘ g : α → α ⊕ β).Injective := by simp [Function.Injective]; exact fun ⦃a₁ a₂⦄ a ↦ h (h (congrArg g a))
+
+@[simp]
+theorem BoundedQuery.relabel_isWellTyped_sumInl [folStruc] {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery k) :
   (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped → φ.isWellTyped := by
     induction φ with
-    | tEq q t₁ t₂ q_ih =>
-      simp_all
-      intro a a_1
-      simp_all only [forall_const, relabel_isWellTyped]
-      obtain ⟨left, right⟩ := h
-      rw [@Finset.union_subset_iff] at a_1 ⊢
-      obtain ⟨left_1, right_1⟩ := a_1
-      apply And.intro
-      . exact (Finset.image_subset_image_iff left).mp left_1
-      . exact (Finset.image_subset_image_iff left).mp right_1
-
-    | _ => aesop
+    | _ => simp_all

@@ -34,10 +34,14 @@ def projectQuery (folQ : FOL.Query) (rs : RelationSchema) : FOL.Query :=
   (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs
 
 @[simp]
+theorem projectAttribute.Injective : (projectAttribute dropSet).Injective :=
+  by simp [Function.Injective, projectAttribute]; aesop
+
+@[simp]
 theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs := rfl
 
 @[simp]
-theorem projectQuery.schema_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.schema) (h' : folQ.isWellTyped) : (projectQuery folQ rs).schema = rs := by
+theorem projectQuery.schema_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.schema) : (projectQuery folQ rs).schema = rs := by
   ext a
   apply Iff.intro
   · intro a_1
@@ -67,39 +71,7 @@ theorem projectQuery.not_sub_schema [FOL.folStruc] (folQ : FOL.Query) (rs : Rela
 theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
   (φ.relabel (projectAttribute dropSet)).isWellTyped → φ.isWellTyped := by
     induction φ with
-    | tEq q t₁ t₂ q_ih =>
-      simp_all
-      intro a a_1
-      simp_all only [forall_const]
-      rw [@Finset.union_subset_iff] at a_1 ⊢
-      obtain ⟨left, right⟩ := a_1
-      apply And.intro
-      . apply Finset.subset_iff.mpr
-        intro x hx
-        by_cases h' : x ∈ dropSet
-        . simp_all [Finset.subset_iff]
-          sorry
-        . simp_all [Finset.subset_iff]
-          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.schema, projectAttribute dropSet a = Sum.inl x := by simp_all [left x hx]
-          have z := projectAttribute_eq hx_2
-          subst z
-          exact hx_1
-
-      . apply Finset.subset_iff.mpr
-        intro x hx
-        by_cases h' : x ∈ dropSet
-        . simp_all [Finset.subset_iff]
-          sorry
-        . simp_all [Finset.subset_iff]
-          have ⟨a, hx_1, hx_2⟩ : ∃ a ∈ q.schema, projectAttribute dropSet a = Sum.inl x := by simp_all [right x hx]
-          have z := projectAttribute_eq hx_2
-          subst z
-          exact hx_1
-
-    | and q₁ q₂ q₁_ih q₂_ih =>
-      simp_all
-
-    | _ => aesop
+    | _ => simp_all
 
 theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
   : folQ.isWellTyped := by
