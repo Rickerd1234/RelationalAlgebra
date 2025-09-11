@@ -36,7 +36,7 @@ theorem ArityToTuple.def_dite {dbs : DatabaseSchema} (va : Fin (dbs rn).card →
   ArityToTuple va = λ a => dite (a ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none) := by
     rfl
 
-theorem ArityToTuple.def_fromIndex {dbs : DatabaseSchema} (t : Tuple) (h : t.Dom = dbs rn) :
+theorem ArityToTuple.def_fromIndex {dbs : DatabaseSchema} (t : Tuple) (h : t.Dom ⊆ dbs rn) :
   ArityToTuple (fun i ↦ t ((dbs rn).fromIndex i)) = t := by
     simp_all [ArityToTuple.def_dite]
     ext a v
@@ -51,7 +51,7 @@ theorem ArityToTuple.def_fromIndex {dbs : DatabaseSchema} (t : Tuple) (h : t.Dom
       next h_1 =>
         simp_all only [Part.not_mem_none]
         have z : a ∈ t.Dom := by apply Part.dom_iff_mem.mpr; use v
-        simp_all only [Finset.mem_coe]
+        exact h_1 (h z)
 
 @[simp]
 theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Part Value}

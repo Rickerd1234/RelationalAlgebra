@@ -104,15 +104,11 @@ theorem Query.Realize.isWellTyped_def {iv : Fin n →. Value} [folStruc]
       | ex q q_ih => aesop
 
 @[simp]
-theorem Query.RealizeDom.isWellTyped_eq_Realize [folStruc]
-  (φ : Query) (h : t ∈ (dbi.relations rn).tuples)
-  (h' : φ.isWellTyped) (h'' : t.Dom ⊆ ↑φ.schema) :
+theorem Query.RealizeDom.isWellTyped_eq_Realize {t dbi} [folStruc]
+  (φ : Query) (h_wt : φ.isWellTyped) (h_dom_schema : t.Dom ⊆ ↑φ.schema) (h_ran_domain : t.ran ⊆ dbi.domain) :
     φ.RealizeDom dbi t = φ.Realize t default := by
       simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.RealizeValidDom.def,
         IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, eq_iff_iff,
         and_iff_left_iff_imp]
-      intro h'''
-      apply And.intro
-      · intro a h
-        exact Realize.isWellTyped_def φ h' h''' h
-      · exact DatabaseInstance.t_ran_sub_domain h
+      intro h_realize a ha
+      exact Realize.isWellTyped_def φ h_wt h_realize ha
