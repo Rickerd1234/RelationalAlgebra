@@ -5,7 +5,7 @@ open RM
 
 -- @TODO: for negative select add (λ q => ite (pos) q (.not q)) to .s
 
-noncomputable def ra_to_fol_query [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query :=
+noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query :=
   match raQ with
   | .R rn => .R dbs rn (FOL.outVar ∘ (dbs rn).fromIndex)
   | .s a b pos sq => (.tEq (ra_to_fol_query sq dbs) (FOL.outVar a) (FOL.outVar b))
@@ -14,7 +14,7 @@ noncomputable def ra_to_fol_query [FOL.folStruc] (raQ : RA.Query) (dbs : Databas
   | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
 
 @[simp]
-theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped) :
+theorem ra_to_fol_query_schema (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     induction raQ
     case R rn =>
@@ -59,7 +59,7 @@ theorem ra_to_fol_query_schema [struc : FOL.folStruc] (raQ : RA.Query) (dbs : Da
     all_goals simp_all [ra_to_fol_query]
 
 @[simp]
-theorem ra_to_fol_query.isWellTyped [FOL.folStruc] (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
+theorem ra_to_fol_query.isWellTyped (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).isWellTyped := by
     induction raQ
     all_goals simp_all [RA.Query.isWellTyped, ra_to_fol_query]

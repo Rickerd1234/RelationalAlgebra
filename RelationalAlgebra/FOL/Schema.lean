@@ -21,7 +21,7 @@ def BoundedQuery.hasSafeTerm {n : ℕ} (t : fol.Term (Attribute ⊕ Fin n)) : (q
 
 
 @[simp]
-theorem BoundedQuery.hasSafeTerm.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin n)) :
+theorem BoundedQuery.hasSafeTerm.R_def {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) (t' : fol.Term (Attribute ⊕ Fin n)) :
   (R dbs rn t).hasSafeTerm t' = ∃i, (t i) = t' := by rfl
 
 @[simp]
@@ -44,18 +44,18 @@ def BoundedQuery.schema {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
   | .ex q => q.schema
 
 @[simp]
-theorem BoundedQuery.schema.R_def_mem [folStruc] {n : ℕ} {x : Attribute} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
+theorem BoundedQuery.schema.R_def_mem {n : ℕ} {x : Attribute} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
   x ∈ (R dbs rn t).schema ↔ ∃i : Fin (dbs rn).card, x ∈ (t i).varFinsetLeft := by
     simp_all only [schema, toFormula, Relations.boundedFormula,
       BoundedFormula.freeVarFinset, Finset.mem_biUnion, Finset.mem_univ, true_and]
 
-instance BoundedQuery.schema.R_fintype [folStruc] {rn} {dbs : DatabaseSchema} {t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)} :
+instance BoundedQuery.schema.R_fintype {rn} {dbs : DatabaseSchema} {t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)} :
   Fintype {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft} := by
     apply Fintype.ofFinset ((BoundedQuery.R dbs rn t).schema)
     simp only [BoundedQuery.schema.R_def_mem, Set.mem_setOf_eq, implies_true]
 
 @[simp]
-theorem BoundedQuery.schema.R_def [folStruc] {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
+theorem BoundedQuery.schema.R_def {n : ℕ} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
   (R dbs rn t).schema = {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft}.toFinset := by ext a; simp
 
 @[simp]
@@ -79,7 +79,7 @@ theorem BoundedQuery.schema.exs_def {n : ℕ} (q : BoundedQuery n) :
 
 -- Some theorems to connect schema and hasSafeTerm
 @[simp]
-theorem BoundedQuery.hasSafeTerm_mem_schema [folStruc] (q : BoundedQuery n) :
+theorem BoundedQuery.hasSafeTerm_mem_schema (q : BoundedQuery n) :
   q.hasSafeTerm (var (Sum.inl a)) ↔ a ∈ q.schema := by
     induction q with
     | R dbs rn t =>

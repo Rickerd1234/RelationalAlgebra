@@ -22,10 +22,9 @@ theorem fol.Term.relabelAux_sumInl {n k} (g : Attribute → Attribute ⊕ (Fin n
       simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq]
 
 @[simp]
-theorem fol.Term.relabelAux_castLE {n} [folStruc] {g : Attribute → Attribute ⊕ Fin k} {t : fol.Term (Attribute ⊕ Fin n)} :
+theorem fol.Term.relabelAux_castLE {g : Attribute → Attribute ⊕ Fin k} {t : fol.Term (Attribute ⊕ Fin n)} :
   (Term.relabel (Sum.map id (Fin.castLE (Nat.le_add_right (k + n) 1)) ∘ BoundedFormula.relabelAux g n) t) =
     (Term.relabel (BoundedFormula.relabelAux g (n + 1) ∘ Sum.map id (Fin.castLE (Nat.le_add_right n 1))) t) := by
-      -- induction t
       have ⟨t, ht⟩ := Term.cases t
       subst ht
       simp_all only [relabel, Function.comp_apply, var.injEq]
@@ -42,7 +41,7 @@ theorem fol.Term.relabelAux_castLE {n} [folStruc] {g : Attribute → Attribute �
         rfl
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft_id [folStruc] {k n} {f : Fin k → Fin n} {t : fol.Term (Attribute ⊕ Fin k)} :
+theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : fol.Term (Attribute ⊕ Fin k)} :
   (Term.relabel (Sum.map id f) t).varFinsetLeft = t.varFinsetLeft := by
     ext a
     unfold varFinsetLeft
@@ -51,7 +50,7 @@ theorem fol.Term.relabel_varFinsetLeft_id [folStruc] {k n} {f : Fin k → Fin n}
       split
       next x i => simp_all only [relabel, Sum.map_inl, id_eq, Finset.mem_singleton]
       next x _i => simp_all only [relabel, Sum.map_inr, Finset.not_mem_empty]
-      next x l _f ts => exact False.elim (folStruc_empty_fun _f)
+      next x l _f ts => exact False.elim (fol_empty_fun _f)
     · intro a_1
       split
       next x i heq =>
@@ -67,10 +66,10 @@ theorem fol.Term.relabel_varFinsetLeft_id [folStruc] {k n} {f : Fin k → Fin n}
         next x_1 _i_1 => simp_all only [relabel, Sum.map_inr, var.injEq, Sum.inr.injEq, Finset.not_mem_empty]
         next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
       next x l _f ts heq =>
-        exact False.elim (folStruc_empty_fun _f)
+        exact False.elim (fol_empty_fun _f)
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft_relabelAux [folStruc] {k n} (g : Attribute → Attribute ⊕ (Fin n)) (t : fol.Term (Attribute ⊕ Fin k)) :
+theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : Attribute → Attribute ⊕ (Fin n)) (t : fol.Term (Attribute ⊕ Fin k)) :
   (Term.relabel (BoundedFormula.relabelAux g _) t).varFinsetLeft = t.varFinsetLeft.pimage (λ a => (g a).getLeft?) := by
     simp [Finset.pimage]
     ext a
@@ -98,7 +97,7 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux [folStruc] {k n} (g : Attribut
             finSumFinEquiv_apply_right, reduceCtorEq]
         next x_1 _i_1 heq => simp_all only [var.injEq, Finset.not_mem_empty]
         next x_1 l _f ts heq => simp_all only [reduceCtorEq]
-      next x l _f ts => exact False.elim (folStruc_empty_fun _f)
+      next x l _f ts => exact False.elim (fol_empty_fun _f)
 
     · intro a_1
       obtain ⟨w, h⟩ := a_1
@@ -143,10 +142,10 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux [folStruc] {k n} (g : Attribut
           simp_all only [heq_eq_eq]
           subst right_1
           simp_all only
-          exact False.elim (folStruc_empty_fun _f)
+          exact False.elim (fol_empty_fun _f)
 
 @[simp]
-theorem BoundedFormula.relabel_freeVarFinset [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : fol.BoundedFormula Attribute k) :
+theorem BoundedFormula.relabel_freeVarFinset {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : fol.BoundedFormula Attribute k) :
   (φ.relabel g).freeVarFinset = (φ.freeVarFinset.pimage (λ a => (g a).getLeft?)) := by
     simp_all only [Finset.pimage]
     induction φ

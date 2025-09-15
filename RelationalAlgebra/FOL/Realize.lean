@@ -7,46 +7,48 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-def Term.realizeSome [folStruc] {n : ℕ} (t : fol.Term (Attribute ⊕ (Fin n))) (ov : Attribute →. Value) (iv : Fin n →. Value) : Prop
+def Term.realizeSome (dbi) [folStruc dbi] {n : ℕ} (t : fol.Term (Attribute ⊕ (Fin n))) (ov : Attribute →. Value) (iv : Fin n →. Value) : Prop
   := (t.realize (Sum.elim ov iv)).Dom
 
 @[simp]
-theorem Term.realizeSome.def [folStruc] (t : fol.Term (Attribute ⊕ (Fin n))) (ov : Attribute →. Value) (iv : Fin n →. Value) :
-  Term.realizeSome t ov iv ↔ (t.realize (Sum.elim ov iv)).Dom := by rfl
+theorem Term.realizeSome.def (dbi) [folStruc dbi] (t : fol.Term (Attribute ⊕ (Fin n))) (ov : Attribute →. Value) (iv : Fin n →. Value) :
+  Term.realizeSome dbi t ov iv ↔ (t.realize (Sum.elim ov iv)).Dom := by rfl
 
+-- @TODO: Check if dbs needs a welltypedness constraint
 -- Formal realization definition, requires all terms to be 'some'
-def BoundedQuery.Realize {n : ℕ} [folStruc] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
-  | R dbs rn t, ov, iv => (∀i, Term.realizeSome (t i) ov iv) ∧ (R dbs rn t).toFormula.Realize ov iv
-  | tEq q t₁ t₂, ov, iv => q.Realize ov iv ∧ Term.realizeSome t₁ ov iv ∧ Term.realizeSome t₂ ov iv ∧ (BoundedFormula.equal t₁ t₂).Realize ov iv
-  | and q₁ q₂, ov, iv => q₁.Realize ov iv ∧ q₂.Realize ov iv
-  | ex q, ov, iv => ∃a, q.Realize ov (Fin.snoc iv a)
+def BoundedQuery.Realize (dbi) {n : ℕ} [folStruc dbi] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
+  | R dbs rn t, ov, iv => (∀i, Term.realizeSome dbi (t i) ov iv) ∧ (R dbs rn t).toFormula.Realize ov iv
+  | tEq q t₁ t₂, ov, iv => q.Realize dbi ov iv ∧ Term.realizeSome dbi t₁ ov iv ∧ Term.realizeSome dbi t₂ ov iv ∧ (BoundedFormula.equal t₁ t₂).Realize ov iv
+  | and q₁ q₂, ov, iv => q₁.Realize dbi ov iv ∧ q₂.Realize dbi ov iv
+  | ex q, ov, iv => ∃a ∈ dbi.domain, q.Realize dbi ov (Fin.snoc iv a)
 
 @[simp]
-theorem BoundedQuery.Realize.R_def [folStruc] {n : ℕ} (t) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (R dbs rn t).Realize ov iv ↔ (∀i, Term.realizeSome (t i) ov iv) ∧ (R dbs rn t).toFormula.Realize ov iv := by
+theorem BoundedQuery.Realize.R_def [folStruc dbi] {n : ℕ} (t) {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (R dbs rn t).Realize dbi ov iv ↔ (∀i, Term.realizeSome dbi (t i) ov iv) ∧ (R dbs rn t).toFormula.Realize ov iv := by
     rfl
 
 @[simp]
-theorem BoundedQuery.Realize.tEq_def [folStruc] {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (tEq q t₁ t₂).Realize ov iv ↔ (q.Realize ov iv ∧ Term.realizeSome t₁ ov iv ∧ Term.realizeSome t₂ ov iv ∧ (BoundedFormula.equal t₁ t₂).Realize ov iv) := by
+theorem BoundedQuery.Realize.tEq_def [folStruc dbi] {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (tEq q t₁ t₂).Realize dbi ov iv ↔ (q.Realize dbi ov iv ∧ Term.realizeSome dbi t₁ ov iv ∧ Term.realizeSome dbi t₂ ov iv ∧ (BoundedFormula.equal t₁ t₂).Realize ov iv) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.Realize.and_def [folStruc] {n : ℕ} (q₁ q₂ : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (and q₁ q₂).Realize ov iv ↔ q₁.Realize ov iv ∧ q₂.Realize ov iv := by
+theorem BoundedQuery.Realize.and_def [folStruc dbi] {n : ℕ} (q₁ q₂ : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (and q₁ q₂).Realize dbi ov iv ↔ q₁.Realize dbi ov iv ∧ q₂.Realize dbi ov iv := by
     rfl
 
 @[simp]
-theorem BoundedQuery.Realize.ex_def [folStruc] {n : ℕ} (q : BoundedQuery (n + 1)) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (ex q).Realize ov iv ↔ ∃a, q.Realize ov (Fin.snoc iv a) := by
+theorem BoundedQuery.Realize.ex_def [folStruc dbi] {n : ℕ} (q : BoundedQuery (n + 1)) {ov : Attribute →. Value} {iv : Fin n →. Value}
+  : (ex q).Realize dbi ov iv ↔ ∃a ∈ dbi.domain, q.Realize dbi ov (Fin.snoc iv a) := by
     rfl
 
+-- Check if these are required or already a result of the new Realize (presumably all of them follow from prior definitions)
 -- Realize a bounded query doamin, all values must be within dbi.domain and both assignments must have 'some' values for all used terms
 def BoundedQuery.RealizeValidDom (q : BoundedQuery n) (dbi : DatabaseInstance) (ov : Tuple) (iv : Fin n →. Value) : Prop :=
   (∀a ∈ q.schema, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧ (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
 
 @[simp]
-theorem BoundedQuery.RealizeValidDom.def [folStruc] {n : ℕ} (q : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
+theorem BoundedQuery.RealizeValidDom.def {n : ℕ} (q : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
   : q.RealizeValidDom dbi ov iv ↔
       (∀a ∈ q.schema, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧
         (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
@@ -54,27 +56,27 @@ theorem BoundedQuery.RealizeValidDom.def [folStruc] {n : ℕ} (q : BoundedQuery 
     rfl
 
 -- Realize a bounded query considering the database domain, using Attribute and Fin n maps
-def BoundedQuery.RealizeDom {n : ℕ} (dbi : DatabaseInstance) [folStruc] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
-  | q, ov, iv     => q.Realize ov iv ∧ q.RealizeValidDom dbi ov iv
+def BoundedQuery.RealizeDom {n : ℕ} (dbi : DatabaseInstance) [folStruc dbi] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
+  | q, ov, iv     => q.Realize dbi ov iv ∧ q.RealizeValidDom dbi ov iv
 
 @[simp]
-theorem BoundedQuery.RealizeDom.def [folStruc] {q : BoundedQuery n} :
-  q.RealizeDom dbi ov iv ↔ q.Realize ov iv ∧ q.RealizeValidDom dbi ov iv := by rfl
+theorem BoundedQuery.RealizeDom.def [folStruc dbi] {q : BoundedQuery n} :
+  q.RealizeDom dbi ov iv ↔ q.Realize dbi ov iv ∧ q.RealizeValidDom dbi ov iv := by rfl
 
 -- Realize a query considering the database domain, using just an Attribute map
-nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc] (v : Attribute →. Value) : Prop :=
+nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (v : Attribute →. Value) : Prop :=
   φ.RealizeDom dbi v default ∧ v.Dom ⊆ φ.schema
 
 @[simp]
-theorem Query.RealizeDom.def [folStruc] (φ : Query)
+theorem Query.RealizeDom.def [folStruc dbi] (φ : Query)
   : φ.RealizeDom dbi ov ↔ BoundedQuery.RealizeDom dbi φ ov default ∧ ov.Dom ⊆ φ.schema := by rfl
 
-theorem Query.RealizeDom.schema_sub_Dom [folStruc] (q : FOL.Query) (h: q.RealizeDom dbi ov) :
+theorem Query.RealizeDom.schema_sub_Dom [folStruc dbi] (q : FOL.Query) (h: q.RealizeDom dbi ov) :
   ↑q.schema ⊆ ov.Dom := by simp_all; aesop
 
 @[simp]
-theorem Query.Realize.isWellTyped_def {iv : Fin n →. Value} [folStruc]
-  (φ : BoundedQuery n) (h : φ.isWellTyped) (h' : φ.Realize t iv) (ha : a ∈ BoundedQuery.schema φ):
+theorem Query.Realize.isWellTyped_def {iv : Fin n →. Value} [folStruc dbi]
+  (φ : BoundedQuery n) (h : φ.isWellTyped) (h' : φ.Realize dbi t iv) (ha : a ∈ BoundedQuery.schema φ):
     (t a).Dom := by
       induction φ with
       | R dbs rn f =>
@@ -103,12 +105,19 @@ theorem Query.Realize.isWellTyped_def {iv : Fin n →. Value} [folStruc]
       | and => aesop
       | ex q q_ih => aesop
 
+
 @[simp]
-theorem Query.RealizeDom.isWellTyped_eq_Realize {t dbi} [folStruc]
-  (φ : Query) (h_wt : φ.isWellTyped) (h_dom_schema : t.Dom ⊆ ↑φ.schema) (h_ran_domain : t.ran ⊆ dbi.domain) :
-    φ.RealizeDom dbi t = φ.Realize t default := by
+theorem Query.RealizeDom.imp_Realize {t dbi} [folStruc dbi] (φ : Query) :
+    φ.RealizeDom dbi t → φ.Realize dbi t default := by
       simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.RealizeValidDom.def,
-        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, eq_iff_iff,
-        and_iff_left_iff_imp]
+        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true,
+        implies_true]
+
+@[simp]
+theorem Query.RealizeDom.isWellTyped_eq_Realize {t dbi} [folStruc dbi]
+  (φ : Query) (h_wt : φ.isWellTyped) (h_dom_schema : t.Dom ⊆ ↑φ.schema) (h_ran_domain : t.ran ⊆ dbi.domain) :
+    φ.Realize dbi t default → φ.RealizeDom dbi t := by
+      simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.RealizeValidDom.def,
+        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, true_and]
       intro h_realize a ha
       exact Realize.isWellTyped_def φ h_wt h_realize ha

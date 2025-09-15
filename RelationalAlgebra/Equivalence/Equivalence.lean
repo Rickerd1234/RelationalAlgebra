@@ -3,55 +3,14 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Defs
 open RM
 
 @[simp]
-theorem ra_to_fol_evalT.FOL_evaluateT [struc : FOL.folStruc] (dbi : DatabaseInstance) (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
+theorem ra_to_fol_evalT.FOL_evaluateT (dbi : DatabaseInstance) [struc : FOL.folStruc dbi] (raQ : RA.Query) :
   t ∈ (ra_to_fol_query raQ dbi.schema).evaluateT dbi ↔ (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t := by
-    simp_all only [FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def, FOL.BoundedQuery.RealizeValidDom.def,
-      IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, FOL.Query.evaluateT]
-    simp_all
-    apply Iff.intro
-    · intro a
-      obtain ⟨w, h_1⟩ := a
-      obtain ⟨w_1, h_1⟩ := h_1
-      obtain ⟨left, right⟩ := w_1
-      obtain ⟨left, right_1⟩ := left
-      obtain ⟨left_1, right_1⟩ := right_1
-      subst h_1
-      apply And.intro
-      · apply And.intro
-        · have z : PFun.restrict w (FOL.Query.RealizeDom.schema_sub_Dom (ra_to_fol_query raQ dbi.schema) (by simp_all; exact right_1)) = w := by aesop
-          simp_all [z]
-        · apply And.intro
-          · intro a a_1
-            simp [PFun.Dom, Part.dom_iff_mem] at right
-            simp_all [Set.subset_def]
-            apply Part.dom_iff_mem.mpr
-            use (w a).get (left_1 a a_1)
-            simp_all [Part.get_mem]
-          · intro v h
-            rw [PFun.ran] at *
-            simp [PFun.Dom, Part.dom_iff_mem] at right
-            simp_all [Set.subset_def]
-            obtain ⟨w_1, h⟩ := h
-            obtain ⟨left_2, right_3⟩ := h
-            apply right_1
-            · exact right_3
-      · simp_all [PFun.restrict, PFun.Dom, Part.restrict]
-    · intro a
-      obtain ⟨left, right⟩ := a
-      obtain ⟨left, right_1⟩ := left
-      obtain ⟨left_1, right_1⟩ := right_1
-      use t
-      simp_all
-      ext a b : 1
-      simp_all only [PFun.mem_restrict, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, Finset.mem_coe,
-        iff_and_self]
-      intro a_1
-      apply right
-      simp_all only [PFun.mem_dom]
-      apply Exists.intro
-      · exact a_1
+    simp_all only [FOL.Query.evaluateT, FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def,
+      FOL.BoundedQuery.RealizeValidDom.def, IsEmpty.forall_iff,
+      DatabaseInstance.default_ran_sub_domain, and_self, and_true, Set.mem_setOf_eq]
 
-theorem ra_to_fol_evalT.reverse [FOL.folStruc] {raQ dbi} (h : RA.Query.isWellTyped dbi.schema raQ) :
+-- @TODO: Split this over multiple smaller proofs
+theorem ra_to_fol_evalT.reverse {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema raQ) :
   ∀t, (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi raQ := by
     induction raQ with
     | R rn =>
@@ -74,16 +33,19 @@ theorem ra_to_fol_evalT.reverse [FOL.folStruc] {raQ dbi} (h : RA.Query.isWellTyp
 
     | s a b p sq ih =>
       intro t
-      simp_all only [FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def,
+      simp only [FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def,
         FOL.BoundedQuery.RealizeValidDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema,
         IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, and_imp,
         RA.Query.isWellTyped.s_def, ra_to_fol_query, FOL.outVar.def,
         FOL.BoundedQuery.Realize.tEq_def, FOL.Term.realizeSome.def,
         FirstOrder.Language.Term.realize_var, Sum.elim_inl, FOL.BoundedQuery.schema.tEq_def,
         RA.Query.evaluateT.s_def, selectionT, ne_eq, ite_true, Set.mem_setOf_eq, implies_true,
-        true_and, forall_const]
+        true_and, forall_const] at ⊢ h
       intro a_4 a_5 a_6 a_7 a_8 a_9 a_10
-      simp_all only
+      simp_all only [FOL.Query.RealizeDom.def, FOL.BoundedQuery.RealizeDom.def,
+        FOL.BoundedQuery.RealizeValidDom.def, IsEmpty.forall_iff,
+        DatabaseInstance.default_ran_sub_domain, and_self, and_true, and_imp, forall_const,
+        implies_true, true_and]
       exact a_7
 
     | p rs sq ih =>
@@ -169,18 +131,18 @@ theorem ra_to_fol_evalT.reverse [FOL.folStruc] {raQ dbi} (h : RA.Query.isWellTyp
 
     | r => sorry
 
-theorem ra_to_fol_evalT.mem [struc : FOL.folStruc] (dbi : DatabaseInstance) (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema):
+theorem ra_to_fol_evalT.mem (dbi : DatabaseInstance) [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema):
   ∀t, t ∈ raQ.evaluateT dbi ↔ (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t := by
     intro t
     apply Iff.intro
     . intro h_RA_eval
-      rw [
+      apply
         FOL.Query.RealizeDom.isWellTyped_eq_Realize
           (ra_to_fol_query raQ dbi.schema)
           (ra_to_fol_query.isWellTyped raQ dbi.schema h_ra_wt)
           (by simp_all [RA.Query.evaluate.validSchema raQ h_ra_wt t h_RA_eval])
           (RA.Query.evaluateT.dbi_domain h_ra_wt t h_RA_eval)
-      ]
+
 
       induction raQ with
       | R rn =>
@@ -199,19 +161,19 @@ theorem ra_to_fol_evalT.mem [struc : FOL.folStruc] (dbi : DatabaseInstance) (raQ
 
     . exact ra_to_fol_evalT.reverse h_ra_wt t
 
-theorem ra_to_fol_eval [struc : FOL.folStruc] {dbi} (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
+theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
   raQ.evaluate dbi h_ra_wt = (ra_to_fol_query raQ dbi.schema).evaluate dbi := by
     simp [RA.Query.evaluate, FOL.Query.evaluate]
-    simp_all [ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, true_and]
+    simp_all
     ext t
     simp_all only [ra_to_fol_evalT.FOL_evaluateT]
     exact ra_to_fol_evalT.mem dbi raQ h_ra_wt t
 
-theorem ra_to_fol [FOL.folStruc] {dbi} (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
+theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
   ∃folQ : FOL.Query, raQ.evaluate dbi h = folQ.evaluate dbi := by
     use ra_to_fol_query raQ dbi.schema
     exact ra_to_fol_eval raQ h
 
 
-theorem fol_to_ra [FOL.folStruc] {dbi} (folQ : FOL.Query) (h : folQ.isWellTyped) :
+theorem fol_to_ra {dbi} [FOL.folStruc dbi] (folQ : FOL.Query) (h : folQ.isWellTyped) :
   ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by sorry

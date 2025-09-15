@@ -38,10 +38,10 @@ theorem projectAttribute.Injective : (projectAttribute dropSet).Injective :=
   by simp [Function.Injective, projectAttribute]; aesop
 
 @[simp]
-theorem projectQuery.def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs := rfl
+theorem projectQuery.def (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs := rfl
 
 @[simp]
-theorem projectQuery.schema_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.schema) : (projectQuery folQ rs).schema = rs := by
+theorem projectQuery.schema_def (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.schema) : (projectQuery folQ rs).schema = rs := by
   ext a
   apply Iff.intro
   · intro a_1
@@ -62,18 +62,18 @@ theorem projectQuery.schema_def [FOL.folStruc] (folQ : FOL.Query) (rs : Relation
     · exact h a_1
     · simp_all only [Finset.mem_sdiff, not_true_eq_false, and_false, not_false_eq_true, projectAttribute_not_mem]
 
-theorem projectQuery.not_sub_schema [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) : (projectQuery folQ (rs ∩ folQ.schema)) = (projectQuery folQ rs) := by
+theorem projectQuery.not_sub_schema (folQ : FOL.Query) (rs : RelationSchema) : (projectQuery folQ (rs ∩ folQ.schema)) = (projectQuery folQ rs) := by
   simp_all
   have z : (folQ.schema \ (rs ∩ folQ.schema)) = folQ.schema \ rs := by simp
   rw [z]
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped_projectAttribute [FOL.folStruc] {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
+theorem BoundedQuery.relabel_isWellTyped_projectAttribute {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
   (φ.relabel (projectAttribute dropSet)).isWellTyped → φ.isWellTyped := by
     induction φ with
     | _ => simp_all
 
-theorem projectQuery.isWellTyped_def [FOL.folStruc] (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
+theorem projectQuery.isWellTyped_def (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
   : folQ.isWellTyped := by
     cases folQ with
 

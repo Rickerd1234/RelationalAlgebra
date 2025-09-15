@@ -67,7 +67,7 @@ theorem BoundedQuery.hasSubQuery.exs_def (q : BoundedQuery n) (needle : BoundedQ
     . aesop
 
 @[simp]
-theorem BoundedQuery.hasSubQuery.schema_def {k n hk} [folStruc] {needle : BoundedQuery k} {q : BoundedQuery n} (h : hasSubQuery hk q needle) :
+theorem BoundedQuery.hasSubQuery.schema_def {k n hk} {needle : BoundedQuery k} {q : BoundedQuery n} (h : hasSubQuery hk q needle) :
   needle.schema ⊆ q.schema := by
     induction q with
     | R dbs rn t =>

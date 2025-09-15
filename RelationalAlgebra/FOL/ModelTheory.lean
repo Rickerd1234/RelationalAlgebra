@@ -67,9 +67,8 @@ theorem arityToTuple_def {dbs: DatabaseSchema} {rn : RelationName} {i : Fin (Fin
     := by simp [ArityToTuple]
 
 -- Explore relation concepts
-class folStruc extends fol.Structure (Part Value) where
+class folStruc (dbi : DatabaseInstance) extends fol.Structure (Part Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
-      (dbi : DatabaseInstance)     →                        -- Every database schema
       (rn : RelationName)          →                      -- Every relation (and every arity)
       (va : Fin (dbi.schema rn).card → Part Value) →             -- Every value assignment (for this arity)
 
@@ -79,13 +78,13 @@ class folStruc extends fol.Structure (Part Value) where
         )
 
 @[simp]
-theorem folStruc_apply_RelMap [folStruc] {dbi : DatabaseInstance} {rn va} :
+theorem folStruc_apply_RelMap (dbi : DatabaseInstance) [folStruc dbi] {rn va} :
   Structure.RelMap (fol.Rel dbi.schema rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
-    := (folStruc.RelMap_R dbi rn va)
+    := (folStruc.RelMap_R rn va)
 
 @[simp]
-theorem folStruc_empty_fun {n} [folStruc] (_f : fol.Functions n) : False := by
+theorem fol_empty_fun {n} (_f : fol.Functions n) : False := by
   exact Aesop.BuiltinRules.empty_false _f
 
-theorem Term.cases [folStruc] (t : fol.Term (Attribute ⊕ (Fin n))) : ∃k, t = var k := by
-  cases t with | var k => use k | func _f _ => exact False.elim (folStruc_empty_fun _f)
+theorem Term.cases {n} (t : fol.Term (Attribute ⊕ (Fin n))) : ∃k, t = var k := by
+  cases t with | var k => use k | func _f _ => exact False.elim (fol_empty_fun _f)

@@ -6,7 +6,7 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 @[simp]
-theorem relabel.Injective_def [folStruc] {k n : ℕ} {g : (Attribute ⊕ Fin k) → (Attribute ⊕ Fin n)} (h : g.Injective) :
+theorem relabel.Injective_def {k n : ℕ} {g : (Attribute ⊕ Fin k) → (Attribute ⊕ Fin n)} (h : g.Injective) :
   Function.Injective (Term.relabel g : fol.Term (Attribute ⊕ Fin k) → fol.Term (Attribute ⊕ Fin n)) := by
     simp_all [Function.Injective]
     intros t₁ t₂ h'
@@ -30,7 +30,7 @@ theorem relabel.Injective_def [folStruc] {k n : ℕ} {g : (Attribute ⊕ Fin k) 
         exact (right val_1).2 val_2 h'
 
 @[simp]
-theorem relabel.Injective_relabelAux [folStruc] {k n : ℕ} {g : Attribute → (Attribute ⊕ Fin n)} (h : g.Injective) :
+theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute ⊕ Fin n)} (h : g.Injective) :
   Function.Injective (BoundedFormula.relabelAux g k) := by
     simp_all [Function.Injective]
     apply And.intro
@@ -100,16 +100,13 @@ theorem relabel.Injective_relabelAux [folStruc] {k n : ℕ} {g : Attribute → (
         simp_all [BoundedFormula.relabelAux]
 
 @[simp]
-theorem BoundedQuery.relabel_schema [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
+theorem BoundedQuery.relabel_schema {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
-    | R =>
-      simp [Relations.boundedFormula]
-      aesop
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_hasSafeTerm [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (t : fol.Term (Attribute ⊕ Fin k)) (h : g.Injective):
+theorem BoundedQuery.relabel_hasSafeTerm {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (t : fol.Term (Attribute ⊕ Fin k)) (h : g.Injective):
   (φ.relabel g).hasSafeTerm (t.relabel (BoundedFormula.relabelAux g k)) = φ.hasSafeTerm t := by
     induction φ with
     | R dbs rn a =>
@@ -132,7 +129,7 @@ theorem BoundedQuery.relabel_hasSafeTerm [folStruc] {n k} (g : Attribute → Att
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped [folStruc] {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery k) (h : φ.isWellTyped) :
+theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery k) (h : φ.isWellTyped) :
   (φ.relabel g).isWellTyped := by
     induction φ with
     | _ => simp_all
@@ -142,7 +139,7 @@ theorem Sum.Injective (g : α → α) (h : g.Injective) :
   (Sum.inl ∘ g : α → α ⊕ β).Injective := by simp [Function.Injective]; exact fun ⦃a₁ a₂⦄ a ↦ h (h (congrArg g a))
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped_sumInl [folStruc] {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery k) :
+theorem BoundedQuery.relabel_isWellTyped_sumInl {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery k) :
   (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped → φ.isWellTyped := by
     induction φ with
     | _ => simp_all
