@@ -129,17 +129,13 @@ theorem BoundedQuery.relabel_hasSafeTerm {n k} (g : Attribute → Attribute ⊕ 
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery k) (h : φ.isWellTyped) :
-  (φ.relabel g).isWellTyped := by
+theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery k) (h : φ.isWellTyped dbs) :
+  (φ.relabel g).isWellTyped dbs := by
     induction φ with
     | _ => simp_all
-
-@[simp]
-theorem Sum.Injective (g : α → α) (h : g.Injective) :
-  (Sum.inl ∘ g : α → α ⊕ β).Injective := by simp [Function.Injective]; exact fun ⦃a₁ a₂⦄ a ↦ h (h (congrArg g a))
 
 @[simp]
 theorem BoundedQuery.relabel_isWellTyped_sumInl {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery k) :
-  (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped → φ.isWellTyped := by
+  (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped dbs → φ.isWellTyped dbs := by
     induction φ with
-    | _ => simp_all
+    | _ => simp_all [Sum.inl_injective]

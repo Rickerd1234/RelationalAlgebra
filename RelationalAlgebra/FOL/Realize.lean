@@ -7,117 +7,393 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-def Term.realizeSome (dbi) [folStruc dbi] {n : ℕ} (t : fol.Term (Attribute ⊕ (Fin n))) (ov : Attribute →. Value) (iv : Fin n →. Value) : Prop
-  := (t.realize (Sum.elim ov iv)).Dom
+def Term.realizeSome (dbi) [folStruc dbi] {n : ℕ} (t : fol.Term (Attribute ⊕ (Fin n))) (tup : Tuple) (iv : Fin n →. Value) : Prop
+  := (t.realize (Sum.elim tup iv)).Dom
 
 @[simp]
-theorem Term.realizeSome.def (dbi) [folStruc dbi] (t : fol.Term (Attribute ⊕ (Fin n))) (ov : Attribute →. Value) (iv : Fin n →. Value) :
-  Term.realizeSome dbi t ov iv ↔ (t.realize (Sum.elim ov iv)).Dom := by rfl
+theorem Term.realizeSome.def (dbi) [folStruc dbi] (t : fol.Term (Attribute ⊕ (Fin n))) (tup : Tuple) (iv : Fin n →. Value) :
+  Term.realizeSome dbi t tup iv ↔ (t.realize (Sum.elim tup iv)).Dom := by rfl
 
--- @TODO: Check if dbs needs a welltypedness constraint
+@[simp]
+theorem Term.realizeSome.tuple_restrict {dbi} [folStruc dbi] (t : fol.Term (Attribute ⊕ (Fin n))) {tup tup' : Tuple} {iv : Fin n →. Value} :
+  Term.realizeSome dbi t tup' iv → (h_sub : tup'.Dom ⊆ tup.Dom) → tup' = tup.restrict h_sub → Term.realizeSome dbi t tup iv := by
+    intro h_realize h_sub h_eq
+    simp_all only [«def»]
+    have ⟨t, ht⟩ := Term.cases t
+    subst ht
+    cases t with
+    | inl a => exact h_sub h_realize
+    | inr k => simp_all only [realize_var, Sum.elim_inr]
+
+theorem Term.realizeSome.tuple_restrict2 {dbi} [folStruc dbi] (t : fol.Term (Attribute ⊕ (Fin n))) {tup : Tuple} {iv : Fin n →. Value} :
+  Term.realizeSome dbi t tup iv → (h : ↑t.varFinsetLeft ⊆ tup.Dom) → tup' = tup.restrict h → Term.realizeSome dbi t tup' iv := by
+    intro a h ht
+    simp_all only [«def»]
+    have ⟨t, ht⟩ := Term.cases t
+    subst ht
+    cases t with
+    | inl a => simp [PFun.restrict, Part.restrict]
+    | inr k => simp_all only [realize_var, Sum.elim_inr, varFinsetLeft.eq_2, implies_true]
+
 -- Formal realization definition, requires all terms to be 'some'
-def BoundedQuery.Realize (dbi) {n : ℕ} [folStruc dbi] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
-  | R dbs rn t, ov, iv => (∀i, Term.realizeSome dbi (t i) ov iv) ∧ (R dbs rn t).toFormula.Realize ov iv
-  | tEq q t₁ t₂, ov, iv => q.Realize dbi ov iv ∧ Term.realizeSome dbi t₁ ov iv ∧ Term.realizeSome dbi t₂ ov iv ∧ (BoundedFormula.equal t₁ t₂).Realize ov iv
-  | and q₁ q₂, ov, iv => q₁.Realize dbi ov iv ∧ q₂.Realize dbi ov iv
-  | ex q, ov, iv => ∃a ∈ dbi.domain, q.Realize dbi ov (Fin.snoc iv a)
+def BoundedQuery.Realize (dbi) {n : ℕ} [folStruc dbi] : BoundedQuery n → Tuple → (Fin n →. Value) → Prop
+  | R dbs rn tMap,  tup, iv => (∀i, Term.realizeSome dbi (tMap i) tup iv) ∧ (R dbs rn tMap).toFormula.Realize tup iv
+  | tEq q t₁ t₂,    tup, iv => q.Realize dbi tup iv ∧ Term.realizeSome dbi t₁ tup iv ∧ Term.realizeSome dbi t₂ tup iv
+                                ∧ (BoundedFormula.equal t₁ t₂).Realize tup iv
+  | and q₁ q₂,      tup, iv => q₁.Realize dbi tup iv ∧ q₂.Realize dbi tup iv
+  | ex q,           tup, iv => ∃a ∈ dbi.domain, q.Realize dbi tup (Fin.snoc iv a)
 
 @[simp]
-theorem BoundedQuery.Realize.R_def [folStruc dbi] {n : ℕ} (t) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (R dbs rn t).Realize dbi ov iv ↔ (∀i, Term.realizeSome dbi (t i) ov iv) ∧ (R dbs rn t).toFormula.Realize ov iv := by
+theorem BoundedQuery.Realize.R_def [folStruc dbi] {n : ℕ} (tMap) {tup : Tuple} {iv : Fin n →. Value}
+  : (R dbs rn tMap).Realize dbi tup iv ↔ (∀i, Term.realizeSome dbi (tMap i) tup iv) ∧ (R dbs rn tMap).toFormula.Realize tup iv := by
+    rfl
+
+theorem BoundedQuery.Realize.all_i_R_def [folStruc dbi] {n : ℕ} (tMap) {tup : Tuple} {iv : Fin n →. Value}
+  : (R dbs rn tMap).Realize dbi tup iv → (∀i, ((tMap i).realize (Sum.elim tup iv)).Dom) := by
+    simp_all
+
+theorem BoundedQuery.Realize.all_att_R_def [folStruc dbi] {n : ℕ} (tMap) {tup : Tuple} {iv : Fin n →. Value}
+  : (R dbs rn tMap).Realize dbi tup iv → (∀a (ha : a ∈ dbs rn), ((tMap ((dbs rn).index ha)).realize (Sum.elim tup iv)).Dom) := by
+    simp_all
+
+theorem BoundedQuery.Realize.exists_att_R_def [folStruc dbi] {n : ℕ} (tMap) {tup : Tuple} {iv : Fin n →. Value} (h : dbs rn ≠ ∅)
+  : (R dbs rn tMap).Realize dbi tup iv → (∃t' : fol.Term (Attribute ⊕ (Fin n)), (t'.realize (Sum.elim tup iv)).Dom) := by
+    intro a
+    simp_all only [ne_eq, R_def, realizeSome.def, toFormula_rel, BoundedFormula.realize_rel]
+    obtain ⟨left, right⟩ := a
+    induction h' : (dbs rn).card with
+    | zero => simp_all only [Finset.card_eq_zero]
+    | succ k ih =>
+      use (tMap (Fin.cast h'.symm (Fin.ofNat' (k + 1) (k + 1))))
+      simp_all only
+
+@[simp]
+theorem BoundedQuery.Realize.exists_tuple_R_def [folStruc dbi] {n : ℕ} (tMap) {tup : Tuple} {iv : Fin n →. Value}
+  : (R dbi.schema rn tMap).Realize dbi tup iv → (∃t' ∈ (dbi.relations rn).tuples, ∀i, (tMap i).realize (Sum.elim tup iv) = t' ((dbi.schema rn).fromIndex i)) := by
+    intro a
+    simp_all only [R_def, realizeSome.def, toFormula_rel, BoundedFormula.realize_rel, folStruc_apply_RelMap]
+    obtain ⟨left, right⟩ := a
+    use (ArityToTuple fun i ↦ realize (Sum.elim tup iv) (tMap i))
+    simp_all only [true_and]
+    intro i
+    simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def, and_self]
+
+@[simp]
+theorem BoundedQuery.Realize.tEq_def [folStruc dbi] {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) {tup : Tuple} {iv : Fin n →. Value}
+  : (tEq q t₁ t₂).Realize dbi tup iv ↔ (q.Realize dbi tup iv ∧ Term.realizeSome dbi t₁ tup iv ∧ Term.realizeSome dbi t₂ tup iv ∧ (BoundedFormula.equal t₁ t₂).Realize tup iv) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.Realize.tEq_def [folStruc dbi] {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (tEq q t₁ t₂).Realize dbi ov iv ↔ (q.Realize dbi ov iv ∧ Term.realizeSome dbi t₁ ov iv ∧ Term.realizeSome dbi t₂ ov iv ∧ (BoundedFormula.equal t₁ t₂).Realize ov iv) := by
+theorem BoundedQuery.Realize.and_def [folStruc dbi] {n : ℕ} (q₁ q₂ : BoundedQuery n) {t : Tuple} {iv : Fin n →. Value}
+  : (and q₁ q₂).Realize dbi t iv ↔ q₁.Realize dbi t iv ∧ q₂.Realize dbi t iv := by
     rfl
 
 @[simp]
-theorem BoundedQuery.Realize.and_def [folStruc dbi] {n : ℕ} (q₁ q₂ : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (and q₁ q₂).Realize dbi ov iv ↔ q₁.Realize dbi ov iv ∧ q₂.Realize dbi ov iv := by
+theorem BoundedQuery.Realize.ex_def [folStruc dbi] {n : ℕ} (q : BoundedQuery (n + 1)) {t: Tuple} {iv : Fin n →. Value}
+  : (ex q).Realize dbi t iv ↔ ∃a ∈ dbi.domain, q.Realize dbi t (Fin.snoc iv a) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.Realize.ex_def [folStruc dbi] {n : ℕ} (q : BoundedQuery (n + 1)) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : (ex q).Realize dbi ov iv ↔ ∃a ∈ dbi.domain, q.Realize dbi ov (Fin.snoc iv a) := by
-    rfl
+theorem BoundedQuery.Realize.schema_sub_Dom [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value}
+  : q.Realize dbi t iv → ∀a ∈ q.schema, (t a).Dom := by
+    induction q with
+    | R dbs rn vs =>
+      intro a_1 a_2 a_3
+      simp_all only [R_def, realizeSome.def, toFormula_rel, BoundedFormula.realize_rel, schema.R_def, Set.mem_toFinset,
+        Set.mem_setOf_eq]
+      obtain ⟨left, right⟩ := a_1
+      obtain ⟨w, h⟩ := a_3
+      have z := Term.cases (vs w)
+      simp_all only [Sum.exists]
+      cases z with
+      | inl h_1 =>
+        obtain ⟨w_1, h_1⟩ := h_1
+        simp_all only [varFinsetLeft.eq_1, Finset.mem_singleton]
+        subst h
+        have z' := left w
+        simp_all only [realize_var, Sum.elim_inl]
+      | inr h_2 =>
+        obtain ⟨w_1, h_1⟩ := h_2
+        simp_all only [varFinsetLeft.eq_2, Finset.not_mem_empty]
 
--- Check if these are required or already a result of the new Realize (presumably all of them follow from prior definitions)
--- Realize a bounded query doamin, all values must be within dbi.domain and both assignments must have 'some' values for all used terms
-def BoundedQuery.RealizeValidDom (q : BoundedQuery n) (dbi : DatabaseInstance) (ov : Tuple) (iv : Fin n →. Value) : Prop :=
-  (∀a ∈ q.schema, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧ (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
+    | _ => aesop
 
 @[simp]
-theorem BoundedQuery.RealizeValidDom.def {n : ℕ} (q : BoundedQuery n) {ov : Attribute →. Value} {iv : Fin n →. Value}
-  : q.RealizeValidDom dbi ov iv ↔
-      (∀a ∈ q.schema, (ov a).Dom) ∧ (ov.ran ⊆ dbi.domain) ∧
-        (∀i : Fin n, (iv i).Dom) ∧ (iv.ran ⊆ dbi.domain)
-  := by
-    rfl
-
--- Realize a bounded query considering the database domain, using Attribute and Fin n maps
-def BoundedQuery.RealizeDom {n : ℕ} (dbi : DatabaseInstance) [folStruc dbi] : BoundedQuery n → (Attribute →. Value) → (Fin n →. Value) → Prop
-  | q, ov, iv     => q.Realize dbi ov iv ∧ q.RealizeValidDom dbi ov iv
+theorem Relmap.tuple_restrict [folStruc : folStruc dbi] {t t' : Tuple} {tMap : Fin (dbi.schema rn).card → fol.Term (Attribute ⊕ (Fin n))}:
+  folStruc.RelMap (fol.Rel dbi.schema rn) (fun i ↦ realize (Sum.elim t' iv) (tMap i)) →
+  (h : t'.Dom ⊆ t.Dom) → t' = t.restrict h →
+  (∀ (i : Fin (Finset.card (dbi.schema rn))), (realize (Sum.elim (PFun.restrict t h) iv) (tMap i)).Dom) →
+    folStruc.RelMap (fol.Rel dbi.schema rn) (fun i ↦ realize (Sum.elim t iv) (tMap i)) := by
+      intro ht h ht' hdom
+      have z : (ArityToTuple fun i ↦ realize (Sum.elim (t.restrict h) iv) (tMap i)) = (ArityToTuple fun i ↦ realize (Sum.elim t iv) (tMap i)) := by
+        ext a v
+        apply Iff.intro
+        · intro a_1
+          unfold ArityToTuple at *
+          simp_all only [PFun.dom_mk, DatabaseInstance.validSchema_def]
+          split
+          next h_1 =>
+            simp_all only [↓reduceDIte, Part.dom_iff_mem]
+            have ⟨k, hk⟩ := Term.cases (tMap (RelationSchema.index h_1))
+            rw [hk]
+            simp_all only [realize_var]
+            cases k with
+            | inl val => simp_all only [Sum.elim_inl, PFun.mem_restrict, Finset.mem_coe]
+            | inr val_1 => simp_all only [Sum.elim_inr]
+          next h_1 => simp_all only [↓reduceDIte, Part.not_mem_none]
+        · intro a_1
+          unfold ArityToTuple at *
+          simp_all only [PFun.dom_mk, DatabaseInstance.validSchema_def]
+          split
+          next h_1 =>
+            simp_all only [↓reduceDIte]
+            have ⟨k, hk⟩ := Term.cases (tMap (RelationSchema.index h_1))
+            have z := hdom (RelationSchema.index h_1)
+            rw [hk]
+            simp_all only [realize_var]
+            cases k with
+            | inl val =>
+              simp [Part.dom_iff_mem] at z a_1
+              simp [a_1, z]
+            | inr val_1 => simp_all only [Sum.elim_inr]
+          next h_1 => simp_all only [↓reduceDIte, Part.not_mem_none]
+      simp_all only [folStruc_apply_RelMap]
 
 @[simp]
-theorem BoundedQuery.RealizeDom.def [folStruc dbi] {q : BoundedQuery n} :
-  q.RealizeDom dbi ov iv ↔ q.Realize dbi ov iv ∧ q.RealizeValidDom dbi ov iv := by rfl
+theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped dbi.schema)
+  : q.Realize dbi t' iv → (h : t'.Dom ⊆ t.Dom) →  t' = t.restrict h → q.Realize dbi t iv := by
+    intro a h a_1
+    induction q with
+    | R dbs rn tMap =>
+      simp_all only [R_def, realizeSome.def, toFormula_rel, BoundedFormula.realize_rel]
+      obtain ⟨left, right⟩ := a
+      apply And.intro
+      · intro i
+        exact Term.realizeSome.tuple_restrict (tMap i) (left i) h rfl
+      · simp_all
+        subst h_wt
+        exact Relmap.tuple_restrict right h rfl left
 
--- Realize a query considering the database domain, using just an Attribute map
-nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (v : Attribute →. Value) : Prop :=
-  φ.RealizeDom dbi v default ∧ v.Dom ⊆ φ.schema
+    | tEq sq t₁ t₂ ih  =>
+      simp_all only [tEq_def, true_and]
+      obtain ⟨left, right⟩ := a
+      obtain ⟨left_1, right⟩ := right
+      obtain ⟨left_2, right⟩ := right
+      apply And.intro
+      . exact ih h_wt.1 left
+      . apply And.intro
+        · exact Term.realizeSome.tuple_restrict t₁ left_1 h rfl
+        · apply And.intro
+          · exact Term.realizeSome.tuple_restrict t₂ left_2 h rfl
+          · simp_all [BoundedFormula.Realize]
+            obtain ⟨left_1, right_1⟩ := h_wt
+            obtain ⟨left_3, right_1⟩ := right_1
+            have ⟨t₁, ht₁⟩ := Term.cases t₁
+            have ⟨t₂, ht₂⟩ := Term.cases t₂
+            simp_all [ht₁, ht₂]
+            cases t₁ with
+            | inl att₁ =>
+              simp_all
+              cases t₂ with
+              | inl att₂ =>
+                by_cases hd₁ : (t' att₁).Dom
+                . by_cases hd₂ : (t' att₂).Dom
+                  . simp [Part.ext_iff] at right ⊢
+                    simp [Part.dom_iff_mem] at hd₁ hd₂
+                    intro v
+                    apply Iff.intro
+                    . intro hv
+                      exact ((right v).mp (And.intro hd₁ hv)).2
+                    . intro hv
+                      exact ((right v).mpr (And.intro hd₂ hv)).2
+                  . simp_all
+                . simp_all
+              | inr fin₂ =>
+                by_cases (t' att₁).Dom
+                . simp_all
+                  rw [← right]
+                  ext v
+                  simp [PFun.mem_restrict]
+                  intro a
+                  subst ht₁ ht₂
+                  simp_all only
+                  exact Part.dom_iff_mem.mp left_2
+                . simp_all
+            | inr fin₁ =>
+              cases t₂ with
+              | inl att₂ =>
+                by_cases (t' att₂).Dom
+                . simp_all
+                  ext v
+                  simp [PFun.mem_restrict]
+                  intro a
+                  subst ht₁ ht₂
+                  simp_all only
+                  exact Part.dom_iff_mem.mp left_2
+                . simp_all
+              | inr fin₂ =>
+                simp_all
+
+    | ex q ih =>
+      simp at a ⊢ h_wt
+      have ⟨w, hw⟩ := a
+      use w
+      exact And.intro hw.1 (ih h_wt hw.2)
+
+    | _ => aesop
+
+@[simp]
+theorem Relmap.tuple_restrict2 [folStruc : folStruc dbi] {t : Tuple} (h : ↑((BoundedQuery.R dbi.schema rn tMap).schema) ⊆ t.Dom) :
+  folStruc.RelMap (fol.Rel dbi.schema rn) (fun i ↦ realize (Sum.elim t iv) (tMap i)) →
+    folStruc.RelMap (fol.Rel dbi.schema rn) (fun i ↦ realize (Sum.elim (PFun.restrict t h) iv) (tMap i)) := by
+      intro ht
+      have z : (ArityToTuple fun i ↦ realize (Sum.elim (t.restrict h) iv) (tMap i)) = (ArityToTuple fun i ↦ realize (Sum.elim t iv) (tMap i)) := by
+        ext a v
+        apply Iff.intro
+        · intro a_1
+          unfold ArityToTuple at *
+          simp_all only [PFun.dom_mk, DatabaseInstance.validSchema_def]
+          split
+          next h_1 =>
+            simp_all only [↓reduceDIte, Part.dom_iff_mem]
+            have ⟨k, hk⟩ := Term.cases (tMap (RelationSchema.index h_1))
+            rw [hk]
+            simp_all only [realize_var]
+            cases k with
+            | inl val => simp_all only [Sum.elim_inl, PFun.mem_restrict, Finset.mem_coe]
+            | inr val_1 => simp_all only [Sum.elim_inr]
+          next h_1 => simp_all only [↓reduceDIte, Part.not_mem_none]
+        · intro a_1
+          simp_all
+          have arityDom := RelationInstance.validSchema.def ht
+          unfold ArityToTuple at *
+          simp_all only [PFun.dom_mk, DatabaseInstance.validSchema_def]
+          split
+          next h_1 =>
+            simp_all only [↓reduceDIte]
+            have ⟨k, hk⟩ := Term.cases (tMap (RelationSchema.index h_1))
+            rw [hk]
+            simp_all only [realize_var]
+            cases k with
+            | inl
+              val =>
+              simp_all only [Sum.elim_inl, PFun.mem_restrict, BoundedQuery.schema.R_def, Set.coe_toFinset,
+                Set.mem_setOf_eq, and_true]
+              simp_all only [BoundedQuery.schema.R_def, Set.coe_toFinset]
+              use RelationSchema.index h_1
+              unfold varFinsetLeft
+              split
+              . simp_all only [var.injEq, Sum.inl.injEq, Finset.mem_singleton]
+              . simp_all only [var.injEq, reduceCtorEq]
+              . simp_all [emptyStructure]
+            | inr val_1 => simp_all only [Sum.elim_inr]
+          next h_1 => simp_all only [↓reduceDIte, Part.not_mem_none]
+      simp_all only [folStruc_apply_RelMap]
+
+@[simp]
+theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped dbi.schema)
+  : (h : ↑q.schema ⊆ t.Dom) → q.Realize dbi t iv → q.Realize dbi (t.restrict h) iv := by
+    intro h h_rel
+    induction q with
+    | R dbs rn tMap =>
+      simp_all only [isWellTyped.R_def, R_def, toFormula_rel, BoundedFormula.realize_rel]
+      obtain ⟨left, right⟩ := h_rel
+      apply And.intro
+      · intro i
+        have z : ↑(tMap i).varFinsetLeft ⊆ t.Dom := by rw [@Set.subset_def] at ⊢ h; aesop
+        have z' := Term.realizeSome.tuple_restrict2 (tMap i) (left i) z (rfl)
+        have hz' : ↑(tMap i).varFinsetLeft ⊆ ↑(R dbs rn tMap).schema := by simp [Set.subset_def]; intro x hx; use i
+        exact realizeSome.tuple_restrict (tMap i) z' hz' rfl
+      · subst h_wt
+        simp_all [Relmap.tuple_restrict2 h right]
+
+
+    | tEq sq t₁ t₂ ih  =>
+      simp_all only [isWellTyped.tEq_def, tEq_def, forall_const]
+      obtain ⟨left, right⟩ := h_rel
+      obtain ⟨left_1, right⟩ := right
+      obtain ⟨left_2, right⟩ := right
+      have ⟨t₁, ht₁⟩ := Term.cases t₁
+      subst ht₁
+      have ⟨t₂, ht₂⟩ := Term.cases t₂
+      subst ht₂
+      simp_all only [realizeSome.def, realize_var, true_and]
+      obtain ⟨left_3, right_1⟩ := h_wt
+      obtain ⟨left_4, right_1⟩ := right_1
+      cases t₁ with
+      | inl val =>
+        cases t₂ with
+        | inl val_1 =>
+          simp_all only [Sum.elim_inl, hasSafeTerm_mem_schema]
+          apply And.intro
+          · exact left_4
+          · apply And.intro
+            · exact right_1
+            · ext a : 1
+              simp_all only [Part.dom_iff_mem, BoundedFormula.Realize, realize_var, Sum.elim_inl,
+                schema, PFun.mem_restrict, Finset.mem_coe, true_and]
+        | inr val_2 =>
+          simp_all only [Sum.elim_inl, hasSafeTerm_mem_schema, Sum.elim_inr, true_and]
+          apply And.intro
+          · exact left_4
+          · simp_all only [BoundedFormula.Realize, realize_var, Sum.elim_inl, Sum.elim_inr]
+            ext a : 1
+            simp_all only [PFun.mem_restrict, schema.tEq_def, Finset.mem_coe, true_and]
+      | inr val_1 =>
+        cases t₂ with
+        | inl val =>
+          simp_all only [Sum.elim_inr, Sum.elim_inl, hasSafeTerm_mem_schema, true_and]
+          apply And.intro
+          · exact right_1
+          · ext a : 1
+            simp_all only [Part.dom_iff_mem, BoundedFormula.Realize, realize_var, Sum.elim_inr,
+              Sum.elim_inl, schema, PFun.mem_restrict, Finset.mem_coe, true_and]
+        | inr val_2 =>
+          simp_all only [Sum.elim_inr, true_and]
+          exact right
+
+    | and q₁ q₂ ih₁ ih₂ =>
+      simp_all only [isWellTyped.and_def, and_self, and_def, forall_const]
+      obtain ⟨left, right⟩ := h_wt
+      obtain ⟨left_1, right_1⟩ := h_rel
+      apply And.intro
+      · have h': ↑q₁.schema ⊆ t.Dom := by simp_all
+        have := ih₁ h' left_1
+        have h'' : ↑q₁.schema ⊆ ↑(q₁.and q₂).schema := by simp
+        exact tuple_restrict left (ih₁ h' left_1) h'' rfl
+      · have h': ↑q₂.schema ⊆ t.Dom := by simp_all
+        have := ih₂ h' right_1
+        have h'' : ↑q₂.schema ⊆ ↑(q₁.and q₂).schema := by simp
+        exact tuple_restrict right (ih₂ h' right_1) h'' rfl
+
+    | ex q ih =>
+      simp_all only [isWellTyped.ex_def, ex_def, Part.coe_some, forall_const]
+      obtain ⟨w, h_1⟩ := h_rel
+      obtain ⟨left, right⟩ := h_1
+      apply Exists.intro
+      · apply And.intro
+        · simp_all only [schema.ex_def, forall_true_left]
+          apply left
+        · simp_all only
+
+-- -- Realize a query, without any additional attributes in the 'tuple'
+nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (t : Tuple) : Prop :=
+  φ.Realize dbi t default ∧ t.Dom ⊆ φ.schema
 
 @[simp]
 theorem Query.RealizeDom.def [folStruc dbi] (φ : Query)
-  : φ.RealizeDom dbi ov ↔ BoundedQuery.RealizeDom dbi φ ov default ∧ ov.Dom ⊆ φ.schema := by rfl
+  : φ.RealizeDom dbi t ↔ BoundedQuery.Realize dbi φ t default ∧ t.Dom ⊆ φ.schema := by rfl
 
-theorem Query.RealizeDom.schema_sub_Dom [folStruc dbi] (q : FOL.Query) (h: q.RealizeDom dbi ov) :
-  ↑q.schema ⊆ ov.Dom := by simp_all; aesop
-
-@[simp]
-theorem Query.Realize.isWellTyped_def {iv : Fin n →. Value} [folStruc dbi]
-  (φ : BoundedQuery n) (h : φ.isWellTyped) (h' : φ.Realize dbi t iv) (ha : a ∈ BoundedQuery.schema φ):
-    (t a).Dom := by
-      induction φ with
-      | R dbs rn f =>
-        simp_all only [BoundedQuery.isWellTyped.R_def, BoundedQuery.Realize.R_def, realizeSome.def,
-          BoundedQuery.toFormula_rel, BoundedFormula.realize_rel, BoundedQuery.schema.R_def,
-          Set.mem_toFinset, Set.mem_setOf_eq]
-        obtain ⟨left, right⟩ := h'
-        obtain ⟨w, h⟩ := ha
-        have z := Term.cases (f w)
-        simp_all [Sum.exists]
-        cases z with
-        | inl h_1 =>
-          obtain ⟨w_2, h_1⟩ := h_1
-          simp_all only [varFinsetLeft.eq_1, Finset.mem_singleton]
-          subst h
-          have z' := left w
-          simp_all only [realize_var, Sum.elim_inl]
-        | inr h_2 =>
-          obtain ⟨w_2, h_1⟩ := h_2
-          simp_all only [varFinsetLeft.eq_2, Finset.not_mem_empty]
-      | tEq sq t₁ t₂ sq_ih =>
-        simp_all
-        obtain ⟨left, right⟩ := h
-        obtain ⟨left_1, right_1⟩ := h'
-        aesop
-      | and => aesop
-      | ex q q_ih => aesop
-
+theorem Query.RealizeDom.schema_sub_Dom [folStruc dbi] {q : FOL.Query} (h: q.RealizeDom dbi t) :
+  ↑q.schema ⊆ t.Dom := by simp_all; exact BoundedQuery.Realize.schema_sub_Dom h.1
 
 @[simp]
 theorem Query.RealizeDom.imp_Realize {t dbi} [folStruc dbi] (φ : Query) :
     φ.RealizeDom dbi t → φ.Realize dbi t default := by
-      simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.RealizeValidDom.def,
-        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true,
-        implies_true]
+      simp_all
 
 @[simp]
-theorem Query.RealizeDom.isWellTyped_eq_Realize {t dbi} [folStruc dbi]
-  (φ : Query) (h_wt : φ.isWellTyped) (h_dom_schema : t.Dom ⊆ ↑φ.schema) (h_ran_domain : t.ran ⊆ dbi.domain) :
+theorem Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema {t dbi} [folStruc dbi]
+    (φ : Query) (h_dom_schema : t.Dom ⊆ ↑φ.schema) :
     φ.Realize dbi t default → φ.RealizeDom dbi t := by
-      simp_all only [«def», BoundedQuery.RealizeDom.def, BoundedQuery.RealizeValidDom.def,
-        IsEmpty.forall_iff, DatabaseInstance.default_ran_sub_domain, and_self, and_true, true_and]
-      intro h_realize a ha
-      exact Realize.isWellTyped_def φ h_wt h_realize ha
+      simp_all

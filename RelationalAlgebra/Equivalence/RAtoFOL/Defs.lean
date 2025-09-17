@@ -14,7 +14,7 @@ noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.
   | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
 
 @[simp]
-theorem ra_to_fol_query_schema (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped) :
+theorem ra_to_fol_query_schema (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     induction raQ
     case R rn =>
@@ -31,7 +31,7 @@ theorem ra_to_fol_query_schema (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.
 
     case p rs sq sq_ih =>
       ext a
-      have z : (ra_to_fol_query sq dbs).isWellTyped := by
+      have z : (ra_to_fol_query sq dbs).isWellTyped dbs := by
         simp only [ra_to_fol_query] at h'
         exact projectQuery.isWellTyped_def (ra_to_fol_query sq dbs) rs h'
       simp [sq_ih h.1 z, h.2, ra_to_fol_query, projectAttribute]
@@ -52,7 +52,7 @@ theorem ra_to_fol_query_schema (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.
 
 
     case r f sq ih =>
-      have z : (ra_to_fol_query sq dbs).isWellTyped :=
+      have z : (ra_to_fol_query sq dbs).isWellTyped dbs :=
         FOL.BoundedQuery.relabel_isWellTyped_sumInl f h.2.1 (ra_to_fol_query sq dbs) h'
       simp_all [ra_to_fol_query]
 
@@ -60,9 +60,9 @@ theorem ra_to_fol_query_schema (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.
 
 @[simp]
 theorem ra_to_fol_query.isWellTyped (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
-  (ra_to_fol_query raQ dbs).isWellTyped := by
+  (ra_to_fol_query raQ dbs).isWellTyped dbs := by
     induction raQ
     all_goals simp_all [RA.Query.isWellTyped, ra_to_fol_query]
 
     case r f q q_ih =>
-      exact FOL.BoundedQuery.relabel_isWellTyped (Sum.inl ∘ f) (FOL.Sum.Injective f h.2.1) (ra_to_fol_query q dbs) q_ih
+      exact FOL.BoundedQuery.relabel_isWellTyped (Sum.inl ∘ f) (Function.Injective.comp Sum.inl_injective h.2.1) (ra_to_fol_query q dbs) q_ih

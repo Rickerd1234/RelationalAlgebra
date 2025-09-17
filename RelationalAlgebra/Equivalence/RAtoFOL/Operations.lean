@@ -69,12 +69,12 @@ theorem projectQuery.not_sub_schema (folQ : FOL.Query) (rs : RelationSchema) : (
 
 @[simp]
 theorem BoundedQuery.relabel_isWellTyped_projectAttribute {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
-  (φ.relabel (projectAttribute dropSet)).isWellTyped → φ.isWellTyped := by
+  (φ.relabel (projectAttribute dropSet)).isWellTyped dbs → φ.isWellTyped dbs := by
     induction φ with
     | _ => simp_all
 
-theorem projectQuery.isWellTyped_def (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
-  : folQ.isWellTyped := by
+theorem projectQuery.isWellTyped_def (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped dbs)
+  : folQ.isWellTyped dbs := by
     cases folQ with
 
     | R _ _ _ => simp_all
