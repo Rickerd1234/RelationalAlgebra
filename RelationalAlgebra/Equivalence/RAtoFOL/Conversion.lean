@@ -1,4 +1,4 @@
-import RelationalAlgebra.Equivalence.RAtoFOL.Operations
+import RelationalAlgebra.Equivalence.RAtoFOL.ProjectionDef
 import RelationalAlgebra.FOL.Properties
 
 open RM
