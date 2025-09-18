@@ -17,27 +17,7 @@ theorem ra_to_fol_evalT.mp {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.is
     induction raQ with
     | R rn => exact R_def.mp
     | s a b p sq ih => exact s_def.mp h ih
-
-    | p rs sq ih =>
-      intro t
-      simp only [RA.Query.isWellTyped.p_def, ra_to_fol_query, projectQuery.def, Nat.add_zero,
-        FOL.Query.RealizeDom.def, FOL.BoundedQuery.schema.exs_def, FOL.BoundedQuery.relabel_schema,
-        Finset.coe_pimage, RA.Query.evaluateT.p_def, projectionT, Set.mem_setOf_eq, and_imp] at ⊢ h
-      intro a_2 a_3
-      obtain ⟨left, right⟩ := h
-      have h_rs : ↑rs ⊆ t.Dom := by sorry
-      use t.restrict h_rs
-      simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
-        forall_const]
-      apply And.intro
-      · sorry
-      · intro a
-        apply And.intro
-        · intro a_1
-          sorry
-        · intro a_1
-          sorry
-
+    | p rs q ih => exact p_def.mp h ih
     | j q₁ q₂ ih₁ ih₂ => exact j_def.mp h ih₁ ih₂
 
     | r f q ih => sorry
@@ -47,30 +27,7 @@ theorem ra_to_fol_evalT.mpr {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.i
     induction raQ with
     | R rn => exact R_def.mpr h
     | s a b p sq ih => exact s_def.mpr h ih
-
-    | p rs sq ih =>
-      intro t h_RA_eval
-      have t_Dom : t.Dom = rs := by
-        exact RA.Query.evaluate.validSchema (.p rs sq) h t h_RA_eval
-      apply
-        FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
-          (ra_to_fol_query (.p rs sq) dbi.schema)
-          (by simp_all)
-
-      simp only [ra_to_fol_query]
-      simp_all only [RA.Query.isWellTyped.p_def, RA.Query.evaluateT.p_def, projectionT,
-        Set.mem_setOf_eq, forall_const]
-      simp_all only [projectQuery.def, Nat.add_zero]
-      simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema]
-      obtain ⟨left, right⟩ := h
-      obtain ⟨w, h⟩ := h_RA_eval
-      obtain ⟨hw, right_1⟩ := h
-
-      have z := (ih w hw)
-      have w_Dom : w.Dom = sq.schema dbi.schema := by
-        exact RA.Query.evaluate.validSchema sq left w hw
-
-      sorry
+    | p rs sq ih => exact p_def.mpr h ih
 
     | j q₁ q₂ ih₁ ih₂ => exact j_def.mpr h ih₁ ih₂
 
