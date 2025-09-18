@@ -2,6 +2,7 @@ import RelationalAlgebra.FOL.Ordering
 import RelationalAlgebra.FOL.Query
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.WellTyped
+import RelationalAlgebra.FOL.Relabel
 
 open FOL FirstOrder Language RM Term
 
@@ -375,6 +376,35 @@ theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : Bound
         · simp_all only [schema.ex_def, forall_true_left]
           apply left
         · simp_all only
+
+theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] {k : ℕ}
+    {ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (k + n)))}
+    {n} {φ : BoundedQuery n} (v : ∀ {n}, (Fin (k + n) →. Value) → Attribute →. Value)
+    {v' : Tuple} (xs : Fin (k + n) →. Value)
+    (h1 :
+      ∀ (n) (t : fol.Term (Attribute ⊕ (Fin n))) (xs' : Fin (k + n) →. Value),
+        (ft n t).realize (Sum.elim v' xs') = t.realize (Sum.elim (v xs') (xs' ∘ Fin.natAdd _)))
+    (hv : ∀ (n) (xs : Fin (k + n) →. Value) (x : Part Value), @v (n + 1) (Fin.snoc xs x : Fin _ →. Value) = v xs) :
+    (φ.mapTermRel ft fun _ => BoundedQuery.castLE (add_assoc _ _ _).symm.le).Realize dbi v' xs ↔
+      φ.Realize dbi (v xs) (xs ∘ Fin.natAdd _) := by
+        induction φ with
+        | R => simp [FOL.BoundedQuery.mapTermRel, h1]
+        | tEq q t₁ t₂ ih =>
+          rename_i n'
+          simp [FOL.BoundedQuery.mapTermRel, h1, hv, ih]
+          intro a a_1 a_2
+          have ⟨t₁, ht₁⟩ := Term.cases t₁
+          have ⟨t₂, ht₂⟩ := Term.cases t₂
+          simp_all only [realize_var, BoundedFormula.Realize]
+        | and _ _ ih1 ih2 => simp [FOL.BoundedQuery.mapTermRel, ih1, ih2]
+        | ex _ ih => simp [FOL.BoundedQuery.mapTermRel, ih, hv]
+
+@[simp]
+theorem BoundedQuery.Realize.relabel_def {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
+  {xs : Fin (m + n) →. Value} :
+  (φ.relabel g).Realize dbi t xs ↔
+    φ.Realize dbi (Sum.elim t (xs ∘ Fin.castAdd n) ∘ g) (xs ∘ Fin.natAdd m) := by
+      apply BoundedQuery.Realize.mapTermRel_add_castLe <;> simp
 
 -- -- Realize a query, without any additional attributes in the 'tuple'
 nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (t : Tuple) : Prop :=
