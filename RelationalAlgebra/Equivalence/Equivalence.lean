@@ -6,12 +6,6 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Rename
 
 open RM
 
-@[simp]
-theorem ra_to_fol_evalT.FOL_evaluateT (dbi : DatabaseInstance) [struc : FOL.folStruc dbi] (raQ : RA.Query) :
-  t ∈ (ra_to_fol_query raQ dbi.schema).evaluateT dbi ↔ (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t := by
-    simp_all only [FOL.Query.evaluateT, FOL.Query.RealizeDom.def, Set.mem_setOf_eq]
-
--- @TODO: Split this over multiple smaller proofs
 theorem ra_to_fol_evalT.mp {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema raQ) :
   ∀t, (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi raQ := by
     induction raQ with
@@ -19,8 +13,7 @@ theorem ra_to_fol_evalT.mp {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.is
     | s a b p sq ih => exact s_def.mp h ih
     | p rs q ih => exact p_def.mp h ih
     | j q₁ q₂ ih₁ ih₂ => exact j_def.mp h ih₁ ih₂
-
-    | r f q ih => sorry
+    | r f q ih => exact r_def.mp h ih
 
 theorem ra_to_fol_evalT.mpr {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema raQ) :
   ∀t, t ∈ RA.Query.evaluateT dbi raQ → (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t := by
@@ -28,22 +21,8 @@ theorem ra_to_fol_evalT.mpr {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.i
     | R rn => exact R_def.mpr h
     | s a b p sq ih => exact s_def.mpr h ih
     | p rs sq ih => exact p_def.mpr h ih
-
     | j q₁ q₂ ih₁ ih₂ => exact j_def.mpr h ih₁ ih₂
-
-    | r f q ih =>
-      intro t h_RA_eval
-      apply
-        FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
-          (ra_to_fol_query (.r f q) dbi.schema)
-          (by simp_all [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval])
-
-      simp only [ra_to_fol_query]
-      simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema,
-        RA.Query.isWellTyped.r_def, RA.Query.evaluateT.r_def, renameT, exists_eq_right',
-        Set.mem_setOf_eq, forall_const, and_self, implies_true]
-      obtain ⟨left, right⟩ := h
-      sorry
+    | r f q ih => exact r_def.mpr h ih
 
 theorem ra_to_fol_evalT.mem (dbi : DatabaseInstance) [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema):
   ∀t, (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t ↔ t ∈ raQ.evaluateT dbi := by
@@ -54,10 +33,10 @@ theorem ra_to_fol_evalT.mem (dbi : DatabaseInstance) [struc : FOL.folStruc dbi] 
 
 theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
   (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h_ra_wt := by
-    simp [RA.Query.evaluate, FOL.Query.evaluate]
+    simp [RA.Query.evaluate, FOL.Query.evaluate, FOL.Query.evaluateT.def]
     simp_all
     ext t
-    simp_all only [ra_to_fol_evalT.FOL_evaluateT]
+    -- simp_all only [ra_to_fol_evalT.FOL_evaluateT]
     exact ra_to_fol_evalT.mem dbi raQ h_ra_wt t
 
 theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :

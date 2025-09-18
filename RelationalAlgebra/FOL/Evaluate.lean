@@ -11,6 +11,10 @@ def Query.evaluateT (q : FOL.Query) (dbi : DatabaseInstance) [folStruc dbi] : Se
   {t | q.RealizeDom dbi t}
 
 @[simp]
+theorem Query.evaluateT.def {dbi : DatabaseInstance} [struc : FOL.folStruc dbi] {folQ : FOL.Query} :
+  t ∈ folQ.evaluateT dbi ↔ folQ.RealizeDom dbi t := by rfl
+
+@[simp]
 theorem realize_query_dom {t : Attribute →. Value}  {q : Query} (dbi : DatabaseInstance) [folStruc dbi] (h_realize : t ∈ q.evaluateT dbi) :
   t.Dom = q.schema := by
     ext a
