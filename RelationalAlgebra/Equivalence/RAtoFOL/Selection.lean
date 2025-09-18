@@ -15,7 +15,7 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p 
       exact a_7
 
 theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
-  (ih : RA.Query.isWellTyped dbi.schema q → ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeDom dbi t):
+  (ih : RA.Query.isWellTyped dbi.schema q → ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeDom dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.s a b p q) → (ra_to_fol_query (.s a b p q) dbi.schema).RealizeDom dbi t := by
       intro t h_RA_eval
       apply
