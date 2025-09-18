@@ -95,6 +95,31 @@ theorem BoundedQuery.Realize.ex_def [folStruc dbi] {n : ℕ} (q : BoundedQuery (
     rfl
 
 @[simp]
+theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery n) {t: Tuple}
+  : (exs q).Realize dbi t (default : Fin 0 →. Value) ↔ ∃iv : Fin n →. Value, q.Realize dbi t iv := by
+    induction' n with n ih
+    · simp
+      apply Iff.intro
+      · intro a
+        use default
+      · intro a
+        obtain ⟨w, h⟩ := a
+        have hw : w = default := by
+          ext a v
+          exact Fin.elim0 a
+        simp_all only
+    · simp only [BoundedQuery.exs, ih, BoundedQuery.Realize.ex_def]
+      constructor
+      · rintro ⟨xs, x, h⟩
+        exact ⟨_, h.2⟩
+      · rintro ⟨xs, h⟩
+        rw [← Fin.snoc_init_self xs] at h
+        use Fin.init xs
+        use (xs (Fin.last n)).get (by sorry)
+        simp_all
+        sorry
+
+@[simp]
 theorem BoundedQuery.Realize.schema_sub_Dom [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value}
   : q.Realize dbi t iv → ∀a ∈ q.schema, (t a).Dom := by
     induction q with
