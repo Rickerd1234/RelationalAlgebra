@@ -16,16 +16,7 @@ theorem ra_to_fol_evalT.mp {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.is
   ∀t, (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi raQ := by
     induction raQ with
     | R rn => exact R_def.mp
-
-    | s a b p sq ih =>
-      intro t
-      simp only [RA.Query.isWellTyped.s_def, ra_to_fol_query, FOL.outVar.def,
-        FOL.Query.RealizeDom.def, FOL.BoundedQuery.Realize.tEq_def, FOL.Term.realizeSome.def,
-        FirstOrder.Language.Term.realize_var, Sum.elim_inl, FOL.BoundedQuery.schema.tEq_def,
-        RA.Query.evaluateT.s_def, selectionT, ne_eq, ite_true, Set.mem_setOf_eq, and_imp] at ⊢ h
-      intro a_4 a_5 a_6 a_7 a_8
-      simp_all only [FOL.Query.RealizeDom.def, and_imp, forall_const, true_and]
-      exact a_7
+    | s a b p sq ih => exact s_def.mp h ih
 
     | p rs sq ih =>
       intro t
@@ -120,28 +111,7 @@ theorem ra_to_fol_evalT.mpr {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.i
   ∀t, t ∈ RA.Query.evaluateT dbi raQ → (ra_to_fol_query raQ dbi.schema).RealizeDom dbi t := by
     induction raQ with
     | R rn => exact R_def.mpr h
-
-    | s a b p sq ih =>
-      intro t h_RA_eval
-      apply
-        FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
-          (ra_to_fol_query (.s a b p sq) dbi.schema)
-          (by simp_all [RA.Query.evaluate.validSchema (.s a b p sq) h t h_RA_eval])
-
-      simp only [ra_to_fol_query]
-      simp_all only [RA.Query.isWellTyped.s_def, RA.Query.evaluateT.s_def, selectionT, ne_eq,
-        ite_true, Set.mem_setOf_eq, FOL.outVar.def, FOL.BoundedQuery.Realize.tEq_def,
-        FOL.Term.realizeSome.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
-        and_self_left, true_and, forall_const]
-      simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, true_and]
-      obtain ⟨left, right⟩ := h
-      obtain ⟨left_1, right_1⟩ := h_RA_eval
-      obtain ⟨left_2, right⟩ := right
-      apply And.intro
-      · have z : ∀x, x ∈ sq.schema dbi.schema ↔ (t x).Dom := by
-          simp [(RA.Query.evaluate dbi sq left).validSchema t left_1, RA.Query.evaluate, Part.dom_iff_mem, ← PFun.mem_dom]
-        simp_all only
-      · exact right_1
+    | s a b p sq ih => exact s_def.mpr h ih
 
     | p rs sq ih =>
       intro t h_RA_eval

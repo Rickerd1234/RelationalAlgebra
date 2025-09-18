@@ -1,11 +1,13 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-theorem ra_to_fol_evalT.R_def.mp[struc : FOL.folStruc dbi] :
-  ∀t, (ra_to_fol_query (.R rn) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
+variable {dbi rn} [struc : FOL.folStruc dbi]
+
+theorem ra_to_fol_evalT.R_def.mp :
+    ∀t, (ra_to_fol_query (.R rn) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
       intro t
-      simp_all only [ra_to_fol_query, FOL.Query.RealizeDom.def, Nat.add_zero,
-        FOL.BoundedQuery.relabel.R_def, Function.comp_apply, FOL.outVar.def,
-        FirstOrder.Language.Term.relabel.eq_1, FOL.BoundedQuery.isWellTyped.R_def,
+      simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema,
+        ra_to_fol_query, Nat.add_zero, FOL.BoundedQuery.relabel.R_def, Function.comp_apply,
+        FOL.outVar.def, FirstOrder.Language.Term.relabel.eq_1, FOL.BoundedQuery.isWellTyped.R_def,
         FOL.BoundedQuery.Realize.R_def, FOL.Term.realizeSome.def,
         FirstOrder.Language.Term.realize_var, Sum.elim_inl, FOL.BoundedQuery.toFormula_rel,
         FirstOrder.Language.BoundedFormula.realize_rel, FOL.folStruc_apply_RelMap,
@@ -17,25 +19,21 @@ theorem ra_to_fol_evalT.R_def.mp[struc : FOL.folStruc dbi] :
       . exact a_1
       . exact a_2
 
-theorem ra_to_fol_evalT.R_def.mpr [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
+theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
   ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query (.R rn) dbi.schema).RealizeDom dbi t := by
-      intro t h_RA_eval
-      apply
-        FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
-          (ra_to_fol_query (.R rn) dbi.schema)
-          (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval])
+    intro t h_RA_eval
+    apply
+      FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
+        (ra_to_fol_query (.R rn) dbi.schema)
+        (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval])
 
-      simp only [ra_to_fol_query]
-      simp_all only [RA.Query.isWellTyped.R_def, RA.Query.evaluateT.R_def,
-        FOL.BoundedQuery.Realize.R_def, Function.comp_apply, FOL.outVar.def,
-        FOL.Term.realizeSome.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
-        RM.RelationSchema.fromIndex_Dom, implies_true, FOL.BoundedQuery.toFormula_rel,
-        FirstOrder.Language.BoundedFormula.realize_rel, FOL.folStruc_apply_RelMap, true_and]
+    simp only [ra_to_fol_query]
+    simp_all only [RA.Query.isWellTyped.R_def, RA.Query.evaluateT.R_def,
+      FOL.BoundedQuery.Realize.R_def, Function.comp_apply, FOL.outVar.def,
+      FOL.Term.realizeSome.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
+      RM.RelationSchema.fromIndex_Dom, implies_true, FOL.BoundedQuery.toFormula_rel,
+      FirstOrder.Language.BoundedFormula.realize_rel, FOL.folStruc_apply_RelMap, true_and]
 
-      rw [FOL.ArityToTuple.def_fromIndex t]
-      . exact h_RA_eval
-      . simp [RM.RelationInstance.validSchema.def h_RA_eval]
-
-theorem ra_to_fol_evalT.R_def [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
-  ∀t, (ra_to_fol_query (.R rn) dbi.schema).RealizeDom dbi t ↔ t ∈ RA.Query.evaluateT dbi (.R rn) := by
-      apply λ t => Iff.intro (R_def.mp t) (R_def.mpr h t)
+    rw [FOL.ArityToTuple.def_fromIndex t]
+    . exact h_RA_eval
+    . simp [RM.RelationInstance.validSchema.def h_RA_eval]
