@@ -83,3 +83,12 @@ theorem BoundedQuery.relabel.ex_def (g : Attribute → Attribute ⊕ (Fin n)) {k
 theorem BoundedQuery.relabel_formula (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery k) :
   (φ.relabel g).toFormula = φ.toFormula.relabel g := by
     simp only [relabel, BoundedFormula.relabelAux, mapTermRel_formula, BoundedFormula.relabel]
+
+@[simp]
+theorem BoundedQuery.relabel_Sum_inl {k} {h : k ≤ n + k} (φ : BoundedQuery k) (h' : n = 0) :
+  (φ.relabel (λ t => (Sum.inl t : (Attribute ⊕ Fin n)))) = φ.castLE h := by
+    simp_all [relabel, castLE_rfl]
+    induction φ with
+    | R => subst h'; simp_all only [Fin.natAdd_zero, castLE]; rfl
+    | tEq => subst h'; simp_all [mapTermRel]; apply And.intro; all_goals rfl
+    | _ => simp_all [mapTermRel]
