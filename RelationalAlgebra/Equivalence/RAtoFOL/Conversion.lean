@@ -15,8 +15,8 @@ noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.
 
 theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
-    induction raQ
-    case R rn =>
+    induction raQ with
+    | R rn =>
       ext a
       simp_all [ra_to_fol_query, Finset.mem_singleton,
         Set.mem_toFinset, Set.mem_setOf_eq]
@@ -28,7 +28,7 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
         use RelationSchema.index a_1
         exact Eq.symm (RelationSchema.fromIndex_index_eq a_1)
 
-    case p rs sq sq_ih =>
+    | p rs sq sq_ih =>
       ext a
       have z : (ra_to_fol_query sq dbs).isWellTyped dbs := by
         simp only [ra_to_fol_query] at h'
@@ -38,21 +38,22 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
       rw [ra_to_fol_query, RA.Query.schema_p, projectQuery.schema_def (ra_to_fol_query sq dbs) rs right]
 
 
-    case r f sq ih =>
+    | r f sq ih =>
       have z : (ra_to_fol_query sq dbs).isWellTyped dbs :=
         FOL.BoundedQuery.relabel_isWellTyped_sumInl f h.2.1 (ra_to_fol_query sq dbs) h'
       simp_all [ra_to_fol_query, FOL.BoundedQuery.relabel_schema]
 
-    all_goals simp_all [ra_to_fol_query]
+    | _ => simp_all [ra_to_fol_query]
 
 @[simp]
 theorem ra_to_fol_query.isWellTyped (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).isWellTyped dbs := by
-    induction raQ
-    all_goals simp_all [RA.Query.isWellTyped, ra_to_fol_query, ra_to_fol_query_schema.def]
-
-    case r f q q_ih =>
+    induction raQ with
+    | r f q q_ih =>
+      simp_all [RA.Query.isWellTyped, ra_to_fol_query, ra_to_fol_query_schema.def]
       exact FOL.BoundedQuery.relabel_isWellTyped (Sum.inl ∘ f) (Function.Injective.comp Sum.inl_injective h.2.1) (ra_to_fol_query q dbs) q_ih
+
+    | _ => simp_all [RA.Query.isWellTyped, ra_to_fol_query, ra_to_fol_query_schema.def]
 
 theorem ra_to_fol_query_schema (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by

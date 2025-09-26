@@ -70,6 +70,48 @@ theorem BoundedQuery.Realize.exists_tuple_R_def [folStruc dbi] {tup : Tuple} {iv
     intro i
     simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def, and_self]
 
+@[simp]
+theorem BoundedQuery.Realize.all_terms {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t : Tuple} {xs : Fin n →. Value}
+  (h_wt : φ.isWellTyped dbi.schema) (h_rel : φ.Realize dbi t xs) :
+    ∀term, φ.hasSafeTerm term → (term.realize (Sum.elim t xs)).Dom := by
+      induction φ with
+      | R dbs rn tMap =>
+        intro term a_1
+        simp_all only [isWellTyped.R_def, toFormula_rel, BoundedFormula.realize_rel,
+          hasSafeTerm.R_def]
+        obtain ⟨w, h⟩ := a_1
+        subst h
+        subst h_wt
+        exact Term.RealizeSome.fromRelMap w h_rel
+
+      | and q₁ q₂ ih₁ ih₂ =>
+        simp only [isWellTyped.and_def, «def», toFormula_and, BoundedFormula.realize_inf,
+          hasSafeTerm.and_def] at h_wt h_rel ⊢
+        intro term a
+        simp_all only [«def», forall_const]
+        obtain ⟨left, right⟩ := h_wt
+        obtain ⟨left_1, right_1⟩ := h_rel
+        cases a with
+        | inl h => simp_all only
+        | inr h_1 => simp_all only
+
+      | ex q ih =>
+        intro term a_1
+        simp only [«def», isWellTyped.ex_def, toFormula_ex, BoundedFormula.realize_ex,
+          Nat.succ_eq_add_one, hasSafeTerm.ex_def, forall_const, implies_true] at h_wt h_rel ⊢
+        obtain ⟨w, h⟩ := h_rel
+        have z := ih h_wt h ((Term.relabel (Sum.map id (Fin.castLE (by simp))) term)) a_1
+        simp_all only [Part.dom_iff_mem, realize_relabel]
+        obtain ⟨z, hz⟩ := z
+        use z
+        have ⟨z', hz'⟩ := Term.cases term
+        subst hz'
+        cases z'
+        . simp_all
+        . simp_all [Fin.snoc]
+          exact hz
+
+      | _ => simp_all [BoundedQuery.Realize.def]
 
 @[simp]
 theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery n) {t: Tuple}
@@ -79,29 +121,10 @@ theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery 
 
 @[simp]
 theorem BoundedQuery.Realize.schema_sub_Dom [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value}
-  (h_wt : q.isWellTyped dbi.schema) (h_rel : q.Realize dbi t iv)
-  : ∀a ∈ q.schema, (t a).Dom := by
-    induction q with
-    | R dbs rn vs =>
-      intro a_1 a_2
-      simp_all only [isWellTyped.R_def, «def», toFormula_rel, BoundedFormula.realize_rel,
-        schema.R_def, Set.mem_toFinset, Set.mem_setOf_eq]
-      obtain ⟨w, h⟩ := a_2
-      have z := Term.cases (vs w)
-      simp_all only [Sum.exists]
-      cases z with
-      | inl h_1 =>
-        obtain ⟨w_1, h_1⟩ := h_1
-        simp_all only [isWellTyped.R_def, varFinsetLeft.eq_1, Finset.mem_singleton]
-        subst h
-        subst h_wt
-        have := Term.RealizeSome.fromRelMap w h_rel
-        simp_all only [isWellTyped.R_def, realizeSome.def, realize_var, Sum.elim_inl]
-      | inr h_2 =>
-        obtain ⟨w_1, h_1⟩ := h_2
-        simp_all only [varFinsetLeft.eq_2, Finset.not_mem_empty]
-
-    | _ => simp_all [BoundedQuery.Realize.def]; aesop
+  (h_wt : q.isWellTyped dbi.schema) (h_rel : q.Realize dbi t iv) :
+    ∀a ∈ q.schema, (t a).Dom := by
+      intro a h
+      exact all_terms h_wt h_rel (var (Sum.inl a)) ((hasSafeTerm_mem_schema q).mpr h)
 
 theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] {k : ℕ}
     {ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (k + n)))}
@@ -128,49 +151,6 @@ theorem BoundedQuery.Realize.relabel_def {dbi} [folStruc dbi] {m n : ℕ} {φ : 
   (φ.relabel g).Realize dbi t xs ↔
     φ.Realize dbi (Sum.elim t (xs ∘ Fin.castAdd n) ∘ g) (xs ∘ Fin.natAdd m) := by
       apply BoundedQuery.Realize.mapTermRel_add_castLe <;> simp
-
-@[simp]
-theorem BoundedQuery.Realize.all_terms {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t : Tuple} {xs : Fin n →. Value}
-  (h_wt : φ.isWellTyped dbi.schema) (h_rel : φ.Realize dbi t xs) :
-    ∀term, φ.hasSafeTerm term → (term.realize (Sum.elim t xs)).Dom := by
-      induction φ with
-      | ex q ih =>
-        intro term a_1
-        simp only [«def», isWellTyped.ex_def, toFormula_ex, BoundedFormula.realize_ex,
-          Nat.succ_eq_add_one, hasSafeTerm.ex_def, forall_const, implies_true] at h_wt h_rel ⊢
-        obtain ⟨w, h⟩ := h_rel
-        have z := ih h_wt h ((Term.relabel (Sum.map id (Fin.castLE (by simp))) term)) a_1
-        simp_all only [Part.dom_iff_mem, realize_relabel]
-        obtain ⟨z, hz⟩ := z
-        use z
-        have ⟨z', hz'⟩ := Term.cases term
-        subst hz'
-        cases z'
-        . simp_all
-        . simp_all [Fin.snoc]
-          exact hz
-
-      | R dbs rn tMap =>
-        intro term a_1
-        simp_all only [isWellTyped.R_def, toFormula_rel, BoundedFormula.realize_rel,
-          hasSafeTerm.R_def]
-        obtain ⟨w, h⟩ := a_1
-        subst h
-        subst h_wt
-        exact Term.RealizeSome.fromRelMap w h_rel
-
-      | and q₁ q₂ ih₁ ih₂ =>
-        simp only [isWellTyped.and_def, «def», toFormula_and, BoundedFormula.realize_inf,
-          hasSafeTerm.and_def] at h_wt h_rel ⊢
-        intro term a
-        simp_all only [«def», forall_const]
-        obtain ⟨left, right⟩ := h_wt
-        obtain ⟨left_1, right_1⟩ := h_rel
-        cases a with
-        | inl h => simp_all only
-        | inr h_1 => simp_all only
-
-      | _ => simp_all [BoundedQuery.Realize.def]
 
 @[simp]
 theorem BoundedQuery.Realize.tuple_eq_ext {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t t' : Tuple} {xs : Fin n →. Value} :
