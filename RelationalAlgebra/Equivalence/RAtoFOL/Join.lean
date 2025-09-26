@@ -8,15 +8,17 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
     ∀t, (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
       intro t
       simp only [RA.Query.isWellTyped.j_def, ra_to_fol_query, FOL.Query.RealizeDom.def,
-        FOL.BoundedQuery.Realize.and_def, FOL.BoundedQuery.schema.and_def, Finset.coe_union,
-        RA.Query.evaluateT.j_def, joinT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or,
-        not_exists, and_imp, Set.mem_setOf_eq] at ⊢ h
+        FOL.BoundedQuery.schema.and_def, Finset.coe_union, RA.Query.evaluateT.j_def, joinT,
+        PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp,
+        Set.mem_setOf_eq] at ⊢ h
+      simp only [FOL.BoundedQuery.Realize.def, FOL.BoundedQuery.toFormula_and,
+        FirstOrder.Language.BoundedFormula.realize_inf, and_imp]
       intro a_2 a_3 a_4
       have h_dom : t.Dom = ↑(q₁.schema dbi.schema) ∪ ↑(q₂.schema dbi.schema) := by
         obtain ⟨left, right⟩ := h
 
-        have z₁ := FOL.BoundedQuery.Realize.schema_sub_Dom a_2
-        have z₂ := FOL.BoundedQuery.Realize.schema_sub_Dom a_3
+        have z₁ := FOL.BoundedQuery.Realize.schema_sub_Dom (ra_to_fol_query.isWellTyped q₁ dbi.schema left) a_2
+        have z₂ := FOL.BoundedQuery.Realize.schema_sub_Dom (ra_to_fol_query.isWellTyped q₂ dbi.schema right) a_3
         simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
           forall_const]
 
@@ -83,15 +85,13 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       have t_Dom : t.Dom = q₁.schema dbi.schema ∪ q₂.schema dbi.schema := by
         exact RA.Query.evaluate.validSchema (.j q₁ q₂) h t h_RA_eval
 
-      apply
-        FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
-          (ra_to_fol_query (.j q₁ q₂) dbi.schema)
-          (by simp_all [ra_to_fol_query_schema])
+      apply And.intro ?_
+        (by simp_all [ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
       simp_all only [RA.Query.isWellTyped.j_def, RA.Query.evaluateT.j_def, joinT, PFun.mem_dom,
         forall_exists_index, Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq,
-        FOL.BoundedQuery.Realize.and_def, forall_const]
+        forall_const]
       simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema]
 
       obtain ⟨left, right⟩ := h
@@ -99,6 +99,8 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       obtain ⟨hw₁, h⟩ := h
       obtain ⟨w₂, h⟩ := h
       obtain ⟨hw₂, right_1⟩ := h
+      simp only [FOL.BoundedQuery.Realize.def, FOL.BoundedQuery.toFormula_and,
+        FirstOrder.Language.BoundedFormula.realize_inf]
       apply And.intro
       · have z := (ih₁ w₁ hw₁)
         have w_Dom : w₁.Dom = q₁.schema dbi.schema := by

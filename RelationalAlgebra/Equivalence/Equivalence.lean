@@ -16,16 +16,17 @@ theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWel
     | r f q ih => exact ra_to_fol_evalT.r_def_eq h (ih h.1)
 
 theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
-  (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h_ra_wt := by
+  (ra_to_fol_query raQ dbi.schema).evaluate dbi (ra_to_fol_query.isWellTyped raQ dbi.schema h_ra_wt) = raQ.evaluate dbi h_ra_wt := by
     simp [RA.Query.evaluate, FOL.Query.evaluate, FOL.Query.evaluateT.def]
     simp_all [ra_to_fol_query_schema]
     exact ra_to_fol_evalT h_ra_wt
 
 theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  ∃folQ : FOL.Query, folQ.evaluate dbi = raQ.evaluate dbi h := by
+  ∃folQ : FOL.Query, ∃h' : folQ.isWellTyped dbi.schema, folQ.evaluate dbi h' = raQ.evaluate dbi h := by
     use ra_to_fol_query raQ dbi.schema
+    use ra_to_fol_query.isWellTyped raQ dbi.schema h
     exact ra_to_fol_eval raQ h
 
 
 theorem fol_to_ra {dbi} [FOL.folStruc dbi] (folQ : FOL.Query) (h : folQ.isWellTyped dbi.schema) :
-  ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by sorry
+  ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi h := by sorry

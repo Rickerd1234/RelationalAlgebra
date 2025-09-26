@@ -10,36 +10,33 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
       simp only [FOL.Query.evaluateT, ra_to_fol_query, FOL.Query.RealizeDom]
       rw [← ra_to_fol_query_schema left] at right
       rw [projectQuery.schema_def (ra_to_fol_query q dbi.schema) rs right]
-      simp [projectionT]
+      simp only [RA.Query.evaluateT.p_def, projectionT]
       ext t
-      simp_all only [ra_to_fol_query.isWellTyped, Set.mem_setOf_eq]
+      simp_all only [Set.mem_setOf_eq]
 
       apply Iff.intro
       · intro a
-        obtain ⟨left_1, right_1⟩ := a
-        obtain ⟨w, h⟩ := left_1
+        obtain ⟨h, right_1⟩ := a
         have ⟨dropSet, h_dropSet⟩ : ∃s, (FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs) = s := by simp
         induction dropSet using Finset.induction_on with
         | empty =>
-          unfold projectAttribute at h
-          simp [h_dropSet] at h
+          have : rs = FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) := by
+            refine Finset.Subset.antisymm right (Finset.sdiff_eq_empty_iff_subset.mp h_dropSet)
+
+          rw [this, projectQuery.q_schema_def] at h
           rw [← ih]
           simp
           use t
-          simp_all only [Finset.sdiff_eq_empty_iff_subset, ra_to_fol_query.isWellTyped, implies_true, true_and]
-          apply And.intro
-          · apply And.intro
-            · apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp h
-              . ext a v
-                exact Fin.elim0 a
-              . rfl
-            · exact fun ⦃a⦄ a_1 ↦ right (right_1 a_1)
-          · intro a a_1
-            apply Part.eq_none_iff'.mpr fun a ↦ a_1 (right_1 a)
+          simp_all only [subset_refl, FOL.BoundedQuery.Realize.def, sdiff_self, Finset.bot_eq_empty,
+            and_self, implies_true, true_and]
+          intro a a_1
+          apply Part.eq_none_iff'.mpr fun a ↦ a_1 (right_1 a)
         | insert h' ih =>
           rename_i a ds
-          simp_all only [ra_to_fol_query.isWellTyped, Finset.insert_eq_self, not_isEmpty_of_nonempty,
-            IsEmpty.forall_iff, and_true, IsEmpty.exists_iff, implies_true]
+          simp_all only [projectQuery.def, Nat.add_zero, Finset.insert_eq_self,
+            not_isEmpty_of_nonempty, IsEmpty.forall_iff, and_true, IsEmpty.exists_iff]
+          simp at h
+          obtain ⟨w, h⟩ := h
           unfold projectAttribute at h
           simp [h_dropSet] at h
           rw [← ih]
@@ -112,7 +109,9 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
         obtain ⟨w, h⟩ := a
         obtain ⟨left_1, right_1⟩ := h
         apply And.intro
-        · use λ i => w (RM.RelationSchema.fromIndex i)
+        · simp only [projectQuery.def, Nat.add_zero, FOL.BoundedQuery.Realize.exs_def,
+          FOL.BoundedQuery.Realize.relabel_def, Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq]
+          use λ i => w (RM.RelationSchema.fromIndex i)
           rw [← ih] at left_1
           simp at left_1
           apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp left_1.1
