@@ -14,6 +14,7 @@ theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWel
     | p rs sq ih => exact ra_to_fol_evalT.p_def_eq h (ih h.1)
     | j q₁ q₂ ih₁ ih₂ => exact ra_to_fol_evalT.j_def_eq h (ih₁ h.1) (ih₂ h.2)
     | r f q ih => exact ra_to_fol_evalT.r_def_eq h (ih h.1)
+    | _ => sorry
 
 theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
   (ra_to_fol_query raQ dbi.schema).evaluate dbi (ra_to_fol_query.isWellTyped raQ dbi.schema h_ra_wt) = raQ.evaluate dbi h_ra_wt := by

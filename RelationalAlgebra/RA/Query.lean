@@ -42,6 +42,14 @@ theorem Query.schema_j {dbs : DatabaseSchema} :
 theorem Query.schema_r {dbs : DatabaseSchema} :
   (r f sq).schema dbs = (sq.schema dbs).image f := rfl
 
+@[simp]
+theorem Query.schema_u {dbs : DatabaseSchema} :
+  (u sq₁ sq₂).schema dbs = sq₁.schema dbs := by rfl
+
+@[simp]
+theorem Query.schema_d {dbs : DatabaseSchema} :
+  (d q nq).schema dbs = q.schema dbs := by rfl
+
 def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
   | .R _ => (True)

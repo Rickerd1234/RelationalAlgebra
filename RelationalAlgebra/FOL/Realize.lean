@@ -95,6 +95,31 @@ theorem BoundedQuery.Realize.all_terms {dbi} [folStruc dbi] {n : ℕ} {φ : Boun
         | inl h => simp_all only
         | inr h_1 => simp_all only
 
+      | or q₁ q₂ ih₁ ih₂ =>
+        intro term a
+        simp only [isWellTyped.or_def, «def», toFormula_or,
+          BoundedFormula.realize_sup] at h_wt h_rel ⊢
+        simp_all only [forall_const, hasSafeTerm.or_def, or_self]
+        obtain ⟨left, right⟩ := h_wt
+        obtain ⟨left_1, right⟩ := right
+        cases h_rel with
+        | inl h =>
+          apply @ih₁
+          · exact h
+          · simp_all only
+        | inr h_1 =>
+          apply @ih₂
+          · exact h_1
+          · simp_all only
+
+      | not =>
+        intro term a
+        simp only [isWellTyped.or_def, «def», toFormula_or,
+          BoundedFormula.realize_sup] at h_wt h_rel ⊢
+        simp_all only [isWellTyped.not_def, hasSafeTerm.not_def, toFormula_not, BoundedFormula.realize_not,
+          forall_const]
+        sorry
+
       | ex q ih =>
         intro term a_1
         simp only [«def», isWellTyped.ex_def, toFormula_ex, BoundedFormula.realize_ex,
@@ -144,6 +169,8 @@ theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] 
           simp_all only [«def», mapTermRel_formula, BoundedFormula.Realize, realize_var]
         | and _ _ ih1 ih2 => simp_all [FOL.BoundedQuery.mapTermRel, ih1, ih2, BoundedQuery.Realize.def]
         | ex _ ih => simp_all [FOL.BoundedQuery.mapTermRel, ih, hv, BoundedQuery.Realize.def]
+        | or _ _ ih1 ih2 => simp_all [FOL.BoundedQuery.mapTermRel, ih1, ih2, BoundedQuery.Realize.def]
+        | not _ ih => simp_all [FOL.BoundedQuery.mapTermRel, ih, hv, BoundedQuery.Realize.def]
 
 @[simp]
 theorem BoundedQuery.Realize.relabel_def {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}

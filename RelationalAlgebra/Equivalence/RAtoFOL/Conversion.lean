@@ -12,6 +12,8 @@ noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.
   | .p rs sq => projectQuery (ra_to_fol_query sq dbs) rs
   | .j sq1 sq2 => .and (ra_to_fol_query sq1 dbs) (ra_to_fol_query sq2 dbs)
   | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
+  | .u sq₁ sq₂ => .or (ra_to_fol_query sq₁ dbs) (ra_to_fol_query sq₂ dbs)
+  | .d sq nq => .and (ra_to_fol_query sq dbs) (.not (ra_to_fol_query nq dbs))
 
 theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) (h' : (ra_to_fol_query raQ dbs).isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
@@ -52,6 +54,8 @@ theorem ra_to_fol_query.isWellTyped (raQ : RA.Query) (dbs : DatabaseSchema) (h :
     | r f q q_ih =>
       simp_all [RA.Query.isWellTyped, ra_to_fol_query, ra_to_fol_query_schema.def]
       exact FOL.BoundedQuery.relabel_isWellTyped (Sum.inl ∘ f) (Function.Injective.comp Sum.inl_injective h.2.1) (ra_to_fol_query q dbs) q_ih
+
+    | u q₁ q₂ ih₁ ih₂ => sorry
 
     | _ => simp_all [RA.Query.isWellTyped, ra_to_fol_query, ra_to_fol_query_schema.def]
 

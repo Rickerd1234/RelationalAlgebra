@@ -12,7 +12,7 @@ def BoundedQuery.isWellTyped {n} (dbs : DatabaseSchema) : BoundedQuery n → Pro
   | tEq q t₁ t₂  => q.isWellTyped dbs ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂
   | and q₁ q₂    => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs
   | ex q         => q.isWellTyped dbs
-  | or q₁ q₂     => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs
+  | or q₁ q₂     => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs ∧ ∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t
   | not q        => q.isWellTyped dbs
 
 @[simp]
@@ -33,7 +33,7 @@ theorem BoundedQuery.isWellTyped.ex_def {n} {q : BoundedQuery (n + 1)} :
 
 @[simp]
 theorem BoundedQuery.isWellTyped.or_def {n} {q₁ q₂ : BoundedQuery n} :
-  (or q₁ q₂).isWellTyped dbs = (q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs) := rfl
+  (or q₁ q₂).isWellTyped dbs = (q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs ∧ ∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t) := rfl
 
 @[simp]
 theorem BoundedQuery.isWellTyped.not_def {n} {q : BoundedQuery n} :

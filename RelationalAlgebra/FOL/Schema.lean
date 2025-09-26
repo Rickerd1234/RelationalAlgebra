@@ -120,3 +120,9 @@ theorem BoundedQuery.hasSafeTerm_mem_schema (q : BoundedQuery n) :
         | inr val_1 => simp_all only [varFinsetLeft, Finset.not_mem_empty]
 
     | _ => simp_all
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm_ext_schema {q₁ q₂ : BoundedQuery n} (h : (∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t)) :
+  q₁.schema = q₂.schema := by
+    ext a
+    simp_all [← @hasSafeTerm_mem_schema]
