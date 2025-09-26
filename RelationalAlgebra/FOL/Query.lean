@@ -11,8 +11,8 @@ inductive BoundedQuery : ℕ → Type
   | and {n} (q1 q2 : BoundedQuery n): BoundedQuery n
   | tEq {n} : (q : BoundedQuery n) → (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) → BoundedQuery n
   | ex {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
-  -- | all {n} (q : BoundedQuery (n + 1)) : BoundedQuery n
-  -- | not {n} (q : BoundedQuery n) : BoundedQuery n
+  | or {n} (q₁ q₂ : BoundedQuery n) : BoundedQuery n
+  | not {n} (q : BoundedQuery n) : BoundedQuery n
 
 abbrev Query := BoundedQuery 0
 
@@ -33,6 +33,10 @@ theorem BoundedQuery.isTEq_and {n} (q₁ q₂ : BoundedQuery n) : (q₁.and q₂
 @[simp]
 theorem BoundedQuery.isTEq_ex {n} (q : BoundedQuery (n + 1)) : q.ex.isTEq = False := rfl
 
+theorem BoundedQuery.isTEq_or {n} (q₁ q₂ : BoundedQuery n) : (q₁.or q₂).isTEq = False := rfl
+
+theorem BoundedQuery.isTEq_not {n} (q : BoundedQuery n) : q.not.isTEq = False := rfl
+
 @[simp]
 theorem BoundedQuery.isTEq_exists {n} {q : BoundedQuery n} : q.isTEq ↔ ∃q' t₁ t₂, q = tEq q' t₁ t₂  := by
   simp_all [isTEq]
@@ -52,8 +56,8 @@ def BoundedQuery.toFormula {n : ℕ} : (q : BoundedQuery n) → fol.BoundedFormu
   | .tEq q t₁ t₂ => q.toFormula ⊓ (.equal t₁ t₂)
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
-  -- | .all q => .all q.toFormula
-  -- | .not q => .not q.toFormula
+  | .or q1 q2 => q1.toFormula ⊔ q2.toFormula
+  | .not q => .not q.toFormula
 
 @[simp]
 theorem BoundedQuery.toFormula_rel {n} {dbs : DatabaseSchema} {rn : RelationName} {vMap : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)} :
@@ -70,6 +74,14 @@ theorem BoundedQuery.toFormula_and {n} (q₁ q₂ : BoundedQuery n) : (q₁.and 
 
 @[simp]
 theorem BoundedQuery.toFormula_ex {n} (q : BoundedQuery (n + 1)) : q.ex.toFormula = q.toFormula.ex := by
+  rfl
+
+@[simp]
+theorem BoundedQuery.toFormula_or {n} (q₁ q₂ : BoundedQuery n) : (q₁.or q₂).toFormula = q₁.toFormula ⊔ q₂.toFormula := by
+  rfl
+
+@[simp]
+theorem BoundedQuery.toFormula_not {n} (q : BoundedQuery n) : q.not.toFormula = q.toFormula.not := by
   rfl
 
 @[simp]

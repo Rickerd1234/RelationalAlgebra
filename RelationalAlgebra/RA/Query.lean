@@ -10,8 +10,8 @@ inductive Query : Type
   | p: RelationSchema → Query → Query
   | j: Query → Query → Query
   | r: (Attribute → Attribute) → Query → Query
-  -- | u: Query → Query → Query
-  -- | d: Query → Query → Query
+  | u: Query → Query → Query
+  | d: Query → Query → Query
 
 def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
   | .R rn => λ dbs => dbs rn
@@ -19,8 +19,8 @@ def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
   | .p rs _ => λ _ => rs
   | .j sq1 sq2 => λ dbs => sq1.schema dbs ∪ sq2.schema dbs
   | .r f sq => λ dbs => renameSchema (sq.schema dbs) f
-  -- | .u sq1 _ => sq1.schema
-  -- | .d sq1 _ => sq1.schema
+  | .u sq1 _ => sq1.schema
+  | .d sq1 _ => sq1.schema
 
 @[simp]
 theorem Query.schema_R (rn : RelationName) {dbs : DatabaseSchema} :
@@ -49,8 +49,8 @@ def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
   | .j sq₁ sq₂ => sq₁.isWellTyped dbs ∧ sq₂.isWellTyped dbs
   | .r f sq => sq.isWellTyped dbs ∧ f.Bijective
-  -- | .u sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
-  -- | .d sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
+  | .u sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
+  | .d sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
 
 @[simp]
 theorem Query.isWellTyped.R_def (rn : RelationName) {dbs : DatabaseSchema} :
@@ -72,6 +72,14 @@ theorem Query.isWellTyped.j_def {dbs : DatabaseSchema} :
 theorem Query.isWellTyped.r_def {dbs : DatabaseSchema} :
   (r f sq).isWellTyped dbs ↔ sq.isWellTyped dbs ∧ f.Bijective := by rfl
 
+@[simp]
+theorem Query.isWellTyped.u_def {dbs : DatabaseSchema} :
+  (u sq1 sq2).isWellTyped dbs ↔ sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs := by rfl
+
+@[simp]
+theorem Query.isWellTyped.d_def {dbs : DatabaseSchema} :
+  (d sq1 sq2).isWellTyped dbs ↔ sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs := by rfl
+
 def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
   match q with
   | .R rn => (dbi.relations rn).tuples
@@ -79,8 +87,8 @@ def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
   | .p rs sq => projectionT (sq.evaluateT dbi) rs
   | .j sq₁ sq₂ => joinT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
   | .r f sq => renameT (sq.evaluateT dbi) f
-  -- | .u sq1 sq2 => unionT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
-  -- | .d sq1 sq2 => diffT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
+  | .u sq1 sq2 => unionT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
+  | .d sq1 sq2 => diffT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
 
 @[simp]
 theorem Query.evaluateT.R_def (rn : RelationName) (dbi : DatabaseInstance) :
@@ -101,6 +109,14 @@ theorem Query.evaluateT.j_def :
 @[simp]
 theorem Query.evaluateT.r_def :
   (r f sq).evaluateT dbi = renameT (sq.evaluateT dbi) f := rfl
+
+@[simp]
+theorem Query.evaluateT.u_def :
+  (u sq₁ sq₂).evaluateT dbi = unionT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi) := rfl
+
+@[simp]
+theorem Query.evaluateT.d_def :
+  (d sq nsq).evaluateT dbi = diffT (sq.evaluateT dbi) (nsq.evaluateT dbi) := rfl
 
 theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
   induction q with
@@ -129,16 +145,16 @@ theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.sche
     simp_all [isWellTyped, evaluateT, renameT, schema]
     apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, ih⟩ h.2
     . simp_all only [renameT, exists_eq_right', Set.mem_setOf_eq]
-  -- | u sq1 sq2 ih =>
-  --   intro _ ht
-  --   simp_all [isWellTyped, evaluateT, unionT, schema]
-  --   cases ht
-  --   all_goals simp_all only
-  -- | d sq1 sq2 ih =>
-  --   intro _ ht
-  --   simp_all [isWellTyped, evaluateT, diffT, schema]
-  --   cases ht
-  --   all_goals simp_all only
+  | u sq1 sq2 ih =>
+    intro _ ht
+    simp_all [isWellTyped, evaluateT, unionT, schema]
+    cases ht
+    all_goals simp_all only
+  | d sq1 sq2 ih =>
+    intro _ ht
+    simp_all [isWellTyped, evaluateT, diffT, schema]
+    cases ht
+    all_goals simp_all only
 
 def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.schema) : RelationInstance :=
   ⟨
@@ -160,7 +176,8 @@ theorem Query.evaluateT.dbi_domain {dbi} {q : Query} (h : q.isWellTyped dbi.sche
     induction q with
     | R => exact fun t a ↦ DatabaseInstance.t_ran_sub_domain a
 
-    | s a b p sq => simp_all [selectionT]
+    | s a b p sq => simp_all only [isWellTyped.s_def, s_def, selectionT, ne_eq, ite_true,
+      Set.mem_setOf_eq, implies_true]
 
     | p rs sq ih =>
       simp_all [projectionT]
@@ -169,12 +186,13 @@ theorem Query.evaluateT.dbi_domain {dbi} {q : Query} (h : q.isWellTyped dbi.sche
         simp only [PFun.ran, Set.setOf_subset_setOf, forall_exists_index]
         intro v a h_dom
         by_cases hc : a ∈ rs
-        . simp_all; exact Exists.intro a h_dom
-        . simp_all
+        . simp_all only; exact Exists.intro a h_dom
+        . simp_all only [not_false_eq_true, Part.not_mem_none]
       exact Set.Subset.trans z' (ih t ht)
 
     | j q₁ q₂ ih₁ ih₂ =>
-      simp_all [joinT]
+      simp_all only [isWellTyped.j_def, j_def, joinT, PFun.mem_dom, forall_exists_index,
+        Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq, forall_const]
       intro t' t₁ ht₁ t₂ ht₂ ht'
 
       have z' : PFun.ran t' ⊆ (PFun.ran t₁) ∪ (PFun.ran t₂) := by
@@ -191,7 +209,8 @@ theorem Query.evaluateT.dbi_domain {dbi} {q : Query} (h : q.isWellTyped dbi.sche
       exact fun ⦃a⦄ a_1 ↦ this (z' a_1)
 
     | r f sq ih =>
-      simp_all [renameT]
+      simp_all only [isWellTyped.r_def, r_def, renameT, exists_eq_right', Set.mem_setOf_eq,
+        forall_const]
       intro t ht
 
       have z := ih (t ∘ f) ht
@@ -202,3 +221,13 @@ theorem Query.evaluateT.dbi_domain {dbi} {q : Query} (h : q.isWellTyped dbi.sche
         simp_all only [f_inv_id]
 
       exact fun ⦃a⦄ a_1 ↦ z (z' a_1)
+
+    | u q₁ q₂ ih₁ ih₂ =>
+      simp_all only [isWellTyped.u_def, u_def, unionT, Set.mem_union, forall_const]
+      intro t ht
+      cases ht with
+      | inl ht₁ => exact ih₁ t ht₁
+      | inr ht₂ => exact ih₂ t ht₂
+
+    | d q nq ih nih =>
+      simp_all only [isWellTyped.d_def, d_def, diffT, Set.diff, Set.mem_setOf_eq, implies_true]
