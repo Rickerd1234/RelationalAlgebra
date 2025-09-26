@@ -13,7 +13,6 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
         not_exists, and_imp, Set.mem_setOf_eq] at ⊢ h
       intro a_2 a_3 a_4
       have h_dom : t.Dom = ↑(q₁.schema dbi.schema) ∪ ↑(q₂.schema dbi.schema) := by
-        simp [h] at a_4
         obtain ⟨left, right⟩ := h
 
         have z₁ := FOL.BoundedQuery.Realize.schema_sub_Dom a_2
@@ -23,7 +22,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
 
         apply Set.Subset.antisymm a_4 (Set.union_subset z₁ z₂)
 
-      have z' : ↑(ra_to_fol_query q₁ dbi.schema).schema ⊆ t.Dom := by simp_all
+      have z' : ↑(ra_to_fol_query q₁ dbi.schema).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
       use t.restrict (z')
       apply And.intro
       . apply ih₁
@@ -34,7 +33,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             intro x a x_1 h_1
             simp_all only [ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, Set.subset_union_left]
 
-      . have z' : ↑(ra_to_fol_query q₂ dbi.schema).schema ⊆ t.Dom := by simp_all
+      . have z' : ↑(ra_to_fol_query q₂ dbi.schema).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
         use t.restrict (z')
         apply And.intro
         . apply ih₂
@@ -87,7 +86,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       apply
         FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
           (ra_to_fol_query (.j q₁ q₂) dbi.schema)
-          (by simp_all)
+          (by simp_all [ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
       simp_all only [RA.Query.isWellTyped.j_def, RA.Query.evaluateT.j_def, joinT, PFun.mem_dom,

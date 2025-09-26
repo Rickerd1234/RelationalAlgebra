@@ -21,7 +21,7 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p
       apply
         FOL.Query.Realize.imp_RealizeDom_if_t_Dom_sub_schema
           (ra_to_fol_query (.s a b p q) dbi.schema)
-          (by simp_all [RA.Query.evaluate.validSchema (.s a b p q) h t h_RA_eval])
+          (by simp_all [RA.Query.evaluate.validSchema (.s a b p q) h t h_RA_eval, ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
       simp_all only [RA.Query.isWellTyped.s_def, FOL.Query.RealizeDom.def,

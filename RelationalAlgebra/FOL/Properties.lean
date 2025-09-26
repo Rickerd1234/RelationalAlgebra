@@ -99,7 +99,6 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute �
       · intro b_1 a
         simp_all [BoundedFormula.relabelAux]
 
-@[simp]
 theorem BoundedQuery.relabel_schema {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
