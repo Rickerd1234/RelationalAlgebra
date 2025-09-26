@@ -37,3 +37,10 @@ theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) 
     rw [FOL.ArityToTuple.def_fromIndex t]
     . exact h_RA_eval
     . simp [RM.RelationInstance.validSchema.def h_RA_eval]
+
+theorem ra_to_fol_evalT.R_def_eq (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
+    (ra_to_fol_query (.R rn) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.R rn) := by
+      ext t
+      apply Iff.intro
+      . exact ra_to_fol_evalT.R_def.mp t
+      . exact ra_to_fol_evalT.R_def.mpr h t
