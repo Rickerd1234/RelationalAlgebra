@@ -1,6 +1,6 @@
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.Realize
-import RelationalAlgebra.FOL.Properties
+import RelationalAlgebra.FOL.RelabelProperties
 import RelationalAlgebra.FOL.WellTyped
 
 open FOL FirstOrder Language RM Term

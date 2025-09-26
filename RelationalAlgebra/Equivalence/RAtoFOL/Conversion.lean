@@ -1,5 +1,5 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.ProjectionDef
-import RelationalAlgebra.FOL.Properties
+import RelationalAlgebra.FOL.RelabelProperties
 
 open RM
 

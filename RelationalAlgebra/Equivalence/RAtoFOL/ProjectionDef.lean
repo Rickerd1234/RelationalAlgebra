@@ -1,6 +1,6 @@
 import RelationalAlgebra.RA.Query
 import RelationalAlgebra.FOL.Evaluate
-import RelationalAlgebra.FOL.Properties
+import RelationalAlgebra.FOL.RelabelProperties
 
 open RM
 
