@@ -12,6 +12,8 @@ def BoundedQuery.isWellTyped {n} (dbs : DatabaseSchema) : BoundedQuery n → Pro
   | tEq q t₁ t₂  => q.isWellTyped dbs ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂
   | and q₁ q₂    => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs
   | ex q         => q.isWellTyped dbs
+  | or q₁ q₂     => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs
+  | not q        => q.isWellTyped dbs
 
 @[simp]
 theorem BoundedQuery.isWellTyped.R_def {dbs rn n} {f : Fin (Finset.card (dbs' rn)) → fol.Term (Attribute ⊕ Fin n)} :
@@ -28,6 +30,14 @@ theorem BoundedQuery.isWellTyped.and_def {n} {q₁ q₂ : BoundedQuery n} :
 @[simp]
 theorem BoundedQuery.isWellTyped.ex_def {n} {q : BoundedQuery (n + 1)} :
   (ex q).isWellTyped dbs = q.isWellTyped dbs := rfl
+
+@[simp]
+theorem BoundedQuery.isWellTyped.or_def {n} {q₁ q₂ : BoundedQuery n} :
+  (or q₁ q₂).isWellTyped dbs = (q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs) := rfl
+
+@[simp]
+theorem BoundedQuery.isWellTyped.not_def {n} {q : BoundedQuery n} :
+  (not q).isWellTyped dbs = q.isWellTyped dbs := rfl
 
 @[simp]
 theorem BoundedQuery.isWellTyped.exs_def {n} {q : BoundedQuery n} :
