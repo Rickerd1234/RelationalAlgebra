@@ -10,7 +10,7 @@ theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWel
   (ra_to_fol_query raQ dbi.schema).RealizeDom dbi = RA.Query.evaluateT dbi raQ := by
     induction raQ with
     | R rn => sorry
-    | s a b p sq ih => sorry
+    | s a b p sq ih => exact ra_to_fol_evalT.s_def_eq h (ih h.1)
     | p rs sq ih => sorry
     | j q₁ q₂ ih₁ ih₂ => exact ra_to_fol_evalT.j_def_eq h (ih₁ h.1) (ih₂ h.2)
     | r f q ih => exact ra_to_fol_evalT.r_def_eq h (ih h.1)

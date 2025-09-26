@@ -3,7 +3,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi a b p q} [struc : FOL.folStruc dbi]
 
 theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
-  (ih: RA.Query.isWellTyped dbi.schema q → ∀t, (ra_to_fol_query q dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q) :
+  (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (ra_to_fol_query (.s a b p q) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.s a b p q) := by
       intro t
       simp [RA.Query.isWellTyped.s_def, ra_to_fol_query, FOL.outVar.def,
@@ -15,7 +15,7 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p 
       exact a_7
 
 theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
-  (ih : RA.Query.isWellTyped dbi.schema q → ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeDom dbi t) :
+  (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeDom dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.s a b p q) → (ra_to_fol_query (.s a b p q) dbi.schema).RealizeDom dbi t := by
       intro t h_RA_eval
       apply
@@ -37,3 +37,15 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p
           simp [(RA.Query.evaluate dbi q left).validSchema t left_1, RA.Query.evaluate, Part.dom_iff_mem, ← PFun.mem_dom]
         simp_all only
       · exact right_1
+
+theorem ra_to_fol_evalT.s_def_eq (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
+  (ih: (ra_to_fol_query q dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q) :
+    (ra_to_fol_query (.s a b p q) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.s a b p q) := by
+      ext t
+      apply Iff.intro
+      . exact ra_to_fol_evalT.s_def.mp h
+          (λ t' => ((Set.ext_iff.mp ih) t').mp)
+          t
+      . exact ra_to_fol_evalT.s_def.mpr h
+          (λ t' => ((Set.ext_iff.mp ih) t').mpr)
+          t
