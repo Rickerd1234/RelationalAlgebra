@@ -32,7 +32,8 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
           . exact FOL.BoundedQuery.Realize.tuple_restrict2 (by simp [h.1]) z' a_2
           . simp_all
             simp [PFun.Dom, Part.dom_iff_mem, z', Set.subset_def]
-            aesop
+            intro x a x_1 h_1
+            simp_all only [ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, Set.subset_union_left]
 
       . have z' : ↑(ra_to_fol_query q₂ dbi.schema).schema ⊆ t.Dom := by simp_all
         use t.restrict (z')
@@ -43,7 +44,8 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             . exact FOL.BoundedQuery.Realize.tuple_restrict2 (by simp [h.2]) z' a_3
             . simp_all
               simp [PFun.Dom, Part.dom_iff_mem, z', Set.subset_def]
-              aesop
+              intro x a x_1 h_1
+              simp_all only [ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, Set.subset_union_left]
 
         . intro a
           simp only [PFun.mem_restrict, Finset.mem_coe, and_imp, not_and]
@@ -63,9 +65,13 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             apply Part.eq_none_iff.mpr
             intro v
             by_cases c1 : (a ∈ q₁.schema dbi.schema)
-            . aesop
+            . simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+              forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, not_false_eq_true,
+              implies_true]
             . by_cases c2 : (a ∈ q₂.schema dbi.schema)
-              . aesop
+              . simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+                forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, IsEmpty.forall_iff,
+                implies_true, not_false_eq_true]
               . by_contra hc
                 have z : ¬(a ∈ t.Dom) := by simp [h_dom, c1, c2]
                 apply z
