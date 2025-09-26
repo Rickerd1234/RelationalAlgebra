@@ -3,8 +3,8 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi q₁ q₂} [struc : FOL.folStruc dbi]
 
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁: RA.Query.isWellTyped dbi.schema q₁ → ∀t, (ra_to_fol_query q₁ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q₁)
-  (ih₂: RA.Query.isWellTyped dbi.schema q₂ → ∀t, (ra_to_fol_query q₂ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
+  (ih₁: ∀t, (ra_to_fol_query q₁ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q₁)
+  (ih₂: ∀t, (ra_to_fol_query q₂ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
     ∀t, (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
       intro t
       simp only [RA.Query.isWellTyped.j_def, ra_to_fol_query, FOL.Query.RealizeDom.def,
@@ -27,7 +27,6 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
       use t.restrict (z')
       apply And.intro
       . apply ih₁
-        . exact h.1
         . apply And.intro
           . exact FOL.BoundedQuery.Realize.tuple_restrict2 (by simp [h.1]) z' a_2
           . simp_all
@@ -39,7 +38,6 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
         use t.restrict (z')
         apply And.intro
         . apply ih₂
-          . exact h.2
           . apply And.intro
             . exact FOL.BoundedQuery.Realize.tuple_restrict2 (by simp [h.2]) z' a_3
             . simp_all
@@ -79,8 +77,8 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
                 use v
 
 theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁ : RA.Query.isWellTyped dbi.schema q₁ → ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query q₁ dbi.schema).RealizeDom dbi t)
-  (ih₂ : RA.Query.isWellTyped dbi.schema q₂ → ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query q₂ dbi.schema).RealizeDom dbi t) :
+  (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query q₁ dbi.schema).RealizeDom dbi t)
+  (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query q₂ dbi.schema).RealizeDom dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) → (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeDom dbi t := by
       intro t h_RA_eval
       have t_Dom : t.Dom = q₁.schema dbi.schema ∪ q₂.schema dbi.schema := by
@@ -149,3 +147,18 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
             obtain ⟨left_1, right_2⟩ := a_1
             obtain ⟨w, h⟩ := left_1
             exact False.elim (hc w h)
+
+theorem ra_to_fol_evalT.j_def_eq (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
+  (ih₁ : (ra_to_fol_query q₁ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q₁)
+  (ih₂ : (ra_to_fol_query q₂ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q₂) :
+    (ra_to_fol_query (.j q₁ q₂) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.j q₁ q₂) := by
+      ext t
+      apply Iff.intro
+      . exact ra_to_fol_evalT.j_def.mp h
+          (λ t' => ((Set.ext_iff.mp ih₁) t').mp)
+          (λ t' => ((Set.ext_iff.mp ih₂) t').mp)
+          t
+      . exact ra_to_fol_evalT.j_def.mpr h
+          (λ t' => ((Set.ext_iff.mp ih₁) t').mpr)
+          (λ t' => ((Set.ext_iff.mp ih₂) t').mpr)
+          t
