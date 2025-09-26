@@ -18,6 +18,8 @@ def BoundedQuery.hasSafeTerm {n : ℕ} (t : fol.Term (Attribute ⊕ Fin n)) : (q
   | .tEq q _ _ => q.hasSafeTerm t
   | .and q1 q2 => q1.hasSafeTerm t ∨ q2.hasSafeTerm t
   | .ex q => q.hasSafeTerm (t.relabel (Sum.map id (Fin.castLE (Nat.le_add_right n 1))))
+  | .or q1 q2 => q1.hasSafeTerm t ∨ q2.hasSafeTerm t
+  | .not q => q.hasSafeTerm t
 
 
 @[simp]
@@ -36,12 +38,22 @@ theorem BoundedQuery.hasSafeTerm.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) 
 theorem BoundedQuery.hasSafeTerm.ex_def {n : ℕ} (q : BoundedQuery (n + 1)) (t' : fol.Term (Attribute ⊕ Fin n)) :
   (ex q).hasSafeTerm t' = q.hasSafeTerm (t'.relabel (Sum.map id (Fin.castLE (Nat.le_add_right n 1)))) := by rfl
 
+@[simp]
+theorem BoundedQuery.hasSafeTerm.or_def {n : ℕ} (q₁ q₂ : BoundedQuery n) (t' : fol.Term (Attribute ⊕ Fin n)) :
+  (or q₁ q₂).hasSafeTerm t' = (q₁.hasSafeTerm t' ∨ q₂.hasSafeTerm t') := by rfl
+
+@[simp]
+theorem BoundedQuery.hasSafeTerm.not_def {n : ℕ} (q : BoundedQuery n) (t' : fol.Term (Attribute ⊕ Fin n)) :
+  (not q).hasSafeTerm t' = q.hasSafeTerm t' := by rfl
+
 -- schema of query
 def BoundedQuery.schema {n : ℕ} : (q : BoundedQuery n) → Finset Attribute
   | .R dbs name vMap => (R dbs name vMap).toFormula.freeVarFinset
   | .tEq q _ _ => q.schema
   | .and q1 q2 => q1.schema ∪ q2.schema
   | .ex q => q.schema
+  | .or q1 q2 => q1.schema ∪ q2.schema
+  | .not q => q.schema
 
 @[simp]
 theorem BoundedQuery.schema.R_def_mem {n : ℕ} {x : Attribute} (t : Fin (dbs rn).card → fol.Term (Attribute ⊕ Fin n)) :
@@ -60,15 +72,23 @@ theorem BoundedQuery.schema.R_def {n : ℕ} (t : Fin (dbs rn).card → fol.Term 
 
 @[simp]
 theorem BoundedQuery.schema.tEq_def {n : ℕ} (q : BoundedQuery n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
-  (tEq q t₁ t₂).schema = q.schema := by simp_all [BoundedQuery.schema]
+  (tEq q t₁ t₂).schema = q.schema := rfl
 
 @[simp]
 theorem BoundedQuery.schema.and_def {n : ℕ} (q₁ q₂ : BoundedQuery n) :
-  (and q₁ q₂).schema = q₁.schema ∪ q₂.schema := by simp_all [BoundedQuery.schema]
+  (and q₁ q₂).schema = q₁.schema ∪ q₂.schema := rfl
 
 @[simp]
 theorem BoundedQuery.schema.ex_def {n : ℕ} (q : BoundedQuery (n + 1)) :
-  (ex q).schema = q.schema := by simp_all [BoundedQuery.schema]
+  (ex q).schema = q.schema := rfl
+
+@[simp]
+theorem BoundedQuery.schema.or_def {n : ℕ} (q₁ q₂ : BoundedQuery n) :
+  (or q₁ q₂).schema = q₁.schema ∪ q₂.schema := rfl
+
+@[simp]
+theorem BoundedQuery.schema.not_def {n : ℕ} (q : BoundedQuery n) :
+  (not q).schema = q.schema := rfl
 
 @[simp]
 theorem BoundedQuery.schema.exs_def {n : ℕ} (q : BoundedQuery n) :

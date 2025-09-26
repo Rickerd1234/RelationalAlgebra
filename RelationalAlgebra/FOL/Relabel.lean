@@ -12,8 +12,8 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute �
   | _n, .tEq q a b      => .tEq (q.mapTermRel ft h) (ft _ a) (ft _ b)
   | _n, .and q1 q2      => .and (q1.mapTermRel ft h) (q2.mapTermRel ft h)
   | n,  .ex q           => (h n (q.mapTermRel ft h)).ex
-  -- | n,  .all q          => (h n (q.mapTermRel ft h)).all
-  -- | _n, .not q          => (q.mapTermRel ft h).not
+  | _n, .or q1 q2      => .or (q1.mapTermRel ft h) (q2.mapTermRel ft h)
+  | _n, .not q          => (q.mapTermRel ft h).not
 
 /-- Casts `L.BoundedFormula α m` as `L.BoundedFormula α n`, where `m ≤ n`. -/
 @[simp]
@@ -22,8 +22,8 @@ def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery m → Bou
   | _m, _n, h, .tEq q a b => .tEq (q.castLE h) (a.relabel (Sum.map id (Fin.castLE h))) (b.relabel (Sum.map id (Fin.castLE h)))
   | _m, _n, h, .and q₁ q₂ => (q₁.castLE h).and (q₂.castLE h)
   | _m, _n, h, .ex q => (q.castLE (add_le_add_right h 1)).ex
-  -- | _m, _n, h, .all q => (q.castLE (add_le_add_right h 1)).all
-  -- | _m, _n, h, .not q => (q.castLE h).not
+  | _m, _n, h, .or q₁ q₂ => (q₁.castLE h).or (q₂.castLE h)
+  | _m, _n, h, .not q => (q.castLE h).not
 
 @[simp]
 theorem BoundedQuery.castLE_formula {m n} (_h : m ≤ n) (φ : BoundedQuery m) :
@@ -39,6 +39,8 @@ theorem castLE_rfl {n} (h : n ≤ n) (φ : BoundedQuery n) : φ.castLE h = φ :=
   | tEq _ _ _ ih => simp [Fin.castLE_of_eq, ih]
   | and _ _ ih₁ ih₂ => simp [Fin.castLE_of_eq, ih₁, ih₂]
   | ex _ ih => simp [Fin.castLE_of_eq, ih]
+  | or _ _ ih₁ ih₂ => simp [Fin.castLE_of_eq, ih₁, ih₂]
+  | not _ ih => simp [Fin.castLE_of_eq, ih]
 
 @[simp]
 theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
@@ -78,6 +80,16 @@ theorem BoundedQuery.relabel.ex_def (g : Attribute → Attribute ⊕ (Fin n)) {k
   (ex φ).relabel g = ex (φ.relabel g) := by
     rw [relabel, mapTermRel, relabel]
     simp
+
+@[simp]
+theorem BoundedQuery.relabel.or_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ ψ : BoundedQuery k) :
+  (or φ ψ).relabel g = or (φ.relabel g) (ψ.relabel g) := by
+    rfl
+
+@[simp]
+theorem BoundedQuery.relabel.not_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery k) :
+  (not φ).relabel g = not (φ.relabel g) := by
+    rfl
 
 @[simp]
 theorem BoundedQuery.relabel_formula (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery k) :
