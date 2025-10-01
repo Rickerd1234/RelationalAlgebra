@@ -172,12 +172,18 @@ theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] 
         | or _ _ ih1 ih2 => simp_all [FOL.BoundedQuery.mapTermRel, ih1, ih2, BoundedQuery.Realize.def]
         | not _ ih => simp_all [FOL.BoundedQuery.mapTermRel, ih, hv, BoundedQuery.Realize.def]
 
+theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
+  {xs : Fin (m + n) →. Value} :
+  (φ.relabel g).Realize dbi t xs ↔
+    (φ.toFormula.relabel g).Realize t xs := by
+      simp [Realize.def]
+
 @[simp]
 theorem BoundedQuery.Realize.relabel_def {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
   {xs : Fin (m + n) →. Value} :
   (φ.relabel g).Realize dbi t xs ↔
     φ.Realize dbi (Sum.elim t (xs ∘ Fin.castAdd n) ∘ g) (xs ∘ Fin.natAdd m) := by
-      apply BoundedQuery.Realize.mapTermRel_add_castLe <;> simp
+      simp [Realize.def]
 
 @[simp]
 theorem BoundedQuery.Realize.tuple_eq_ext {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t t' : Tuple} {xs : Fin n →. Value} :

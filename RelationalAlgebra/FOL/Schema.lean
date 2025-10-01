@@ -122,6 +122,16 @@ theorem BoundedQuery.hasSafeTerm_mem_schema (q : BoundedQuery n) :
     | _ => simp_all
 
 @[simp]
+theorem BoundedQuery.hasSafeTerm_ex_Fin (q : BoundedQuery n) :
+  q.hasSafeTerm (var (Sum.inr w)) → w ≤ n := by
+    induction q with
+    | R dbs rn t =>
+      rename_i n'
+      simp_all only [hasSafeTerm.R_def, Fin.is_le', implies_true]
+
+    | _ => simp_all
+
+@[simp]
 theorem BoundedQuery.hasSafeTerm_ext_schema {q₁ q₂ : BoundedQuery n} (h : (∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t)) :
   q₁.schema = q₂.schema := by
     ext a

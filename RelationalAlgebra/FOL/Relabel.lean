@@ -43,6 +43,20 @@ theorem castLE_rfl {n} (h : n ≤ n) (φ : BoundedQuery n) : φ.castLE h = φ :=
   | not _ ih => simp [Fin.castLE_of_eq, ih]
 
 @[simp]
+theorem castLE_castLE {k m n} (km : k ≤ m) (mn : m ≤ n) (φ : BoundedQuery k) :
+    (φ.castLE km).castLE mn = φ.castLE (km.trans mn) := by
+  revert m n
+  induction φ with
+  | _ => aesop
+
+@[simp]
+theorem castLE_comp_castLE {k m n} (km : k ≤ m) (mn : m ≤ n) :
+    (BoundedQuery.castLE mn ∘ BoundedQuery.castLE km :
+        BoundedQuery k → BoundedQuery n) =
+      BoundedQuery.castLE (km.trans mn) :=
+  funext (castLE_castLE km mn)
+
+@[simp]
 theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
     (h : ∀n, g (n + 1) ≤ g n + 1) (φ : BoundedQuery m) :
   (φ.mapTermRel ft (λ n => castLE (h n))).toFormula = φ.toFormula.mapTermRel ft (λ _ => id) (λ n => BoundedFormula.castLE (h n)) := by
