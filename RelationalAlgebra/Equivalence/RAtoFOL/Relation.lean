@@ -3,9 +3,9 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi rn} [struc : FOL.folStruc dbi]
 
 theorem ra_to_fol_evalT.R_def.mp :
-    ∀t, (ra_to_fol_query (.R rn) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
+    ∀t, (ra_to_fol_query (.R rn) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
       intro t
-      simp_all only [ra_to_fol_query, FOL.Query.RealizeDom.def, FOL.BoundedQuery.Realize.def,
+      simp_all only [ra_to_fol_query, FOL.Query.RealizeMin.def, FOL.BoundedQuery.Realize.def,
         FOL.BoundedQuery.toFormula_rel, FirstOrder.Language.BoundedFormula.realize_rel,
         Function.comp_apply, FOL.outVar.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
         FOL.folStruc_apply_RelMap, FOL.BoundedQuery.schema.R_def,
@@ -17,7 +17,7 @@ theorem ra_to_fol_evalT.R_def.mp :
       . exact a_1
 
 theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
-  ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query (.R rn) dbi.schema).RealizeDom dbi t := by
+  ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query (.R rn) dbi.schema).RealizeMin dbi t := by
     intro t h_RA_eval
     apply And.intro ?_
       (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval, ra_to_fol_query_schema])

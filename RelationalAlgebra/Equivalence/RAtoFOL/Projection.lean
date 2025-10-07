@@ -7,7 +7,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
     (ra_to_fol_query (.p rs q) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.p rs q) := by
       simp at h
       obtain ⟨left, right⟩ := h
-      simp only [FOL.Query.evaluateT, ra_to_fol_query, FOL.Query.RealizeDom]
+      simp only [FOL.Query.evaluateT, ra_to_fol_query, FOL.Query.RealizeMin]
       rw [← ra_to_fol_query_schema left] at right
       rw [projectQuery.schema_def (ra_to_fol_query q dbi.schema) rs right]
       simp only [RA.Query.evaluateT.p_def, projectionT]

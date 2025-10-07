@@ -3,11 +3,11 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi q₁ q₂} [struc : FOL.folStruc dbi]
 
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁: ∀t, (ra_to_fol_query q₁ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q₁)
-  (ih₂: ∀t, (ra_to_fol_query q₂ dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
-    ∀t, (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeDom dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
+  (ih₁: ∀t, (ra_to_fol_query q₁ dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₁)
+  (ih₂: ∀t, (ra_to_fol_query q₂ dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
+    ∀t, (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
       intro t
-      simp only [RA.Query.isWellTyped.j_def, ra_to_fol_query, FOL.Query.RealizeDom.def,
+      simp only [RA.Query.isWellTyped.j_def, ra_to_fol_query, FOL.Query.RealizeMin.def,
         FOL.BoundedQuery.schema.and_def, Finset.coe_union, RA.Query.evaluateT.j_def, joinT,
         PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp,
         Set.mem_setOf_eq] at ⊢ h
@@ -19,7 +19,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
 
         have z₁ := FOL.BoundedQuery.Realize.schema_sub_Dom (ra_to_fol_query.isWellTyped q₁ dbi.schema left) a_2
         have z₂ := FOL.BoundedQuery.Realize.schema_sub_Dom (ra_to_fol_query.isWellTyped q₂ dbi.schema right) a_3
-        simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+        simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
           forall_const]
 
         apply Set.Subset.antisymm a_4 (Set.union_subset z₁ z₂)
@@ -64,11 +64,11 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             apply Part.eq_none_iff.mpr
             intro v
             by_cases c1 : (a ∈ q₁.schema dbi.schema)
-            . simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+            . simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
               forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, not_false_eq_true,
               implies_true]
             . by_cases c2 : (a ∈ q₂.schema dbi.schema)
-              . simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+              . simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
                 forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, IsEmpty.forall_iff,
                 implies_true, not_false_eq_true]
               . by_contra hc
@@ -78,9 +78,9 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
                 use v
 
 theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query q₁ dbi.schema).RealizeDom dbi t)
-  (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query q₂ dbi.schema).RealizeDom dbi t) :
-    ∀t, t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) → (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeDom dbi t := by
+  (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query q₁ dbi.schema).RealizeMin dbi t)
+  (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query q₂ dbi.schema).RealizeMin dbi t) :
+    ∀t, t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) → (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeMin dbi t := by
       intro t h_RA_eval
       have t_Dom : t.Dom = q₁.schema dbi.schema ∪ q₂.schema dbi.schema := by
         exact RA.Query.evaluate.validSchema (.j q₁ q₂) h t h_RA_eval
@@ -92,7 +92,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       simp_all only [RA.Query.isWellTyped.j_def, RA.Query.evaluateT.j_def, joinT, PFun.mem_dom,
         forall_exists_index, Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq,
         forall_const]
-      simp_all only [FOL.Query.RealizeDom.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema]
+      simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema]
 
       obtain ⟨left, right⟩ := h
       obtain ⟨w₁, h⟩ := h_RA_eval

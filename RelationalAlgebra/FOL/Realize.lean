@@ -198,12 +198,12 @@ theorem BoundedQuery.Realize.assignment_eq_ext {dbi} [folStruc dbi] {n : ℕ} {�
     rw [h, h']
 
 -- -- Realize a query, without any additional attributes in the 'tuple'
-nonrec def Query.RealizeDom (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (t : Tuple) : Prop :=
+nonrec def Query.RealizeMin (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (t : Tuple) : Prop :=
   φ.Realize dbi t default ∧ t.Dom ⊆ φ.schema
 
 @[simp]
-theorem Query.RealizeDom.def [folStruc dbi] (φ : Query)
-  : φ.RealizeDom dbi t ↔ BoundedQuery.Realize dbi φ t default ∧ t.Dom ⊆ φ.schema := by rfl
+theorem Query.RealizeMin.def [folStruc dbi] (φ : Query)
+  : φ.RealizeMin dbi t ↔ BoundedQuery.Realize dbi φ t default ∧ t.Dom ⊆ φ.schema := by rfl
 
-theorem Query.RealizeDom.schema_sub_Dom [folStruc dbi] {q : FOL.Query} (h_wt : q.isWellTyped dbi.schema) (h_rel : q.RealizeDom dbi t) :
+theorem Query.RealizeMin.schema_sub_Dom [folStruc dbi] {q : FOL.Query} (h_wt : q.isWellTyped dbi.schema) (h_rel : q.RealizeMin dbi t) :
   ↑q.schema ⊆ t.Dom := by simp_all; exact BoundedQuery.Realize.schema_sub_Dom h_wt h_rel.1

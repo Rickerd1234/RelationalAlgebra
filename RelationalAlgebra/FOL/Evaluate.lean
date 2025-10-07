@@ -8,11 +8,11 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 def Query.evaluateT (q : FOL.Query) (dbi : DatabaseInstance) [folStruc dbi] : Set Tuple :=
-  {t | q.RealizeDom dbi t}
+  {t | q.RealizeMin dbi t}
 
 @[simp]
 theorem Query.evaluateT.def {dbi : DatabaseInstance} [struc : FOL.folStruc dbi] {folQ : FOL.Query} :
-  t ∈ folQ.evaluateT dbi ↔ folQ.RealizeDom dbi t := by rfl
+  t ∈ folQ.evaluateT dbi ↔ folQ.RealizeMin dbi t := by rfl
 
 @[simp]
 theorem realize_query_dom {t : Attribute →. Value}  {q : Query} (dbi : DatabaseInstance) [folStruc dbi] (h_wt : q.isWellTyped dbi.schema) (h_realize : t ∈ q.evaluateT dbi) :
