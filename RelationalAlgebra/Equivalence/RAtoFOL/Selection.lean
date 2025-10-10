@@ -11,13 +11,13 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p 
         FirstOrder.Language.BoundedFormula.realize_inf, FOL.BoundedQuery.schema.tEq_def,
         RA.Query.evaluateT.s_def, selectionT, ↓reduceIte, Set.mem_setOf_eq, and_imp] at ⊢ h
       intro a_1 a_2 a_3
-      simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, and_imp]
+      simp_all only [FOL.Query.RealizeMin.def, and_imp]
       obtain ⟨left, right⟩ := h
       obtain ⟨left_1, right⟩ := right
       apply And.intro
       · apply ih
         · exact a_1
-        · simp_all only [ra_to_fol_query.isWellTyped]
+        · simp_all only
       · exact a_2
 
 theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p q))

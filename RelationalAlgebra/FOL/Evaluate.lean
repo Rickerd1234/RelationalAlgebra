@@ -1,7 +1,6 @@
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.RealizeProperties
 import RelationalAlgebra.FOL.RelabelProperties
-import RelationalAlgebra.FOL.WellTyped
 
 open FOL FirstOrder Language RM Term
 
@@ -15,7 +14,7 @@ theorem Query.evaluateT.def {dbi : DatabaseInstance} [struc : folStruc dbi] {fol
   t ∈ folQ.evaluateT dbi ↔ folQ.RealizeMin dbi t := by rfl
 
 @[simp]
-theorem realize_query_dom {t : Attribute →. Value} (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] (h_wt : q.isWellTyped) (h_realize : t ∈ q.evaluateT dbi) :
+theorem realize_query_dom {t : Attribute →. Value} (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] (h_realize : t ∈ q.evaluateT dbi) :
   t.Dom = q.schema := by
     ext a
     simp_all [PFun.mem_dom, Finset.mem_coe, Query.evaluateT]
@@ -26,8 +25,8 @@ theorem realize_query_dom {t : Attribute →. Value} (dbi : DatabaseInstance) {q
       apply h_t_sub_schema
       exact (PFun.mem_dom t a).mpr (Exists.intro w h_1)
     . intro a_1
-      have left := BoundedQuery.Realize.schema_sub_Dom h_wt h_realize
+      have left := BoundedQuery.Realize.schema_sub_Dom h_realize
       exact Part.dom_iff_mem.mp (left a (h_t_sub_schema (left a a_1)))
 
-def Query.evaluate (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] (h_wt : q.isWellTyped) :
-  RelationInstance := ⟨q.schema, q.evaluateT dbi, λ _ ht ↦ realize_query_dom dbi h_wt ht⟩
+def Query.evaluate (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] :
+  RelationInstance := ⟨q.schema, q.evaluateT dbi, λ _ ht ↦ realize_query_dom dbi ht⟩

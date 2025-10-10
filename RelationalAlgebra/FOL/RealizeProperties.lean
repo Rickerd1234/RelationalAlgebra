@@ -117,26 +117,23 @@ theorem Relmap.tuple_restrict2 [folStruc : folStruc dbi] {t : Tuple} (h : ↑((B
 
 
 @[simp]
-theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped)
+theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value}
   : q.Realize dbi t' iv → (h : t'.Dom ⊆ t.Dom) → t' = t.restrict h → q.Realize dbi t iv := by
     intro a h a_1
     induction q with
     | R rn tMap =>
       simp_all only [realizeSome.def, toFormula_rel, BoundedFormula.realize_rel]
-      simp_all
       exact Relmap.tuple_restrict a h rfl
 
     | tEq sq t₁ t₂ ih  =>
-      simp_all only [«def», isWellTyped.tEq_def, toFormula_tEq, BoundedFormula.realize_inf,
+      simp_all only [«def», toFormula_tEq, BoundedFormula.realize_inf,
         true_and, forall_const, implies_true]
       obtain ⟨left, right⟩ := a
 
-      have hDom₁ := Realize.all_terms h_wt.1 left t₁ h_wt.2.1
-      have hDom₂ := Realize.all_terms h_wt.1 left t₂ h_wt.2.2
+      have hDom₁ := Realize.all_terms left t₁ sorry
+      have hDom₂ := Realize.all_terms left t₂ sorry
 
       · simp_all [BoundedFormula.Realize]
-        obtain ⟨left_1, right_1⟩ := h_wt
-        obtain ⟨left_3, right_1⟩ := right_1
         have ⟨t₁, ht₁⟩ := Term.cases t₁
         have ⟨t₂, ht₂⟩ := Term.cases t₂
         simp_all [ht₁, ht₂]
@@ -184,16 +181,14 @@ theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : Bounde
             simp_all
 
     | ex q ih =>
-      simp [BoundedQuery.Realize.def] at a ⊢ h_wt
+      simp [BoundedQuery.Realize.def] at a ⊢
       have ⟨w, hw⟩ := a
       use w
       simp_all only [«def», forall_const]
 
     | or q₁ q₂ ih₁ ih₂ =>
-      simp [BoundedQuery.Realize.def] at ⊢ ih₁ ih₂ h_wt a
+      simp [BoundedQuery.Realize.def] at ⊢ ih₁ ih₂ a
       simp_all only [forall_const]
-      obtain ⟨left, right⟩ := h_wt
-      obtain ⟨left_1, right⟩ := right
       cases a with
       | inl h_1 => simp_all only [true_or]
       | inr h_2 => simp_all only [or_true]
@@ -203,23 +198,22 @@ theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : Bounde
     | _ => simp_all [BoundedQuery.Realize.def]
 
 @[simp]
-theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped)
+theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value}
   : (h : ↑q.schema ⊆ t.Dom) → q.Realize dbi t iv → q.Realize dbi (t.restrict h) iv := by
     intro h h_rel
     induction q with
     | R rn tMap =>
-      simp_all only [isWellTyped.R_def, toFormula_rel, BoundedFormula.realize_rel]
       simp_all [Relmap.tuple_restrict2 h h_rel,BoundedQuery.Realize.def]
 
 
     | tEq sq t₁ t₂ ih  =>
-      simp only [«def», isWellTyped.tEq_def, toFormula_tEq, BoundedFormula.realize_inf,
-        true_and, forall_const, implies_true, BoundedQuery.Realize.def] at h_rel h_wt ⊢
+      simp only [«def», toFormula_tEq, BoundedFormula.realize_inf,
+        true_and, forall_const, implies_true, BoundedQuery.Realize.def] at h_rel ⊢
       simp_all
       obtain ⟨left, right⟩ := h_rel
 
-      have hDom₁ := Realize.all_terms h_wt.1 left t₁ h_wt.2.1
-      have hDom₂ := Realize.all_terms h_wt.1 left t₂ h_wt.2.2
+      have hDom₁ := Realize.all_terms left t₁ sorry
+      have hDom₂ := Realize.all_terms left t₂ sorry
 
       have ⟨t₁, ht₁⟩ := Term.cases t₁
       subst ht₁
@@ -227,8 +221,6 @@ theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : Bound
       subst ht₂
 
       simp_all only [«def», realize_var, true_and]
-      obtain ⟨left_1, right_1⟩ := h_wt
-      obtain ⟨left_2, right_1⟩ := right_1
       cases t₁ with
       | inl val =>
         cases t₂ with
@@ -237,11 +229,13 @@ theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : Bound
           ext a : 1
           simp_all only [Part.dom_iff_mem, BoundedFormula.Realize, realize_var, Sum.elim_inl,
             schema, PFun.mem_restrict, Finset.mem_coe, true_and]
+          sorry
         | inr val_2 =>
           simp_all only [Sum.elim_inl, hasSafeTerm_mem_schema, Sum.elim_inr]
           simp_all only [BoundedFormula.Realize, realize_var, Sum.elim_inl, Sum.elim_inr]
           ext a : 1
           simp_all only [PFun.mem_restrict, schema.tEq_def, Finset.mem_coe, true_and]
+          sorry
       | inr val_1 =>
         cases t₂ with
         | inl val =>
@@ -249,29 +243,28 @@ theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : Bound
           ext a : 1
           simp_all only [Part.dom_iff_mem, BoundedFormula.Realize, realize_var, Sum.elim_inr,
             Sum.elim_inl, schema, PFun.mem_restrict, Finset.mem_coe, true_and]
+          sorry
         | inr val_2 =>
           simp_all only [Sum.elim_inr]
           exact right
 
     | and q₁ q₂ ih₁ ih₂ =>
-      simp only [«def», isWellTyped.and_def, toFormula_and, BoundedFormula.realize_inf,
-        forall_const, implies_true] at h_rel h_wt ⊢
+      simp only [«def», toFormula_and, BoundedFormula.realize_inf,
+        forall_const, implies_true] at h_rel ⊢
       simp_all
-      obtain ⟨left, right⟩ := h_wt
       obtain ⟨left_1, right_1⟩ := h_rel
       apply And.intro
       · have h': ↑q₁.schema ⊆ t.Dom := by simp_all
         have := ih₁ h' left_1
         have h'' : ↑q₁.schema ⊆ ↑(q₁.and q₂).schema := by simp
-        exact tuple_restrict left (ih₁ h' left_1) h'' rfl
+        exact tuple_restrict (ih₁ h' left_1) h'' rfl
       · have h': ↑q₂.schema ⊆ t.Dom := by simp_all
         have := ih₂ h' right_1
         have h'' : ↑q₂.schema ⊆ ↑(q₁.and q₂).schema := by simp
-        exact tuple_restrict right (ih₂ h' right_1) h'' rfl
+        exact tuple_restrict (ih₂ h' right_1) h'' rfl
 
     | ex q ih =>
-      simp only [«def», toFormula_ex, BoundedFormula.realize_ex, Nat.succ_eq_add_one,
-        isWellTyped.ex_def] at h_rel h_wt ⊢
+      simp only [«def», toFormula_ex, BoundedFormula.realize_ex, Nat.succ_eq_add_one] at h_rel ⊢
       simp_all only [«def», forall_const]
       obtain ⟨w, h_1⟩ := h_rel
       apply Exists.intro
@@ -280,28 +273,25 @@ theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : Bound
         apply h_1
 
     | or q₁ q₂ ih₁ ih₂ =>
-      simp only [«def», toFormula_or, BoundedFormula.realize_sup, isWellTyped.or_def,
-        schema.or_def] at h_rel h_wt ⊢
-      simp_all
-      obtain ⟨left, right⟩ := h_wt
-      obtain ⟨right, h_wt⟩ := right
+      simp only [«def», toFormula_or, BoundedFormula.realize_sup,
+        schema.or_def] at h_rel ⊢
       cases h_rel with
       | inl left_1 =>
         have h': ↑q₁.schema ⊆ t.Dom := by simp_all
         have := ih₁ h' left_1
         have h'' : ↑q₁.schema ⊆ ↑(q₁.and q₂).schema := by simp
         apply Or.inl
-        exact tuple_restrict left (ih₁ h' left_1) h'' rfl
+        exact tuple_restrict (ih₁ h' left_1) h'' rfl
       | inr right_1 =>
         have h': ↑q₂.schema ⊆ t.Dom := by simp_all
         have := ih₂ h' right_1
         have h'' : ↑q₂.schema ⊆ ↑(q₁.and q₂).schema := by simp
         apply Or.inr
-        exact tuple_restrict right (ih₂ h' right_1) h'' rfl
+        exact tuple_restrict (ih₂ h' right_1) h'' rfl
 
     | not q ih =>
-      simp only [«def», toFormula_not, BoundedFormula.realize_not, isWellTyped.not_def,
-        schema.not_def] at h_rel h_wt ⊢
+      simp only [«def», toFormula_not, BoundedFormula.realize_not,
+        schema.not_def] at h_rel ⊢
       simp_all only [«def», forall_const]
       apply Aesop.BuiltinRules.not_intro
       intro a

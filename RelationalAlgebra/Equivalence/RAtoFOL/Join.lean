@@ -17,9 +17,9 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
       have h_dom : t.Dom = ↑(q₁.schema dbi.schema) ∪ ↑(q₂.schema dbi.schema) := by
         obtain ⟨left, right⟩ := h
 
-        have z₁ := FOL.BoundedQuery.Realize.schema_sub_Dom (ra_to_fol_query.isWellTyped q₁ dbi.schema left) a_2
-        have z₂ := FOL.BoundedQuery.Realize.schema_sub_Dom (ra_to_fol_query.isWellTyped q₂ dbi.schema right) a_3
-        simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+        have z₁ := FOL.BoundedQuery.Realize.schema_sub_Dom a_2
+        have z₂ := FOL.BoundedQuery.Realize.schema_sub_Dom a_3
+        simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query_schema, and_imp,
           forall_const]
 
         apply Set.Subset.antisymm a_4 (Set.union_subset z₁ z₂)
@@ -29,22 +29,22 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
       apply And.intro
       . apply ih₁
         . apply And.intro
-          . exact FOL.BoundedQuery.Realize.tuple_restrict2 (by simp [h.1]) z' a_2
+          . exact FOL.BoundedQuery.Realize.tuple_restrict2 z' a_2
           . simp_all
             simp [PFun.Dom, Part.dom_iff_mem, z', Set.subset_def]
             intro x a x_1 h_1
-            simp_all only [ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, Set.subset_union_left]
+            simp_all only [ra_to_fol_query_schema, Set.subset_union_left]
 
       . have z' : ↑(ra_to_fol_query q₂ dbi.schema).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
         use t.restrict (z')
         apply And.intro
         . apply ih₂
           . apply And.intro
-            . exact FOL.BoundedQuery.Realize.tuple_restrict2 (by simp [h.2]) z' a_3
+            . exact FOL.BoundedQuery.Realize.tuple_restrict2 z' a_3
             . simp_all
               simp [PFun.Dom, Part.dom_iff_mem, z', Set.subset_def]
               intro x a x_1 h_1
-              simp_all only [ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, Set.subset_union_left]
+              simp_all only [ra_to_fol_query_schema, Set.subset_union_left]
 
         . intro a
           simp only [PFun.mem_restrict, Finset.mem_coe, and_imp, not_and]
@@ -64,11 +64,11 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             apply Part.eq_none_iff.mpr
             intro v
             by_cases c1 : (a ∈ q₁.schema dbi.schema)
-            . simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+            . simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query_schema, and_imp,
               forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, not_false_eq_true,
               implies_true]
             . by_cases c2 : (a ∈ q₂.schema dbi.schema)
-              . simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema, and_imp,
+              . simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query_schema, and_imp,
                 forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, IsEmpty.forall_iff,
                 implies_true, not_false_eq_true]
               . by_contra hc
@@ -92,7 +92,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       simp_all only [RA.Query.isWellTyped.j_def, RA.Query.evaluateT.j_def, joinT, PFun.mem_dom,
         forall_exists_index, Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq,
         forall_const]
-      simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema]
+      simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query_schema]
 
       obtain ⟨left, right⟩ := h
       obtain ⟨w₁, h⟩ := h_RA_eval
@@ -106,7 +106,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
         have w_Dom : w₁.Dom = q₁.schema dbi.schema := by
           exact RA.Query.evaluate.validSchema q₁ left w₁ hw₁
         have z' : w₁.Dom ⊆ t.Dom := by simp_all
-        apply FOL.BoundedQuery.Realize.tuple_restrict (ra_to_fol_query.isWellTyped q₁ dbi.schema left) z.1 z'
+        apply FOL.BoundedQuery.Realize.tuple_restrict z.1 z'
 
         ext a v
         simp [PFun.mem_restrict]
@@ -130,7 +130,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
         have w_Dom : w₂.Dom = q₂.schema dbi.schema := by
           exact RA.Query.evaluate.validSchema q₂ right w₂ hw₂
         have z' : w₂.Dom ⊆ t.Dom := by simp_all
-        apply FOL.BoundedQuery.Realize.tuple_restrict (ra_to_fol_query.isWellTyped q₂ dbi.schema right) z.1 z'
+        apply FOL.BoundedQuery.Realize.tuple_restrict z.1 z'
 
         ext a v
         simp [PFun.mem_restrict]

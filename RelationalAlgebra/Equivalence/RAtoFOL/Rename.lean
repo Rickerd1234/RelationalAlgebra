@@ -29,11 +29,11 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
         (by simp_all [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval, ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
-      simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query.isWellTyped, ra_to_fol_query_schema,
+      simp_all only [FOL.Query.RealizeMin.def, ra_to_fol_query_schema,
         RA.Query.isWellTyped.r_def, RA.Query.evaluateT.r_def, renameT, exists_eq_right',
         Set.mem_setOf_eq, forall_const, and_self, implies_true]
       obtain ⟨left, right⟩ := h
-      simp_all only [ra_to_fol_query.isWellTyped, FOL.BoundedQuery.Realize.relabel_def, Nat.add_zero,
+      simp_all only [FOL.BoundedQuery.Realize.relabel_def, Nat.add_zero,
         Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq, Fin.natAdd_zero]
       exact (ih (Sum.elim t (default : (Fin 0 →. RM.Value)) ∘ Sum.inl ∘ f) h_RA_eval).1
 

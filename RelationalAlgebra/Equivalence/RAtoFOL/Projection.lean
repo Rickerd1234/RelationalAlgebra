@@ -46,7 +46,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
             rw [h_dropSet]
             exact a_2
           use (Sum.elim t w ∘ fun a' ↦ if h : a' = a ∨ a' ∈ ds then Sum.inr (RM.RelationSchema.index (this a' (by simp_all))) else Sum.inl a')
-          simp_all only [ra_to_fol_query.isWellTyped, dite_eq_ite, Function.comp_apply]
+          simp_all only [dite_eq_ite, Function.comp_apply]
           apply And.intro
           · apply And.intro
             · apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp h
@@ -55,28 +55,28 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
               . rfl
             · rw [Set.subset_def]
               intro x a_1
-              simp_all only [ra_to_fol_query.isWellTyped, PFun.mem_dom, Function.comp_apply, Finset.mem_coe]
+              simp_all only [PFun.mem_dom, Function.comp_apply, Finset.mem_coe]
               obtain ⟨w_1, h_1⟩ := a_1
               split at h_1
               next h_2 =>
-                simp_all only [ra_to_fol_query.isWellTyped, Sum.elim_inr]
+                simp_all only [Sum.elim_inr]
                 have := this x (by simp [h_2])
                 simp at this
                 exact this.1
               next
                 h_2 =>
-                simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_insert, or_false, not_or, Sum.elim_inl]
+                simp_all only [Finset.mem_insert, or_false, not_or, Sum.elim_inl]
                 obtain ⟨left_1, right_2⟩ := h_2
-                simp_all only [ra_to_fol_query.isWellTyped, implies_true]
+                simp_all only [implies_true]
                 apply right
                 apply right_1
-                simp_all only [ra_to_fol_query.isWellTyped, PFun.mem_dom]
+                simp_all only [PFun.mem_dom]
                 apply Exists.intro
                 · exact h_1
           · intro a_1
             split
             next h_1 =>
-              simp_all only [ra_to_fol_query.isWellTyped, Sum.elim_inr]
+              simp_all only [Sum.elim_inr]
               cases h_1 with
               | inl h_2 =>
                 subst h_2
@@ -86,7 +86,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
                   simp at this
                   exact this.1.2 a
                 · intro a
-                  simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_insert, or_false]
+                  simp_all only [Finset.mem_insert, or_false]
                   exact Part.eq_none_iff'.mpr fun a_2 ↦ a (right_1 a_2)
               | inr h_3 =>
                 apply And.intro
@@ -96,11 +96,11 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
                   simp at this
                   exact this.2 a_2
                 · intro a_2
-                  simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_insert, or_false]
+                  simp_all only [Finset.mem_insert, or_false]
                   apply Part.eq_none_iff'.mpr fun a ↦ a_2 (right_1 a)
             next
               h_1 =>
-              simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_insert, or_false, not_or, Sum.elim_inl,
+              simp_all only [Finset.mem_insert, or_false, not_or, Sum.elim_inl,
                 implies_true, true_and]
               intro a_2
               obtain ⟨left_1, right_2⟩ := h_1
@@ -119,9 +119,9 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
             exact Fin.elim0 a
           . obtain ⟨left_1, right_2⟩ := left_1
             ext a v
-            simp_all only [ra_to_fol_query.isWellTyped, Function.comp_apply]
+            simp_all only [Function.comp_apply]
             by_cases a ∈ rs
-            . simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_sdiff, not_true_eq_false, and_false,
+            . simp_all only [Finset.mem_sdiff, not_true_eq_false, and_false,
                 not_false_eq_true, projectAttribute_not_mem, Sum.elim_inl]
             . unfold projectAttribute
               simp_all
@@ -129,12 +129,12 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
               · intro a_1
                 split
                 next h_1 =>
-                  simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_sdiff, not_false_eq_true, and_self,
+                  simp_all only [Finset.mem_sdiff, not_false_eq_true, and_self,
                     Sum.elim_inr, RM.RelationSchema.fromIndex_index_eq]
                 next
                   h_1 =>
                   have : w.Dom ⊆ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) := by simp_all
-                  simp_all only [ra_to_fol_query.isWellTyped, Sum.elim_inl, not_false_eq_true, Part.not_mem_none]
+                  simp_all only [Sum.elim_inl, not_false_eq_true, Part.not_mem_none]
                   apply h_1
                   apply this
                   simp_all
@@ -142,10 +142,10 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
               · intro a_1
                 split at a_1
                 next h_1 =>
-                  simp_all only [ra_to_fol_query.isWellTyped, Finset.mem_sdiff, not_false_eq_true, and_self,
+                  simp_all only [Finset.mem_sdiff, not_false_eq_true, and_self,
                     Sum.elim_inr, RM.RelationSchema.fromIndex_index_eq]
                 next h_1 =>
-                  simp_all only [ra_to_fol_query.isWellTyped, Sum.elim_inl, not_false_eq_true, Part.not_mem_none]
+                  simp_all only [Sum.elim_inl, not_false_eq_true, Part.not_mem_none]
         · rw [Set.subset_def]
           intro x a
           simp_all only [PFun.mem_dom, Finset.mem_coe]

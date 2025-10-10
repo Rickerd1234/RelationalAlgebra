@@ -1,5 +1,5 @@
-import RelationalAlgebra.FOL.WellTyped
 import RelationalAlgebra.FOL.Relabel
+import RelationalAlgebra.FOL.ModelTheoryExtensions
 
 open FOL FirstOrder Language RM Term
 
@@ -40,7 +40,11 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute �
         by_cases h' : (g a_1).isLeft
         . simp_all [Sum.isLeft_iff]
           nth_rewrite 2 [BoundedFormula.relabelAux] at a_2
-          aesop
+          simp_all only [Function.comp_apply, Sum.map_inl]
+          obtain ⟨w, h_1⟩ := h'
+          simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq, fol.Term.relabelAux_sumInl]
+          apply h
+          simp_all only
         . simp_all [Sum.isRight_iff, BoundedFormula.relabelAux]
           by_cases h' : (g a).isLeft
           . simp_all [Sum.isLeft_iff]
@@ -181,42 +185,3 @@ theorem BoundedQuery.hasSafeTerm_relabel_Fin_k {q : BoundedQuery dbs n} (g : Att
       sorry
 
     | _ => aesop
-
-@[simp]
-theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery dbs k) :
-  (φ.relabel g).isWellTyped ↔ φ.isWellTyped := by
-    induction φ with
-    | or q₁ q₂ ih₁ ih₂ =>
-      simp_all [Function.Injective]
-      intro a a_1
-      simp_all only [iff_true]
-      apply Iff.intro
-      · intro a_2 t
-        simp [← relabel_hasSafeTerm g _ t h]
-        exact (a_2 _)
-      · intro a_2 t
-        have := Term.cases t
-        simp_all only [Sum.exists]
-        cases this with
-        | inl h_1 =>
-          obtain ⟨w, h_1⟩ := h_1
-          subst h_1
-          simp_all only [hasSafeTerm_mem_schema, relabel_schema, hasSafeTerm_ext_schema a_2]
-        | inr h_2 =>
-          rename_i n'
-          obtain ⟨w, h_1⟩ := h_2
-          subst h_1
-          apply Iff.intro
-          . intro a_3
-            have := hasSafeTerm_ex_Fin _ a_3
-
-            sorry
-          . sorry
-
-
-    | _ => simp_all
-
-@[simp]
-theorem BoundedQuery.relabel_isWellTyped_sumInl {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery dbs k) :
-  (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped → φ.isWellTyped := by
-    simp_all [Sum.inl_injective]

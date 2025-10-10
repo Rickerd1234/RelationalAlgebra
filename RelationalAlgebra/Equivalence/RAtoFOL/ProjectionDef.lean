@@ -73,47 +73,6 @@ theorem projectQuery.not_sub_schema (folQ : FOL.Query dbs) (rs : RelationSchema)
   rw [z]
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped_projectAttribute {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery dbs k) :
-  (φ.relabel (projectAttribute dropSet)).isWellTyped → φ.isWellTyped := by
-    induction φ with
-    | or q₁ q₂ ih₁ ih₂ =>
-      sorry
-    | _ => simp_all
-
-theorem projectQuery.isWellTyped_def (folQ : FOL.Query dbs) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
-  : folQ.isWellTyped := by
-    cases folQ with
-
-    | R _ _ => simp_all
-
-    | tEq q t₁ t₂ =>
-      simp_all only [projectQuery, FOL.BoundedQuery.isWellTyped.exs_def]
-      exact
-        BoundedQuery.relabel_isWellTyped_projectAttribute ((q.tEq t₁ t₂).schema \ rs)
-          (q.tEq t₁ t₂) h'
-
-    | and q₁ q₂ =>
-      simp_all only [projectQuery, FOL.BoundedQuery.isWellTyped.exs_def, FOL.BoundedQuery.isWellTyped.and_def]
-      exact BoundedQuery.relabel_isWellTyped_projectAttribute ((q₁.and q₂).schema \ rs) (q₁.and q₂) h'
-
-    | ex q =>
-      simp_all only [projectQuery, FOL.BoundedQuery.relabel.ex_def, FOL.BoundedQuery.isWellTyped.exs_def]
-      exact BoundedQuery.relabel_isWellTyped_projectAttribute (q.ex.schema \ rs) q h'
-
-    | or q₁ q₂ =>
-      simp_all only [projectQuery, FOL.BoundedQuery.schema.or_def, Nat.add_zero,
-        FOL.BoundedQuery.relabel.or_def, FOL.BoundedQuery.isWellTyped.exs_def,
-        FOL.BoundedQuery.isWellTyped.or_def, projectAttribute.Injective]
-      exact BoundedQuery.relabel_isWellTyped_projectAttribute ((q₁.or q₂).schema \ rs) (q₁.or q₂) h'
-
-    | not q =>
-      simp_all only [projectQuery, FOL.BoundedQuery.schema.not_def, Nat.add_zero,
-        FOL.BoundedQuery.relabel.not_def, FOL.BoundedQuery.isWellTyped.exs_def,
-        FOL.BoundedQuery.isWellTyped.not_def, projectAttribute.Injective]
-      exact BoundedQuery.relabel_isWellTyped_projectAttribute (q.not.schema \ rs) q h'
-
-
-@[simp]
 theorem projectQuery.Realize_empty_def [FOL.folStruc dbi] (folQ : FOL.Query dbs) (rs : RelationSchema) (h : folQ.schema \ rs = ∅) (h' : rs ⊆ folQ.schema)
   : (projectQuery folQ rs).Realize dbi t xs = folQ.Realize dbi t xs := by
     have : rs = folQ.schema := by aesop
