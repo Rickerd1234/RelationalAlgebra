@@ -31,38 +31,37 @@ theorem Term.RealizeSome.fromRelMap [struc : folStruc dbi] (i) {tMap : Fin (dbi.
       apply Part.get_mem
 
 -- Formal realization definition
-def BoundedQuery.Realize (dbi) {n : ℕ} [folStruc dbi] (q : BoundedQuery n): Tuple → (Fin n →. Value) → Prop :=
+def BoundedQuery.Realize (dbi) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbs n): Tuple → (Fin n →. Value) → Prop :=
   q.toFormula.Realize
 
-theorem BoundedQuery.Realize.def [folStruc dbi] {tup : Tuple} {iv : Fin n →. Value} {q : BoundedQuery n}
+theorem BoundedQuery.Realize.def [folStruc dbi] {tup : Tuple} {iv : Fin n →. Value} {q : BoundedQuery dbs n}
   : q.Realize dbi tup iv ↔ q.toFormula.Realize tup iv := by rfl
 
 @[simp]
 theorem BoundedQuery.Realize.all_att_R_def [folStruc dbi] {tup : Tuple} {iv : Fin n →. Value}
-  (h_wt : (R dbs rn tMap).isWellTyped dbi.schema)
-  (h_rel : (R dbs rn tMap).Realize dbi tup iv) (ha : a ∈ dbs rn) :
-    Term.realizeSome dbi (tMap ((dbs rn).index ha)) tup iv := by
+  (h_wt : (R rn tMap).isWellTyped)
+  (h_rel : (R rn tMap).Realize dbi tup iv) (ha : a ∈ dbi.schema rn) :
+    Term.realizeSome dbi (tMap ((dbi.schema rn).index ha)) tup iv := by
       simp_all
-      subst h_wt
       exact Term.RealizeSome.fromRelMap ?_ h_rel
 
 @[simp]
 theorem BoundedQuery.Realize.exists_t_R_def [folStruc dbi] {tup : Tuple} {iv : Fin n →. Value}
-  (h : dbs rn ≠ ∅) (h_wt : (R dbs rn tMap).isWellTyped dbi.schema)
-  (h_rel : (R dbs rn tMap).Realize dbi tup iv) :
+  {tMap : Fin (dbi.schema rn).card → fol.Term (Attribute ⊕ Fin n)}
+  (h : dbi.schema rn ≠ ∅) (h_wt : (R rn tMap).isWellTyped)
+  (h_rel : (R rn tMap).Realize dbi tup iv) :
     (∃t : fol.Term (Attribute ⊕ (Fin n)), Term.realizeSome dbi t tup iv) := by
       simp_all only [ne_eq, isWellTyped.R_def, «def», toFormula_rel, BoundedFormula.realize_rel,
         realizeSome.def]
-      induction h' : (dbs rn).card with
+      induction h' : (dbi.schema rn).card with
       | zero => simp_all only [Finset.card_eq_zero]
       | succ k ih =>
         use (tMap (Fin.cast h'.symm (Fin.ofNat' (k + 1) (k + 1))))
-        subst h_wt
         exact Term.RealizeSome.fromRelMap ?_ h_rel
 
 @[simp]
 theorem BoundedQuery.Realize.exists_tuple_R_def [folStruc dbi] {tup : Tuple} {iv : Fin n →. Value}
-  (h_rel : (R dbi.schema rn tMap).Realize dbi tup iv)
+  (h_rel : (R rn tMap).Realize dbi tup iv)
   : (∃t' ∈ (dbi.relations rn).tuples, ∀i, (tMap i).realize (Sum.elim tup iv) = t' ((dbi.schema rn).fromIndex i)) := by
     simp_all only [«def», toFormula_rel, BoundedFormula.realize_rel, folStruc_apply_RelMap]
     use (ArityToTuple fun i ↦ realize (Sum.elim tup iv) (tMap i))
@@ -71,17 +70,16 @@ theorem BoundedQuery.Realize.exists_tuple_R_def [folStruc dbi] {tup : Tuple} {iv
     simp_all only [RelationSchema.fromIndex_mem, arityToTuple_def, and_self]
 
 @[simp]
-theorem BoundedQuery.Realize.all_terms {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t : Tuple} {xs : Fin n →. Value}
-  (h_wt : φ.isWellTyped dbi.schema) (h_rel : φ.Realize dbi t xs) :
+theorem BoundedQuery.Realize.all_terms {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery dbi.schema n} {t : Tuple} {xs : Fin n →. Value}
+  (h_wt : φ.isWellTyped) (h_rel : φ.Realize dbi t xs) :
     ∀term, φ.hasSafeTerm term → (term.realize (Sum.elim t xs)).Dom := by
       induction φ with
-      | R dbs rn tMap =>
+      | R rn tMap =>
         intro term a_1
         simp_all only [isWellTyped.R_def, toFormula_rel, BoundedFormula.realize_rel,
           hasSafeTerm.R_def]
         obtain ⟨w, h⟩ := a_1
         subst h
-        subst h_wt
         exact Term.RealizeSome.fromRelMap w h_rel
 
       | and q₁ q₂ ih₁ ih₂ =>
@@ -139,21 +137,21 @@ theorem BoundedQuery.Realize.all_terms {dbi} [folStruc dbi] {n : ℕ} {φ : Boun
       | _ => simp_all [BoundedQuery.Realize.def]
 
 @[simp]
-theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery n) {t: Tuple}
+theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbs n) {t: Tuple}
   : (exs q).Realize dbi t (default : Fin 0 →. Value) ↔ ∃iv : Fin n →. Value, q.Realize dbi t iv := by
     simp_all only [«def», toFormula_exs, Formula.boundedFormula_realize_eq_realize]
     exact BoundedFormula.realize_exs
 
 @[simp]
-theorem BoundedQuery.Realize.schema_sub_Dom [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value}
-  (h_wt : q.isWellTyped dbi.schema) (h_rel : q.Realize dbi t iv) :
+theorem BoundedQuery.Realize.schema_sub_Dom [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value}
+  (h_wt : q.isWellTyped) (h_rel : q.Realize dbi t iv) :
     ∀a ∈ q.schema, (t a).Dom := by
       intro a h
       exact all_terms h_wt h_rel (var (Sum.inl a)) ((hasSafeTerm_mem_schema q).mpr h)
 
 theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] {k : ℕ}
     {ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (k + n)))}
-    {n} {φ : BoundedQuery n} (v : ∀ {n}, (Fin (k + n) →. Value) → Attribute →. Value)
+    {n} {φ : BoundedQuery dbs n} (v : ∀ {n}, (Fin (k + n) →. Value) → Attribute →. Value)
     {v' : Tuple} (xs : Fin (k + n) →. Value)
     (h1 :
       ∀ (n) (t : fol.Term (Attribute ⊕ (Fin n))) (xs' : Fin (k + n) →. Value),
@@ -172,38 +170,38 @@ theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] 
         | or _ _ ih1 ih2 => simp_all [FOL.BoundedQuery.mapTermRel, ih1, ih2, BoundedQuery.Realize.def]
         | not _ ih => simp_all [FOL.BoundedQuery.mapTermRel, ih, hv, BoundedQuery.Realize.def]
 
-theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
+theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery dbs n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
   {xs : Fin (m + n) →. Value} :
   (φ.relabel g).Realize dbi t xs ↔
     (φ.toFormula.relabel g).Realize t xs := by
       simp [Realize.def]
 
 @[simp]
-theorem BoundedQuery.Realize.relabel_def {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
+theorem BoundedQuery.Realize.relabel_def {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery dbs n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Tuple}
   {xs : Fin (m + n) →. Value} :
   (φ.relabel g).Realize dbi t xs ↔
     φ.Realize dbi (Sum.elim t (xs ∘ Fin.castAdd n) ∘ g) (xs ∘ Fin.natAdd m) := by
       simp [Realize.def]
 
 @[simp]
-theorem BoundedQuery.Realize.tuple_eq_ext {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t t' : Tuple} {xs : Fin n →. Value} :
+theorem BoundedQuery.Realize.tuple_eq_ext {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery dbs n} {t t' : Tuple} {xs : Fin n →. Value} :
   t = t' → (φ.Realize dbi t xs ↔ φ.Realize dbi t' xs) := by
     intro h
     rw [h]
 
 @[simp]
-theorem BoundedQuery.Realize.assignment_eq_ext {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery n} {t t' : Tuple} {xs xs' : Fin n →. Value} :
+theorem BoundedQuery.Realize.assignment_eq_ext {dbi} [folStruc dbi] {n : ℕ} {φ : BoundedQuery dbs n} {t t' : Tuple} {xs xs' : Fin n →. Value} :
   xs = xs' → t = t' → (φ.Realize dbi t xs ↔ φ.Realize dbi t' xs') := by
     intro h h'
     rw [h, h']
 
 -- -- Realize a query, without any additional attributes in the 'tuple'
-nonrec def Query.RealizeMin (φ : Query) (dbi : DatabaseInstance) [folStruc dbi] (t : Tuple) : Prop :=
+nonrec def Query.RealizeMin (dbi : DatabaseInstance) (φ : Query dbi.schema) [folStruc dbi] (t : Tuple) : Prop :=
   φ.Realize dbi t default ∧ t.Dom ⊆ φ.schema
 
 @[simp]
-theorem Query.RealizeMin.def [folStruc dbi] (φ : Query)
+theorem Query.RealizeMin.def [folStruc dbi] (φ : Query dbi.schema)
   : φ.RealizeMin dbi t ↔ BoundedQuery.Realize dbi φ t default ∧ t.Dom ⊆ φ.schema := by rfl
 
-theorem Query.RealizeMin.schema_sub_Dom [folStruc dbi] {q : FOL.Query} (h_wt : q.isWellTyped dbi.schema) (h_rel : q.RealizeMin dbi t) :
+theorem Query.RealizeMin.schema_sub_Dom [folStruc dbi] {q : Query dbi.schema} (h_wt : q.isWellTyped) (h_rel : q.RealizeMin dbi t) :
   ↑q.schema ⊆ t.Dom := by simp_all; exact BoundedQuery.Realize.schema_sub_Dom h_wt h_rel.1

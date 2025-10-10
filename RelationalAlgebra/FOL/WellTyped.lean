@@ -7,51 +7,51 @@ theorem Finset.empty.contra (s₁ : Finset Attribute) : (s₁ ≠ ∅) → (s₁
 
 namespace FOL
 
-def BoundedQuery.isWellTyped {n} (dbs : DatabaseSchema) : BoundedQuery n → Prop
-  | R dbs' _ _   => dbs' = dbs
-  | tEq q t₁ t₂  => q.isWellTyped dbs ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂
-  | and q₁ q₂    => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs
-  | ex q         => q.isWellTyped dbs
-  | or q₁ q₂     => q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs ∧ ∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t
-  | not q        => q.isWellTyped dbs
+def BoundedQuery.isWellTyped {n} : BoundedQuery dbs n → Prop
+  | R _ _        => True
+  | tEq q t₁ t₂  => q.isWellTyped ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂
+  | and q₁ q₂    => q₁.isWellTyped ∧ q₂.isWellTyped
+  | ex q         => q.isWellTyped
+  | or q₁ q₂     => q₁.isWellTyped ∧ q₂.isWellTyped ∧ ∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t
+  | not q        => q.isWellTyped
 
 @[simp]
-theorem BoundedQuery.isWellTyped.R_def {dbs rn n} {f : Fin (Finset.card (dbs' rn)) → fol.Term (Attribute ⊕ Fin n)} :
-  (R dbs' rn f).isWellTyped dbs ↔ dbs' = dbs := by rfl
+theorem BoundedQuery.isWellTyped.R_def {rn n} {dbs : DatabaseSchema} {f : Fin (Finset.card (dbs rn)) → fol.Term (Attribute ⊕ Fin n)} :
+  (R rn f).isWellTyped := by trivial
 
 @[simp]
-theorem BoundedQuery.isWellTyped.tEq_def {n} {q : BoundedQuery n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} :
-  (tEq q t₁ t₂).isWellTyped dbs = (q.isWellTyped dbs ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂) := rfl
+theorem BoundedQuery.isWellTyped.tEq_def {n} {q : BoundedQuery dbs n} {t₁ t₂ : fol.Term (Attribute ⊕ Fin n)} :
+  (tEq q t₁ t₂).isWellTyped = (q.isWellTyped ∧ q.hasSafeTerm t₁ ∧ q.hasSafeTerm t₂) := rfl
 
 @[simp]
-theorem BoundedQuery.isWellTyped.and_def {n} {q₁ q₂ : BoundedQuery n} :
-  (and q₁ q₂).isWellTyped dbs = (q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs) := rfl
+theorem BoundedQuery.isWellTyped.and_def {n} {q₁ q₂ : BoundedQuery dbs n} :
+  (and q₁ q₂).isWellTyped = (q₁.isWellTyped ∧ q₂.isWellTyped) := rfl
 
 @[simp]
-theorem BoundedQuery.isWellTyped.ex_def {n} {q : BoundedQuery (n + 1)} :
-  (ex q).isWellTyped dbs = q.isWellTyped dbs := rfl
+theorem BoundedQuery.isWellTyped.ex_def {n} {q : BoundedQuery dbs (n + 1)} :
+  (ex q).isWellTyped = q.isWellTyped := rfl
 
 @[simp]
-theorem BoundedQuery.isWellTyped.or_def {n} {q₁ q₂ : BoundedQuery n} :
-  (or q₁ q₂).isWellTyped dbs = (q₁.isWellTyped dbs ∧ q₂.isWellTyped dbs ∧ ∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t) := rfl
+theorem BoundedQuery.isWellTyped.or_def {n} {q₁ q₂ : BoundedQuery dbs n} :
+  (or q₁ q₂).isWellTyped = (q₁.isWellTyped ∧ q₂.isWellTyped ∧ ∀t, q₁.hasSafeTerm t ↔ q₂.hasSafeTerm t) := rfl
 
 @[simp]
-theorem BoundedQuery.isWellTyped.not_def {n} {q : BoundedQuery n} :
-  (not q).isWellTyped dbs = q.isWellTyped dbs := rfl
+theorem BoundedQuery.isWellTyped.not_def {n} {q : BoundedQuery dbs n} :
+  (not q).isWellTyped = q.isWellTyped := rfl
 
 @[simp]
-theorem BoundedQuery.isWellTyped.exs_def {n} {q : BoundedQuery n} :
-  (exs q).isWellTyped dbs = q.isWellTyped dbs := by
+theorem BoundedQuery.isWellTyped.exs_def {n} {q : BoundedQuery dbs n} :
+  (exs q).isWellTyped = q.isWellTyped := by
     induction n with
     | zero => simp_all only [exs_0]
     | succ n' ih => exact ih
 
 @[simp]
-theorem BoundedQuery.isWellTyped.and_comm {n} {q₁ q₂ : BoundedQuery n} (h : (and q₁ q₂).isWellTyped dbs) :
-  (and q₂ q₁).isWellTyped dbs
+theorem BoundedQuery.isWellTyped.and_comm {n} {q₁ q₂ : BoundedQuery dbs n} (h : (and q₁ q₂).isWellTyped) :
+  (and q₂ q₁).isWellTyped
     := by simp_all [Finset.union_comm]
 
 @[simp]
-theorem BoundedQuery.isWellTyped.and_from_both {n} {q₁ q₂ : BoundedQuery n} (h₁ : q₁.isWellTyped dbs) (h₂ : q₂.isWellTyped dbs) :
-  (and q₁ q₂).isWellTyped dbs
+theorem BoundedQuery.isWellTyped.and_from_both {n} {q₁ q₂ : BoundedQuery dbs n} (h₁ : q₁.isWellTyped) (h₂ : q₂.isWellTyped) :
+  (and q₁ q₂).isWellTyped
     := by simp_all only [and_def, and_self]

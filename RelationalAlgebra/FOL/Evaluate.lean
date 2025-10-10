@@ -7,15 +7,15 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-def Query.evaluateT (q : FOL.Query) (dbi : DatabaseInstance) [folStruc dbi] : Set Tuple :=
+def Query.evaluateT (dbi : DatabaseInstance) (q : Query dbi.schema) [folStruc dbi] : Set Tuple :=
   {t | q.RealizeMin dbi t}
 
 @[simp]
-theorem Query.evaluateT.def {dbi : DatabaseInstance} [struc : FOL.folStruc dbi] {folQ : FOL.Query} :
+theorem Query.evaluateT.def {dbi : DatabaseInstance} [struc : folStruc dbi] {folQ : Query dbi.schema} :
   t ∈ folQ.evaluateT dbi ↔ folQ.RealizeMin dbi t := by rfl
 
 @[simp]
-theorem realize_query_dom {t : Attribute →. Value}  {q : Query} (dbi : DatabaseInstance) [folStruc dbi] (h_wt : q.isWellTyped dbi.schema) (h_realize : t ∈ q.evaluateT dbi) :
+theorem realize_query_dom {t : Attribute →. Value} (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] (h_wt : q.isWellTyped) (h_realize : t ∈ q.evaluateT dbi) :
   t.Dom = q.schema := by
     ext a
     simp_all [PFun.mem_dom, Finset.mem_coe, Query.evaluateT]
@@ -29,5 +29,5 @@ theorem realize_query_dom {t : Attribute →. Value}  {q : Query} (dbi : Databas
       have left := BoundedQuery.Realize.schema_sub_Dom h_wt h_realize
       exact Part.dom_iff_mem.mp (left a (h_t_sub_schema (left a a_1)))
 
-def Query.evaluate {q : Query} (dbi : DatabaseInstance) [folStruc dbi] (h_wt : q.isWellTyped dbi.schema) :
+def Query.evaluate (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] (h_wt : q.isWellTyped) :
   RelationInstance := ⟨q.schema, q.evaluateT dbi, λ _ ht ↦ realize_query_dom dbi h_wt ht⟩

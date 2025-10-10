@@ -6,19 +6,19 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 -- Query equivalence check (uses casting but only works when n = k)
-def BoundedQuery.isQuery {n k : ℕ} (h : n ≤ k) (q : BoundedQuery n) (needle : BoundedQuery k) : Prop :=
+def BoundedQuery.isQuery {n k : ℕ} (h : n ≤ k) (q : BoundedQuery dbs n) (needle : BoundedQuery k) : Prop :=
   ite (n = k) (needle = q.castLE h) False
 
 @[simp]
-theorem BoundedQuery.isQuery.def_eq_hk {n k} {q : BoundedQuery n} (h : n ≤ k) (needle : BoundedQuery k) :
+theorem BoundedQuery.isQuery.def_eq_hk {n k} {q : BoundedQuery dbs n} (h : n ≤ k) (needle : BoundedQuery k) :
   isQuery (by simp [h]) q needle → n = k := by simp_all [isQuery]
 
 @[simp]
-theorem BoundedQuery.isQuery.def_eq {n hn} {q : BoundedQuery n} (needle : BoundedQuery n) :
+theorem BoundedQuery.isQuery.def_eq {n hn} {q : BoundedQuery dbs n} (needle : BoundedQuery dbs n) :
   isQuery hn q needle ↔ needle = q := by simp_all [isQuery]
 
 @[simp]
-theorem BoundedQuery.isQuery.def_lt {n k} {q : BoundedQuery n} (h : n < k) (needle : BoundedQuery k) :
+theorem BoundedQuery.isQuery.def_lt {n k} {q : BoundedQuery dbs n} (h : n < k) (needle : BoundedQuery k) :
   isQuery (Nat.le_of_succ_le h) q needle ↔ False := by
     simp_all [isQuery]
     intro a
@@ -27,7 +27,7 @@ theorem BoundedQuery.isQuery.def_lt {n k} {q : BoundedQuery n} (h : n < k) (need
     simp_all only [lt_self_iff_false]
 
 -- Query containment check (uses casting but requires exact type match for needle)
-def BoundedQuery.hasSubQuery {n k : ℕ} (h : n ≤ k) : (q : BoundedQuery n) → (needle : BoundedQuery k) → Prop
+def BoundedQuery.hasSubQuery {n k : ℕ} (h : n ≤ k) : (q : BoundedQuery dbs n) → (needle : BoundedQuery k) → Prop
   | .tEq q t₁ t₂, needle => (tEq q t₁ t₂).isQuery h needle ∨ q.hasSubQuery h needle
   | .and q₁ q₂, needle => (and q₁ q₂).isQuery h needle ∨ q₁.hasSubQuery h needle ∨ q₂.hasSubQuery h needle
   | .ex q,      needle => dite (n + 1 ≤ k) (λ h' ↦ q.hasSubQuery h' needle) (λ _ ↦ (ex q).isQuery h needle)
@@ -42,7 +42,7 @@ theorem BoundedQuery.hasSubQuery.tEq_def {n k t₁ t₂ q} (h : n ≤ k) (needle
   hasSubQuery h (tEq q t₁ t₂) needle ↔ ((tEq q t₁ t₂).isQuery h needle ∨ hasSubQuery h q needle) := by rfl
 
 @[simp]
-theorem BoundedQuery.hasSubQuery.and_def (h : n ≤ k) (q₁ q₂ : BoundedQuery n) (needle : BoundedQuery k) :
+theorem BoundedQuery.hasSubQuery.and_def (h : n ≤ k) (q₁ q₂ : BoundedQuery dbs n) (needle : BoundedQuery k) :
   hasSubQuery h (and q₁ q₂) needle = ((and q₁ q₂).isQuery h needle ∨ hasSubQuery h q₁ needle ∨ hasSubQuery h q₂ needle) := rfl
 
 @[simp]
@@ -50,7 +50,7 @@ theorem BoundedQuery.hasSubQuery.ex_def_le (h : n + 1 ≤ k) (q : BoundedQuery (
   hasSubQuery (Nat.le_of_succ_le h) (ex q) needle ↔ q.hasSubQuery h needle := by simp_all [hasSubQuery]
 
 @[simp]
-theorem BoundedQuery.hasSubQuery.ex_def_eq (q : BoundedQuery (n + 1)) (needle : BoundedQuery n) :
+theorem BoundedQuery.hasSubQuery.ex_def_eq (q : BoundedQuery (n + 1)) (needle : BoundedQuery dbs n) :
   hasSubQuery (Nat.le_refl n) (ex q) needle ↔ (ex q).isQuery (Nat.le_refl n) needle := by simp_all [hasSubQuery]
 
 @[simp]
@@ -60,14 +60,14 @@ theorem BoundedQuery.hasSubQuery.ex_exists (q : BoundedQuery (n + 1)) (needle : 
     simp_all only [Nat.succ_eq_add_one, ex_def_le]
 
 @[simp]
-theorem BoundedQuery.hasSubQuery.exs_def (q : BoundedQuery n) (needle : BoundedQuery k) :
+theorem BoundedQuery.hasSubQuery.exs_def (q : BoundedQuery dbs n) (needle : BoundedQuery k) :
   hasSubQuery (by simp) (exs q) needle = hasSubQuery h q needle ∨ ¬k ≤ 0 := by
     induction n
     . aesop
     . aesop
 
 @[simp]
-theorem BoundedQuery.hasSubQuery.schema_def {k n hk} {needle : BoundedQuery k} {q : BoundedQuery n} (h : hasSubQuery hk q needle) :
+theorem BoundedQuery.hasSubQuery.schema_def {k n hk} {needle : BoundedQuery k} {q : BoundedQuery dbs n} (h : hasSubQuery hk q needle) :
   needle.schema ⊆ q.schema := by
     induction q with
     | R dbs rn t =>

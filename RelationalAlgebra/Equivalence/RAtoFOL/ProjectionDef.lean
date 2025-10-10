@@ -34,7 +34,7 @@ theorem projectAttribute_mem {dropSet a'} (h : a' ∈ dropSet) :
     simp [projectAttribute.def]
     simp_all only [not_false_eq_true, and_self, ↓reduceDIte, Sum.inr.injEq, exists_eq']
 
-def projectQuery (folQ : FOL.Query) (rs : RelationSchema) : FOL.Query :=
+def projectQuery (folQ : FOL.Query dbs) (rs : RelationSchema) : FOL.Query dbs :=
   (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs
 
 @[simp]
@@ -42,13 +42,13 @@ theorem projectAttribute.Injective : (projectAttribute dropSet).Injective :=
   by simp [Function.Injective, projectAttribute]; aesop
 
 @[simp]
-theorem projectQuery.def (folQ : FOL.Query) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs := rfl
+theorem projectQuery.def (folQ : FOL.Query dbs) (rs : RelationSchema) : projectQuery folQ rs = (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs := rfl
 
 @[simp]
-theorem projectQuery.q_schema_def (folQ : FOL.Query) : projectQuery folQ folQ.schema = folQ := by simp; rw [Finset.sdiff_self]; simp
+theorem projectQuery.q_schema_def (folQ : FOL.Query dbs) : projectQuery folQ folQ.schema = folQ := by simp; rw [Finset.sdiff_self]; simp
 
 @[simp]
-theorem projectQuery.schema_def (folQ : FOL.Query) (rs : RelationSchema) (h : rs ⊆ folQ.schema) : (projectQuery folQ rs).schema = rs := by
+theorem projectQuery.schema_def (folQ : FOL.Query dbs) (rs : RelationSchema) (h : rs ⊆ folQ.schema) : (projectQuery folQ rs).schema = rs := by
   ext a
   simp [projectQuery, FOL.BoundedQuery.relabel_schema]
   apply Iff.intro
@@ -67,24 +67,24 @@ theorem projectQuery.schema_def (folQ : FOL.Query) (rs : RelationSchema) (h : rs
     · exact h a_1
     · simp_all only [Finset.mem_sdiff, not_true_eq_false, and_false, not_false_eq_true, projectAttribute_not_mem]
 
-theorem projectQuery.not_sub_schema (folQ : FOL.Query) (rs : RelationSchema) : (projectQuery folQ (rs ∩ folQ.schema)) = (projectQuery folQ rs) := by
+theorem projectQuery.not_sub_schema (folQ : FOL.Query dbs) (rs : RelationSchema) : (projectQuery folQ (rs ∩ folQ.schema)) = (projectQuery folQ rs) := by
   simp_all
   have z : (folQ.schema \ (rs ∩ folQ.schema)) = folQ.schema \ rs := by simp
   rw [z]
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped_projectAttribute {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery k) :
-  (φ.relabel (projectAttribute dropSet)).isWellTyped dbs → φ.isWellTyped dbs := by
+theorem BoundedQuery.relabel_isWellTyped_projectAttribute {k} (dropSet : RelationSchema) (φ : FOL.BoundedQuery dbs k) :
+  (φ.relabel (projectAttribute dropSet)).isWellTyped → φ.isWellTyped := by
     induction φ with
     | or q₁ q₂ ih₁ ih₂ =>
       sorry
     | _ => simp_all
 
-theorem projectQuery.isWellTyped_def (folQ : FOL.Query) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped dbs)
-  : folQ.isWellTyped dbs := by
+theorem projectQuery.isWellTyped_def (folQ : FOL.Query dbs) (rs : RelationSchema) (h' : (projectQuery folQ rs).isWellTyped)
+  : folQ.isWellTyped := by
     cases folQ with
 
-    | R _ _ _ => simp_all
+    | R _ _ => simp_all
 
     | tEq q t₁ t₂ =>
       simp_all only [projectQuery, FOL.BoundedQuery.isWellTyped.exs_def]
@@ -114,7 +114,7 @@ theorem projectQuery.isWellTyped_def (folQ : FOL.Query) (rs : RelationSchema) (h
 
 
 @[simp]
-theorem projectQuery.Realize_empty_def [FOL.folStruc dbi] (folQ : FOL.Query) (rs : RelationSchema) (h : folQ.schema \ rs = ∅) (h' : rs ⊆ folQ.schema)
+theorem projectQuery.Realize_empty_def [FOL.folStruc dbi] (folQ : FOL.Query dbs) (rs : RelationSchema) (h : folQ.schema \ rs = ∅) (h' : rs ⊆ folQ.schema)
   : (projectQuery folQ rs).Realize dbi t xs = folQ.Realize dbi t xs := by
     have : rs = folQ.schema := by aesop
     simp_all

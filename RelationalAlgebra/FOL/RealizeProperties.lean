@@ -68,7 +68,7 @@ theorem Relmap.tuple_restrict [folStruc : folStruc dbi] {t t' : Tuple} {tMap : F
 
 
 @[simp]
-theorem Relmap.tuple_restrict2 [folStruc : folStruc dbi] {t : Tuple} (h : ↑((BoundedQuery.R dbi.schema rn tMap).schema) ⊆ t.Dom) :
+theorem Relmap.tuple_restrict2 [folStruc : folStruc dbi] {t : Tuple} (h : ↑((BoundedQuery.R rn tMap).schema) ⊆ t.Dom) :
   folStruc.RelMap (fol.Rel dbi.schema rn) (fun i ↦ realize (Sum.elim t iv) (tMap i)) →
     folStruc.RelMap (fol.Rel dbi.schema rn) (fun i ↦ realize (Sum.elim (PFun.restrict t h) iv) (tMap i)) := by
       intro ht
@@ -117,14 +117,13 @@ theorem Relmap.tuple_restrict2 [folStruc : folStruc dbi] {t : Tuple} (h : ↑((B
 
 
 @[simp]
-theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped dbi.schema)
+theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped)
   : q.Realize dbi t' iv → (h : t'.Dom ⊆ t.Dom) → t' = t.restrict h → q.Realize dbi t iv := by
     intro a h a_1
     induction q with
-    | R dbs rn tMap =>
+    | R rn tMap =>
       simp_all only [realizeSome.def, toFormula_rel, BoundedFormula.realize_rel]
       simp_all
-      subst h_wt
       exact Relmap.tuple_restrict a h rfl
 
     | tEq sq t₁ t₂ ih  =>
@@ -204,13 +203,12 @@ theorem BoundedQuery.Realize.tuple_restrict [folStruc dbi] {n : ℕ} {q : Bounde
     | _ => simp_all [BoundedQuery.Realize.def]
 
 @[simp]
-theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : BoundedQuery n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped dbi.schema)
+theorem BoundedQuery.Realize.tuple_restrict2 [folStruc dbi] {n : ℕ} {q : BoundedQuery dbi.schema n} {t : Tuple} {iv : Fin n →. Value} (h_wt : q.isWellTyped)
   : (h : ↑q.schema ⊆ t.Dom) → q.Realize dbi t iv → q.Realize dbi (t.restrict h) iv := by
     intro h h_rel
     induction q with
-    | R dbs rn tMap =>
+    | R rn tMap =>
       simp_all only [isWellTyped.R_def, toFormula_rel, BoundedFormula.realize_rel]
-      subst h_wt
       simp_all [Relmap.tuple_restrict2 h h_rel,BoundedQuery.Realize.def]
 
 

@@ -99,16 +99,16 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute �
       · intro b_1 a
         simp_all [BoundedFormula.relabelAux]
 
-theorem BoundedQuery.relabel_schema {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) :
+theorem BoundedQuery.relabel_schema {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_hasSafeTerm {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery k) (t : fol.Term (Attribute ⊕ Fin k)) (h : g.Injective):
+theorem BoundedQuery.relabel_hasSafeTerm {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery dbs k) (t : fol.Term (Attribute ⊕ Fin k)) (h : g.Injective):
   (φ.relabel g).hasSafeTerm (t.relabel (BoundedFormula.relabelAux g k)) ↔ φ.hasSafeTerm t := by
     induction φ with
-    | R dbs rn a =>
+    | R rn a =>
       rename_i k'
       simp [Relations.boundedFormula]
       have rel_inj : Function.Injective (Term.relabel (BoundedFormula.relabelAux g k')) := relabel.Injective_def (relabel.Injective_relabelAux h)
@@ -130,7 +130,7 @@ theorem BoundedQuery.relabel_hasSafeTerm {n k} (g : Attribute → Attribute ⊕ 
 theorem BoundedQuery.hasSafeTerm_relabel_Fin_0 (g : Attribute → Attribute ⊕ (Fin 0)) :
   hasSafeTerm (var (Sum.inr w)) (relabel g q) ↔ hasSafeTerm (var (Sum.inr w)) (q.castLE (by simp)) := by
     induction q with
-    | R dbs rn vMap =>
+    | R rn vMap =>
       simp_all only [relabel.R_def, hasSafeTerm.R_def, castLE, Function.comp_apply]
       apply Iff.intro
       . intro a_1
@@ -174,17 +174,17 @@ theorem BoundedQuery.hasSafeTerm_relabel_Fin_0 (g : Attribute → Attribute ⊕ 
 
     | _ => aesop
 
-theorem BoundedQuery.hasSafeTerm_relabel_Fin_k {q : BoundedQuery n} (g : Attribute → Attribute ⊕ (Fin k)) :
+theorem BoundedQuery.hasSafeTerm_relabel_Fin_k {q : BoundedQuery dbs n} (g : Attribute → Attribute ⊕ (Fin k)) :
   hasSafeTerm (var (Sum.inr w)) (relabel g q) ↔ hasSafeTerm (var (Sum.inr w)) (q.castLE (Nat.le_add_left n k)) := by
     induction q with
-    | R dbs rn vMap =>
+    | R rn vMap =>
       sorry
 
     | _ => aesop
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery k) :
-  (φ.relabel g).isWellTyped dbs ↔ φ.isWellTyped dbs := by
+theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ (Fin n)) (h : g.Injective) (φ : BoundedQuery dbs k) :
+  (φ.relabel g).isWellTyped ↔ φ.isWellTyped := by
     induction φ with
     | or q₁ q₂ ih₁ ih₂ =>
       simp_all [Function.Injective]
@@ -217,6 +217,6 @@ theorem BoundedQuery.relabel_isWellTyped {n k} (g : Attribute → Attribute ⊕ 
     | _ => simp_all
 
 @[simp]
-theorem BoundedQuery.relabel_isWellTyped_sumInl {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery k) :
-  (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped dbs → φ.isWellTyped dbs := by
+theorem BoundedQuery.relabel_isWellTyped_sumInl {n k} (g : Attribute → Attribute) (h : g.Injective) (φ : BoundedQuery dbs k) :
+  (φ.relabel ((Sum.inl ∘ g) : Attribute → Attribute ⊕ Fin n)).isWellTyped → φ.isWellTyped := by
     simp_all [Sum.inl_injective]

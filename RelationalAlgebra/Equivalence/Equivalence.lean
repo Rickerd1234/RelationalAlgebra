@@ -23,11 +23,11 @@ theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_w
     exact ra_to_fol_evalT h_ra_wt
 
 theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
-  ∃folQ : FOL.Query, ∃h' : folQ.isWellTyped dbi.schema, folQ.evaluate dbi h' = raQ.evaluate dbi h := by
+  ∃folQ : FOL.Query dbi.schema, ∃h' : folQ.isWellTyped, folQ.evaluate dbi h' = raQ.evaluate dbi h := by
     use ra_to_fol_query raQ dbi.schema
     use ra_to_fol_query.isWellTyped raQ dbi.schema h
     exact ra_to_fol_eval raQ h
 
 
-theorem fol_to_ra {dbi} [FOL.folStruc dbi] (folQ : FOL.Query) (h : folQ.isWellTyped dbi.schema) :
+theorem fol_to_ra {dbi} [FOL.folStruc dbi] (folQ : FOL.Query dbi.schema) (h : folQ.isWellTyped) :
   ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi h := by sorry
