@@ -18,100 +18,86 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
       · intro a
         obtain ⟨h, right_1⟩ := a
         have ⟨dropSet, h_dropSet⟩ : ∃s, (FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs) = s := by simp
-        induction dropSet using Finset.induction_on with
-        | empty =>
-          have : rs = FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) := by
-            refine Finset.Subset.antisymm right (Finset.sdiff_eq_empty_iff_subset.mp h_dropSet)
-
-          rw [this, projectQuery.q_schema_def] at h
-          rw [← ih]
-          simp
-          use t
-          simp_all only [subset_refl, FOL.BoundedQuery.Realize.def, sdiff_self, Finset.bot_eq_empty,
-            and_self, implies_true, true_and]
-          intro a a_1
-          apply Part.eq_none_iff'.mpr fun a ↦ a_1 (right_1 a)
-        | insert h' ih =>
-          rename_i a ds
-          simp_all only [projectQuery.def, Nat.add_zero, Finset.insert_eq_self,
-            not_isEmpty_of_nonempty, IsEmpty.forall_iff, and_true, IsEmpty.exists_iff]
-          simp at h
-          obtain ⟨w, h⟩ := h
-          unfold projectAttribute at h
-          simp [h_dropSet] at h
-          rw [← ih]
-          simp
-          have : ∀a' ∈ insert a ds, a' ∈ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs := by
-            intro a_1 a_2
-            rw [h_dropSet]
-            exact a_2
-          use (Sum.elim t w ∘ fun a' ↦ if h : a' = a ∨ a' ∈ ds then Sum.inr (RM.RelationSchema.index (this a' (by simp_all))) else Sum.inl a')
-          simp_all only [dite_eq_ite, Function.comp_apply]
-          apply And.intro
-          · apply And.intro
-            · apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp h
-              . ext a v
-                exact Fin.elim0 a
-              . rfl
-            · rw [Set.subset_def]
-              intro x a_1
-              simp_all only [PFun.mem_dom, Function.comp_apply, Finset.mem_coe]
-              obtain ⟨w_1, h_1⟩ := a_1
+        simp_all only [projectQuery.def, Nat.add_zero, Finset.insert_eq_self,
+          not_isEmpty_of_nonempty, IsEmpty.forall_iff, and_true, IsEmpty.exists_iff]
+        simp at h
+        obtain ⟨w, h⟩ := h
+        unfold projectAttribute at h
+        rw [← ih]
+        simp
+        have : ∀a' ∈ dropSet, a' ∈ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs := by
+          intro a_1 a_2
+          rw [h_dropSet]
+          exact a_2
+        use (Sum.elim t w ∘ fun a' ↦ if h : a' ∈ dropSet then Sum.inr (RM.RelationSchema.index (this a' (by simp_all))) else Sum.inl a')
+        simp_all only [dite_eq_ite, Function.comp_apply]
+        apply And.intro
+        · apply And.intro
+          · apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp h
+            . ext a v
+              exact Fin.elim0 a
+            . rfl
+          · ext a'
+            simp_all only [PFun.mem_dom, Function.comp_apply, Finset.mem_coe]
+            apply Iff.intro
+            · intro a_2
+              obtain ⟨w_1, h_1⟩ := a_2
               split at h_1
               next h_2 =>
                 simp_all only [Sum.elim_inr]
-                have := this x (by simp [h_2])
-                simp at this
+                subst h_dropSet
+                simp_all
+                have := this a' h_2
+                rw [Finset.mem_sdiff] at this
                 exact this.1
-              next
-                h_2 =>
-                simp_all only [Finset.mem_insert, or_false, not_or, Sum.elim_inl]
-                obtain ⟨left_1, right_2⟩ := h_2
-                simp_all only [implies_true]
-                apply right
-                apply right_1
-                simp_all only [PFun.mem_dom]
-                apply Exists.intro
-                · exact h_1
-          · intro a_1
-            split
-            next h_1 =>
-              simp_all only [Sum.elim_inr]
-              cases h_1 with
-              | inl h_2 =>
-                subst h_2
-                apply And.intro
-                · intro a
-                  by_contra hc
-                  simp at this
-                  exact this.1.2 a
-                · intro a
-                  simp_all only [Finset.mem_insert, or_false]
-                  exact Part.eq_none_iff'.mpr fun a_2 ↦ a (right_1 a_2)
-              | inr h_3 =>
-                apply And.intro
-                · intro a_2
-                  have : a_1 ∈ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs := by simp_all
-                  by_contra hc
-                  simp at this
-                  exact this.2 a_2
-                · intro a_2
-                  simp_all only [Finset.mem_insert, or_false]
-                  apply Part.eq_none_iff'.mpr fun a ↦ a_2 (right_1 a)
-            next
-              h_1 =>
-              simp_all only [Finset.mem_insert, or_false, not_or, Sum.elim_inl,
-                implies_true, true_and]
-              intro a_2
-              obtain ⟨left_1, right_2⟩ := h_1
-              apply Part.eq_none_iff'.mpr fun a ↦ a_2 (right_1 a)
-      · intro a
+              next h_2 =>
+                simp_all only [Finset.mem_insert, implies_true, not_or, Sum.elim_inl]
+                rw [Set.ext_iff] at right_1
+                by_contra hc
+                have := (right_1 a').1 (by refine (PFun.mem_dom t a').mpr (Exists.intro w_1 h_1))
+                exact hc (right this)
+            · intro a_2
+              split
+              next h_1 =>
+                simp_all only [Sum.elim_inr]
+
+                sorry
+
+              next h_1 =>
+                simp [← h_dropSet, Finset.mem_sdiff, a_2] at h_1
+                rw [Set.ext_iff] at right_1
+                simp [← PFun.mem_dom]
+                exact (right_1 a').mpr h_1
+        · intro a_1
+          split
+          next h_1 =>
+            simp_all only [Sum.elim_inr]
+            subst h_dropSet
+            simp_all
+            apply And.intro
+            · intro h_2
+              by_contra hc
+              simp at h_1
+              exact h_1.2 h_2
+            · intro a
+              simp_all only [Finset.mem_sdiff, not_false_eq_true, and_self, implies_true, and_true]
+              apply Part.eq_none_iff'.mpr
+              rw [Part.dom_iff_mem, ← PFun.mem_dom, right_1]
+              exact a
+          next h_1 =>
+            simp_all only [Finset.mem_insert, implies_true, not_or, Sum.elim_inl, true_and]
+            intro a_2
+            apply Part.eq_none_iff'.mpr
+            rw [Part.dom_iff_mem, ← PFun.mem_dom, right_1]
+            exact a_2
+
+      . intro a
+        simp_all only [projectQuery.def, Nat.add_zero, FOL.BoundedQuery.Realize.exs_def,
+          FOL.BoundedQuery.Realize.relabel_def, Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq]
         obtain ⟨w, h⟩ := a
         obtain ⟨left_1, right_1⟩ := h
         apply And.intro
-        · simp only [projectQuery.def, Nat.add_zero, FOL.BoundedQuery.Realize.exs_def,
-          FOL.BoundedQuery.Realize.relabel_def, Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq]
-          use λ i => w (RM.RelationSchema.fromIndex i)
+        · use λ i => w (RM.RelationSchema.fromIndex i)
           rw [← ih] at left_1
           simp at left_1
           apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp left_1.1
@@ -133,12 +119,12 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
                     Sum.elim_inr, RM.RelationSchema.fromIndex_index_eq]
                 next
                   h_1 =>
-                  have : w.Dom ⊆ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) := by simp_all
                   simp_all only [Sum.elim_inl, not_false_eq_true, Part.not_mem_none]
-                  apply h_1
-                  apply this
-                  simp_all
-                  exact Exists.intro v a_1
+                  rw [Set.ext_iff] at right_2
+                  have := right_2 a
+                  simp [PFun.mem_dom w a] at this
+                  have := this.mp (Exists.intro v a_1)
+                  exact h_1 this
               · intro a_1
                 split at a_1
                 next h_1 =>
@@ -146,9 +132,18 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
                     Sum.elim_inr, RM.RelationSchema.fromIndex_index_eq]
                 next h_1 =>
                   simp_all only [Sum.elim_inl, not_false_eq_true, Part.not_mem_none]
-        · rw [Set.subset_def]
-          intro x a
+        · ext a
           simp_all only [PFun.mem_dom, Finset.mem_coe]
-          obtain ⟨w_1, h⟩ := a
-          by_contra hc
-          simp_all only [not_false_eq_true, Part.not_mem_none]
+          have h1 := RA.Query.evaluate.validSchema q left w left_1
+          have h2 := (ra_to_fol_query_schema left).symm
+          apply Iff.intro
+          · intro a_1
+            obtain ⟨w_1, h⟩ := a_1
+            by_contra hc
+            have := (right_1 a).2 hc
+            simp [Part.eq_none_iff] at this
+            exact this w_1 h
+          · intro a_1
+            simp_all only
+            rw [← @PFun.mem_dom, h1]
+            exact right a_1

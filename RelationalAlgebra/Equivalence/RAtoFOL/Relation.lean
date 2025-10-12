@@ -14,7 +14,7 @@ theorem ra_to_fol_evalT.R_def.mp :
       intro a a_1
       rw [FOL.ArityToTuple.def_fromIndex t] at a
       . exact a
-      . exact a_1
+      . simp_all only [subset_refl]
 
 theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
   ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query (.R rn) dbi.schema).RealizeMin dbi t := by

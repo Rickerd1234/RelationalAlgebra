@@ -17,7 +17,7 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p 
       apply And.intro
       · apply ih
         · exact a_1
-        · simp_all only
+        · simp_all [FirstOrder.Language.Term.varFinsetLeft, ra_to_fol_query_schema]
       · exact a_2
 
 theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p q))

@@ -10,16 +10,22 @@ theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
         CompTriple.comp_eq, Fin.natAdd_zero, FOL.BoundedQuery.relabel_schema, Function.comp_apply,
         Sum.getLeft?_inl, Part.coe_some, Finset.pimage_some, Finset.coe_image,
         RA.Query.evaluateT.r_def, renameT, exists_eq_right', Set.mem_setOf_eq, and_imp] at ⊢ h
-      intro t a h_dom
+      intro t h_rel h_dom
       apply ih
       . simp_all
         apply And.intro
-        . exact a
-        . simp [Set.subset_def] at h_dom ⊢
-          intro x x_1 h_1
+        . exact h_rel
+        . ext a
+          rw [Set.ext_iff] at h_dom
+          simp_all only [PFun.mem_dom, Set.mem_image, Finset.mem_coe, Function.comp_apply]
           obtain ⟨left, right⟩ := h
-          have ⟨x', hx', hx''⟩ := h_dom (f x) x_1 h_1
-          simp_all [right.1 hx'']
+          apply Iff.intro
+          · intro a_1
+            obtain ⟨w, h⟩ := a_1
+            obtain ⟨left_1, right_1⟩ := h
+            simp_all only [right.1 right_1]
+          · intro a_1
+            use a
 
 theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeMin dbi t) :
