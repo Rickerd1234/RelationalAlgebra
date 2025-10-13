@@ -66,10 +66,9 @@ theorem rename_func_surjective [DecidableEq Attribute] (old new : Attribute) (h 
         simp_all only [not_false_eq_true, not_true_eq_false]
 
 -- Theorem proving that renameFunc is bijective
-theorem rename_func_injective [DecidableEq Attribute] (old new : Attribute) (h : old ≠ new) : (renameFunc old new).Injective := by
+theorem rename_func_injective [DecidableEq Attribute] (old new : Attribute) (h : ¬old = new) : (renameFunc old new).Injective := by
   simp only [renameFunc, Function.Injective]
   intro a''
-  simp_all only [ne_eq]
   by_cases h_a' : a'' = new
   . subst h_a'
     simp_all
