@@ -85,10 +85,7 @@ theorem BoundedQuery.Realize.mapTermRel_add_castLe {dbi} [struc : folStruc dbi] 
       φ.Realize dbi (v xs) (xs ∘ Fin.natAdd _) := by
         induction φ with
         | R => simp [FOL.BoundedQuery.mapTermRel, h1, BoundedQuery.Realize.def]
-        | tEq q t₁ t₂ ih =>
-          rename_i n'
-          simp [FOL.BoundedQuery.mapTermRel, h1, hv, ih, BoundedQuery.Realize.def]
-          simp_all only [«def», mapTermRel_formula, BoundedFormula.Realize, realize_var]
+        | tEq t₁ t₂ => simp_all only [mapTermRel, «def», toFormula_tEq, BoundedFormula.Realize]
         | and _ _ ih1 ih2 => simp_all [FOL.BoundedQuery.mapTermRel, ih1, ih2, BoundedQuery.Realize.def]
         | ex _ ih => simp_all [FOL.BoundedQuery.mapTermRel, ih, hv, BoundedQuery.Realize.def]
         | or _ _ ih1 ih2 => simp_all [FOL.BoundedQuery.mapTermRel, ih1, ih2, BoundedQuery.Realize.def]

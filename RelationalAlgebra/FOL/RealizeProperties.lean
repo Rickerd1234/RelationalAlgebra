@@ -56,22 +56,20 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {tup tup' : Tuple} {iv : Fin
             simp_all only [realize_var, Sum.elim_inr]
         next h => simp_all only [↓reduceDIte, Part.not_mem_none]
 
-    | tEq q t₁ t₂ =>
+    | tEq t₁ t₂ =>
       simp_all [Realize, BoundedFormula.Realize]
       have ⟨t₁, ht₁⟩ := Term.cases t₁
       have ⟨t₂, ht₂⟩ := Term.cases t₂
       subst ht₁ ht₂
-      intro h
       simp_all
       obtain ⟨left, right⟩ := h_min
-      obtain ⟨left_1, right⟩ := right
       cases t₁ with
       | inl val =>
         cases t₂ with
         | inl
           val_1 =>
           simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom, Sum.elim_inl]
-          obtain ⟨w, h_1⟩ := left_1
+          obtain ⟨w, h_1⟩ := left
           obtain ⟨w_1, h_2⟩ := right
           apply Iff.intro
           · intro a
@@ -91,7 +89,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {tup tup' : Tuple} {iv : Fin
           val_2 =>
           simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom,
             Finset.coe_empty, Set.empty_subset, Sum.elim_inl, Sum.elim_inr]
-          obtain ⟨w, h_1⟩ := left_1
+          obtain ⟨w, h_1⟩ := left
           apply Iff.intro
           · intro a
             rw [← h_res] at a

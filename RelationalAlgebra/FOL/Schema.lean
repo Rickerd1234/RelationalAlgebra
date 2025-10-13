@@ -33,8 +33,8 @@ theorem BoundedQuery.schema.R_def {n : ℕ} {dbs : DatabaseSchema} (t : Fin (dbs
   (R rn t).schema = {a | ∃i : Fin (dbs rn).card, a ∈ (t i).varFinsetLeft}.toFinset := by ext a; simp
 
 @[simp]
-theorem BoundedQuery.schema.tEq_def {n : ℕ} (q : BoundedQuery dbs n) (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
-  (tEq q t₁ t₂).schema = q.schema ∪ t₁.varFinsetLeft ∪ t₂.varFinsetLeft := by simp_all [schema]
+theorem BoundedQuery.schema.tEq_def {n : ℕ} (t₁ t₂ : fol.Term (Attribute ⊕ Fin n)) :
+  (tEq t₁ t₂ : BoundedQuery dbs n).schema = t₁.varFinsetLeft ∪ t₂.varFinsetLeft := by simp_all [schema]
 
 @[simp]
 theorem BoundedQuery.schema.and_def {n : ℕ} (q₁ q₂ : BoundedQuery dbs n) :

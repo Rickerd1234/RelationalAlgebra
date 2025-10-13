@@ -6,7 +6,7 @@ open RM
 noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query dbs :=
   match raQ with
   | .R rn => .R rn (FOL.outVar ∘ (dbs rn).fromIndex)
-  | .s a b sq => (.tEq (ra_to_fol_query sq dbs) (FOL.outVar a) (FOL.outVar b))
+  | .s a b sq => .and (ra_to_fol_query sq dbs) (.tEq (FOL.outVar a) (FOL.outVar b))
   | .p rs sq => projectQuery (ra_to_fol_query sq dbs) rs
   | .j sq1 sq2 => .and (ra_to_fol_query sq1 dbs) (ra_to_fol_query sq2 dbs)
   | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
@@ -41,5 +41,5 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
     | _ => simp_all [ra_to_fol_query]
 
 theorem ra_to_fol_query_schema (h : raQ.isWellTyped dbs) :
-  (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
+(ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     refine ra_to_fol_query_schema.def raQ dbs h
