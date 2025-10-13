@@ -67,7 +67,7 @@ def dbI : DatabaseInstance := ⟨
 ⟩
 
 def j : Query :=
-  .s "0" "1" true (.j (.R "R1") (.R "R2"))
+  .s "0" "1" (.j (.R "R1") (.R "R2"))
 
 theorem hj : j.isWellTyped dbI.schema := by
   simp_all [j, Query.isWellTyped, Query.schema, dbI, relS, relS2]

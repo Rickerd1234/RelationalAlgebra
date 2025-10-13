@@ -2,9 +2,9 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
 variable {dbi a b p q} [struc : FOL.folStruc dbi]
 
-theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
+theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
-    ∀t, (ra_to_fol_query (.s a b p q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b p q) := by
+    ∀t, (ra_to_fol_query (.s a b q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
       intro t
       simp only [RA.Query.isWellTyped.s_def, ra_to_fol_query, FOL.outVar.def,
         FOL.Query.RealizeMin.def, FOL.BoundedQuery.Realize.def, FOL.BoundedQuery.toFormula_tEq,
@@ -20,12 +20,12 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b p 
         · simp_all [FirstOrder.Language.Term.varFinsetLeft, ra_to_fol_query_schema]
       · exact a_2
 
-theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
+theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeMin dbi t) :
-    ∀t, t ∈ RA.Query.evaluateT dbi (.s a b p q) → (ra_to_fol_query (.s a b p q) dbi.schema).RealizeMin dbi t := by
+    ∀t, t ∈ RA.Query.evaluateT dbi (.s a b q) → (ra_to_fol_query (.s a b q) dbi.schema).RealizeMin dbi t := by
       intro t h_RA_eval
       apply And.intro ?_
-        (by simp_all [RA.Query.evaluate.validSchema (.s a b p q) h t h_RA_eval, ra_to_fol_query_schema])
+        (by simp_all [RA.Query.evaluate.validSchema (.s a b q) h t h_RA_eval, ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
       simp_all only [RA.Query.isWellTyped.s_def, FOL.Query.RealizeMin.def,
@@ -37,9 +37,9 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b p
       obtain ⟨left_2, right⟩ := right
       exact right_1
 
-theorem ra_to_fol_evalT.s_def_eq (h : RA.Query.isWellTyped dbi.schema (.s a b p q))
+theorem ra_to_fol_evalT.s_def_eq (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih: (ra_to_fol_query q dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q) :
-    (ra_to_fol_query (.s a b p q) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.s a b p q) := by
+    (ra_to_fol_query (.s a b q) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.s a b q) := by
       ext t
       apply Iff.intro
       . exact ra_to_fol_evalT.s_def.mp h

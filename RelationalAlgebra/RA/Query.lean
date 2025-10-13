@@ -6,7 +6,7 @@ namespace RA
 
 inductive Query : Type
   | R: RelationName → Query
-  | s: Attribute → Attribute → Bool → Query → Query
+  | s: Attribute → Attribute → Query → Query
   | p: RelationSchema → Query → Query
   | j: Query → Query → Query
   | r: (Attribute → Attribute) → Query → Query
@@ -15,7 +15,7 @@ inductive Query : Type
 
 def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
   | .R rn => λ dbs => dbs rn
-  | .s _ _ _ sq => sq.schema
+  | .s _ _ sq => sq.schema
   | .p rs _ => λ _ => rs
   | .j sq1 sq2 => λ dbs => sq1.schema dbs ∪ sq2.schema dbs
   | .r f sq => λ dbs => renameSchema (sq.schema dbs) f
@@ -28,7 +28,7 @@ theorem Query.schema_R (rn : RelationName) {dbs : DatabaseSchema} :
 
 @[simp]
 theorem Query.schema_s {dbs : DatabaseSchema} :
-  (s a b pos sq).schema dbs = sq.schema dbs := rfl
+  (s a b sq).schema dbs = sq.schema dbs := rfl
 
 @[simp]
 theorem Query.schema_p (rs : RelationSchema) {dbs : DatabaseSchema} :
@@ -53,7 +53,7 @@ theorem Query.schema_d {dbs : DatabaseSchema} :
 def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
   | .R _ => (True)
-  | .s a b _ sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b ∈ sq.schema dbs
+  | .s a b sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b ∈ sq.schema dbs
   | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
   | .j sq₁ sq₂ => sq₁.isWellTyped dbs ∧ sq₂.isWellTyped dbs
   | .r f sq => sq.isWellTyped dbs ∧ f.Bijective
@@ -66,7 +66,7 @@ theorem Query.isWellTyped.R_def (rn : RelationName) {dbs : DatabaseSchema} :
 
 @[simp]
 theorem Query.isWellTyped.s_def {dbs : DatabaseSchema} :
-  (s a b pos sq).isWellTyped dbs ↔ sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b ∈ sq.schema dbs := by rfl
+  (s a b sq).isWellTyped dbs ↔ sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b ∈ sq.schema dbs := by rfl
 
 @[simp]
 theorem Query.isWellTyped.p_def (rs : RelationSchema) {dbs : DatabaseSchema} :
@@ -91,7 +91,7 @@ theorem Query.isWellTyped.d_def {dbs : DatabaseSchema} :
 def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
   match q with
   | .R rn => (dbi.relations rn).tuples
-  | .s a b posEq sq => selectionT (sq.evaluateT dbi) a b posEq
+  | .s a b sq => selectionT (sq.evaluateT dbi) a b
   | .p rs sq => projectionT (sq.evaluateT dbi) rs
   | .j sq₁ sq₂ => joinT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
   | .r f sq => renameT (sq.evaluateT dbi) f
@@ -104,7 +104,7 @@ theorem Query.evaluateT.R_def (rn : RelationName) (dbi : DatabaseInstance) :
 
 @[simp]
 theorem Query.evaluateT.s_def :
-  (s a b pos sq).evaluateT dbi = selectionT (sq.evaluateT dbi) a b pos := rfl
+  (s a b sq).evaluateT dbi = selectionT (sq.evaluateT dbi) a b := rfl
 
 @[simp]
 theorem Query.evaluateT.p_def (rs : RelationSchema) :
@@ -132,7 +132,7 @@ theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.sche
     intro t h_t
     simp_all only [isWellTyped, evaluateT, schema, ← DatabaseInstance.validSchema]
     exact RelationInstance.validSchema.def h_t
-  | s a b i sq ih =>
+  | s a b sq ih =>
     simp_all only [isWellTyped, evaluateT, selectionT, schema]
     simp_all only [forall_const, Part.coe_some, bind_pure_comp, ne_eq, Set.mem_setOf_eq,
       implies_true]
@@ -184,7 +184,7 @@ theorem Query.evaluateT.dbi_domain {dbi} {q : Query} (h : q.isWellTyped dbi.sche
     induction q with
     | R => exact fun t a ↦ DatabaseInstance.t_ran_sub_domain a
 
-    | s a b p sq => simp_all only [isWellTyped.s_def, s_def, selectionT, ne_eq, ite_true,
+    | s a b sq => simp_all only [isWellTyped.s_def, s_def, selectionT, ne_eq, ite_true,
       Set.mem_setOf_eq, implies_true]
 
     | p rs sq ih =>

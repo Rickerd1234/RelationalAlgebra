@@ -3,12 +3,10 @@ import RelationalAlgebra.FOL.RelabelProperties
 
 open RM
 
--- @TODO: for negative select add (λ q => ite (pos) q (.not q)) to .s
-
 noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query dbs :=
   match raQ with
   | .R rn => .R rn (FOL.outVar ∘ (dbs rn).fromIndex)
-  | .s a b pos sq => (.tEq (ra_to_fol_query sq dbs) (FOL.outVar a) (FOL.outVar b))
+  | .s a b sq => (.tEq (ra_to_fol_query sq dbs) (FOL.outVar a) (FOL.outVar b))
   | .p rs sq => projectQuery (ra_to_fol_query sq dbs) rs
   | .j sq1 sq2 => .and (ra_to_fol_query sq1 dbs) (ra_to_fol_query sq2 dbs)
   | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
