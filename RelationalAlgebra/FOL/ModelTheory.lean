@@ -29,32 +29,48 @@ open Language
 
 -- Define variable indexing types
 
-def ArityToTuple {dbs: DatabaseSchema} {rn : RelationName} (va : Fin (dbs rn).card → Part Value) : Tuple :=
-  λ att => dite (att ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none)
+instance dec_dom {t : Tuple} {rs : RelationSchema} (h : t.Dom = rs) : Decidable (t a).Dom := by
+  simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
+  exact Finset.decidableMem a rs
 
-theorem ArityToTuple.def_dite {dbs : DatabaseSchema} (va : Fin (dbs rn).card → Part Value) :
-  ArityToTuple va = λ a => dite (a ∈ dbs rn) (λ h => va ((dbs rn).index h)) (λ _ => Part.none) := by
+def TupleToFun {rs : RelationSchema} {t : Tuple} (h : t.Dom = rs) : Attribute → Value :=
+  by
+    haveI : ∀ a, Decidable (t a).Dom := fun a => dec_dom h
+    exact λ a => (t a).getOrElse default
+
+@[simp]
+theorem TupleToFun.def {rs : RelationSchema} {t : Tuple} (h : t.Dom = rs) [∀a, Decidable (t a).Dom] :
+  TupleToFun h = λ a => (t a).getOrElse default := by rfl
+
+def ArityToTuple {rs: RelationSchema} (va : Fin rs.card → Value) : Tuple :=
+  λ att => dite (att ∈ rs) (λ h => va (rs.index h)) (λ _ => Part.none)
+
+theorem ArityToTuple.def_dite {rs : RelationSchema} (va : Fin rs.card → Value) :
+  ArityToTuple va = λ a => dite (a ∈ rs) (λ h => .some (va (rs.index h))) (λ _ => Part.none) := by
     rfl
 
-theorem ArityToTuple.def_fromIndex {dbs : DatabaseSchema} (t : Tuple) (h : t.Dom ⊆ dbs rn) :
-  ArityToTuple (fun i ↦ t ((dbs rn).fromIndex i)) = t := by
+theorem ArityToTuple.def_fromIndex {rs : RelationSchema} {t : Tuple} (h : t.Dom = ↑rs) :
+  ArityToTuple (fun i : Fin rs.card ↦ (TupleToFun h (RM.RelationSchema.fromIndex i))) = t := by
     simp_all [ArityToTuple.def_dite]
     ext a v
     apply Iff.intro
     · intro a_1
       split at a_1
-      next h_1 => simp_all only
+      next h_1 =>
+        simp [Set.ext_iff, ← Part.dom_iff_mem] at h;
+        simp_all [RelationSchema.fromIndex_index_eq, Part.getOrElse, Part.get_mem]
       next h_1 => simp_all only [Part.not_mem_none]
     · intro a_1
       split
-      next h_1 => simp_all only
+      next h_1 =>
+        simp_all [← Part.eq_some_iff, RelationSchema.fromIndex_index_eq]
       next h_1 =>
         simp_all only [Part.not_mem_none]
         have z : a ∈ t.Dom := by apply Part.dom_iff_mem.mpr; use v
-        exact h_1 (h z)
+        simp_all only [Finset.mem_coe]
 
 @[simp]
-theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Part Value}
+theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Value}
   (h: ArityToTuple va ∈ (dbi.relations rn).tuples)
   : (ArityToTuple va att).Dom ↔ att ∈ dbi.schema rn := by
     have h2 := RelationInstance.validSchema (dbi.relations rn) (ArityToTuple va) h
@@ -62,15 +78,15 @@ theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va 
     exact Iff.symm (Eq.to_iff (congrFun (id (Eq.symm h2)) att))
 
 @[simp]
-theorem arityToTuple_def {dbs: DatabaseSchema} {rn : RelationName} {i : Fin (Finset.card (dbs rn))} {va : Fin (dbs rn).card → Part Value}
+theorem arityToTuple_def {dbs: DatabaseSchema} {rn : RelationName} {i : Fin (Finset.card (dbs rn))} {va : Fin (dbs rn).card → Value}
   : ArityToTuple va ((dbs rn).fromIndex i) = va i
     := by simp [ArityToTuple]
 
 -- Explore relation concepts
-class folStruc (dbi : DatabaseInstance) extends fol.Structure (Part Value) where
+class folStruc (dbi : DatabaseInstance) extends fol.Structure (Value) where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
       (rn : RelationName)          →                      -- Every relation (and every arity)
-      (va : Fin (dbi.schema rn).card → Part Value) →             -- Every value assignment (for this arity)
+      (va : Fin (dbi.schema rn).card → Value) →             -- Every value assignment (for this arity)
 
         RelMap (.R dbi.schema rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
         (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance

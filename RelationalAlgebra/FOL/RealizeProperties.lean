@@ -1,153 +1,153 @@
-import RelationalAlgebra.FOL.Realize
+-- import RelationalAlgebra.FOL.Realize
 
-open FOL FirstOrder Language RM Term
+-- open FOL FirstOrder Language RM Term
 
-namespace FOL
+-- namespace FOL
 
-@[simp]
-theorem BoundedQuery.Realize.enlarge [folStruc dbi] {tup tup' : Tuple} {iv : Fin n →. Value} {q : BoundedQuery dbi.schema n}
-  (h_sub : tup'.Dom ⊆ tup.Dom)
-  (h_res : tup.restrict h_sub = tup')
-  (h_min : ↑q.schema ⊆ tup'.Dom)
-  : q.Realize dbi tup' iv ↔ q.Realize dbi tup iv := by
-    induction q with
-    | R rn vMap =>
-      simp [Realize]
-      rw [@iff_eq_eq, @Set.mem_def, @Set.mem_def]
-      apply congr rfl
-      ext a v
-      simp [ArityToTuple.def_dite]
-      simp_all only [schema.R_def, Set.coe_toFinset]
-      apply Iff.intro
-      · intro a_1
-        split
-        next h =>
-          simp_all only [↓reduceDIte]
-          have := Term.cases (vMap (RelationSchema.index h))
-          simp_all only [Sum.exists]
-          cases this with
-          | inl h_1 =>
-            obtain ⟨w, h_1⟩ := h_1
-            simp_all only [realize_var, Sum.elim_inl]
-            rw [← h_res] at a_1
-            simp at a_1
-            exact a_1.2
-          | inr h_2 =>
-            obtain ⟨w, h_1⟩ := h_2
-            simp_all only [realize_var, Sum.elim_inr]
-        next h => simp_all only [↓reduceDIte, Part.not_mem_none]
-      · intro a_1
-        split
-        next h =>
-          simp_all only [↓reduceDIte]
-          have := Term.cases (vMap (RelationSchema.index h))
-          simp_all only [Sum.exists]
-          cases this with
-          | inl h_1 =>
-            obtain ⟨w, h_1⟩ := h_1
-            simp_all only [realize_var, Sum.elim_inl]
-            simp [Set.subset_def, PFun.mem_dom] at h_min
-            have ⟨v', h_2⟩ := h_min w (RelationSchema.index h) (by simp_all only [varFinsetLeft.eq_1, Finset.mem_singleton])
-            rw [← h_res] at h_2 ⊢
-            simp at h_2 ⊢
-            simp_all only [and_self]
-          | inr h_2 =>
-            obtain ⟨w, h_1⟩ := h_2
-            simp_all only [realize_var, Sum.elim_inr]
-        next h => simp_all only [↓reduceDIte, Part.not_mem_none]
+-- @[simp]
+-- theorem BoundedQuery.Realize.enlarge [folStruc dbi] {tup tup' : Tuple} {iv : Fin n →. Value} {q : BoundedQuery dbi.schema n}
+--   (h_sub : tup'.Dom ⊆ tup.Dom)
+--   (h_res : tup.restrict h_sub = tup')
+--   (h_min : ↑q.schema ⊆ tup'.Dom)
+--   : q.Realize dbi tup' iv ↔ q.Realize dbi tup iv := by
+--     induction q with
+--     | R rn vMap =>
+--       simp [Realize]
+--       rw [@iff_eq_eq, @Set.mem_def, @Set.mem_def]
+--       apply congr rfl
+--       ext a v
+--       simp [ArityToTuple.def_dite]
+--       simp_all only [schema.R_def, Set.coe_toFinset]
+--       apply Iff.intro
+--       · intro a_1
+--         split
+--         next h =>
+--           simp_all only [↓reduceDIte]
+--           have := Term.cases (vMap (RelationSchema.index h))
+--           simp_all only [Sum.exists]
+--           cases this with
+--           | inl h_1 =>
+--             obtain ⟨w, h_1⟩ := h_1
+--             simp_all only [realize_var, Sum.elim_inl]
+--             rw [← h_res] at a_1
+--             simp at a_1
+--             exact a_1.2
+--           | inr h_2 =>
+--             obtain ⟨w, h_1⟩ := h_2
+--             simp_all only [realize_var, Sum.elim_inr]
+--         next h => simp_all only [↓reduceDIte, Part.not_mem_none]
+--       · intro a_1
+--         split
+--         next h =>
+--           simp_all only [↓reduceDIte]
+--           have := Term.cases (vMap (RelationSchema.index h))
+--           simp_all only [Sum.exists]
+--           cases this with
+--           | inl h_1 =>
+--             obtain ⟨w, h_1⟩ := h_1
+--             simp_all only [realize_var, Sum.elim_inl]
+--             simp [Set.subset_def, PFun.mem_dom] at h_min
+--             have ⟨v', h_2⟩ := h_min w (RelationSchema.index h) (by simp_all only [varFinsetLeft.eq_1, Finset.mem_singleton])
+--             rw [← h_res] at h_2 ⊢
+--             simp at h_2 ⊢
+--             simp_all only [and_self]
+--           | inr h_2 =>
+--             obtain ⟨w, h_1⟩ := h_2
+--             simp_all only [realize_var, Sum.elim_inr]
+--         next h => simp_all only [↓reduceDIte, Part.not_mem_none]
 
-    | tEq t₁ t₂ =>
-      simp_all [Realize, BoundedFormula.Realize]
-      have ⟨t₁, ht₁⟩ := Term.cases t₁
-      have ⟨t₂, ht₂⟩ := Term.cases t₂
-      subst ht₁ ht₂
-      simp_all
-      obtain ⟨left, right⟩ := h_min
-      cases t₁ with
-      | inl val =>
-        cases t₂ with
-        | inl
-          val_1 =>
-          simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom, Sum.elim_inl]
-          obtain ⟨w, h_1⟩ := left
-          obtain ⟨w_1, h_2⟩ := right
-          apply Iff.intro
-          · intro a
-            rw [← h_res] at a h_1 h_2
-            rw [Part.ext_iff] at a
-            ext v
-            simp at *
-            simp [*] at *
-            exact a v
+--     | tEq t₁ t₂ =>
+--       simp_all [Realize, BoundedFormula.Realize]
+--       have ⟨t₁, ht₁⟩ := Term.cases t₁
+--       have ⟨t₂, ht₂⟩ := Term.cases t₂
+--       subst ht₁ ht₂
+--       simp_all
+--       obtain ⟨left, right⟩ := h_min
+--       cases t₁ with
+--       | inl val =>
+--         cases t₂ with
+--         | inl
+--           val_1 =>
+--           simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom, Sum.elim_inl]
+--           obtain ⟨w, h_1⟩ := left
+--           obtain ⟨w_1, h_2⟩ := right
+--           apply Iff.intro
+--           · intro a
+--             rw [← h_res] at a h_1 h_2
+--             rw [Part.ext_iff] at a
+--             ext v
+--             simp at *
+--             simp [*] at *
+--             exact a v
 
-          · intro a
-            rw [← h_res] at h_1 h_2 ⊢
-            ext v
-            simp at *
-            simp_all only
-        | inr
-          val_2 =>
-          simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom,
-            Finset.coe_empty, Set.empty_subset, Sum.elim_inl, Sum.elim_inr]
-          obtain ⟨w, h_1⟩ := left
-          apply Iff.intro
-          · intro a
-            rw [← h_res] at a
-            rw [Part.ext_iff] at a
-            ext v
-            simp at *
-            have : (∃ y, y ∈ tup' val) = True := by aesop
-            simp [this] at a
-            exact a v
-          · intro a
-            rw [← h_res] at h_1 ⊢
-            ext v
-            simp at *
-            simp_all only [true_and]
-      | inr val_1 =>
-        cases t₂ with
-        | inl
-          val =>
-          simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Finset.coe_singleton,
-            Set.singleton_subset_iff, PFun.mem_dom, Sum.elim_inr, Sum.elim_inl]
-          obtain ⟨w, h_1⟩ := right
-          apply Iff.intro
-          · intro a
-            rw [← h_res] at a
-            rw [Part.ext_iff] at a
-            ext v
-            simp at *
-            have : (∃ y, y ∈ tup' val) = True := by aesop
-            simp [this] at a
-            exact a v
-          · intro a
-            rw [← h_res] at h_1 ⊢
-            ext v
-            simp at *
-            simp_all only [true_and]
-        | inr val_2 => simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Sum.elim_inr]
+--           · intro a
+--             rw [← h_res] at h_1 h_2 ⊢
+--             ext v
+--             simp at *
+--             simp_all only
+--         | inr
+--           val_2 =>
+--           simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom,
+--             Finset.coe_empty, Set.empty_subset, Sum.elim_inl, Sum.elim_inr]
+--           obtain ⟨w, h_1⟩ := left
+--           apply Iff.intro
+--           · intro a
+--             rw [← h_res] at a
+--             rw [Part.ext_iff] at a
+--             ext v
+--             simp at *
+--             have : (∃ y, y ∈ tup' val) = True := by aesop
+--             simp [this] at a
+--             exact a v
+--           · intro a
+--             rw [← h_res] at h_1 ⊢
+--             ext v
+--             simp at *
+--             simp_all only [true_and]
+--       | inr val_1 =>
+--         cases t₂ with
+--         | inl
+--           val =>
+--           simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Finset.coe_singleton,
+--             Set.singleton_subset_iff, PFun.mem_dom, Sum.elim_inr, Sum.elim_inl]
+--           obtain ⟨w, h_1⟩ := right
+--           apply Iff.intro
+--           · intro a
+--             rw [← h_res] at a
+--             rw [Part.ext_iff] at a
+--             ext v
+--             simp at *
+--             have : (∃ y, y ∈ tup' val) = True := by aesop
+--             simp [this] at a
+--             exact a v
+--           · intro a
+--             rw [← h_res] at h_1 ⊢
+--             ext v
+--             simp at *
+--             simp_all only [true_and]
+--         | inr val_2 => simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Sum.elim_inr]
 
-    | and => simp_all [Realize]
+--     | and => simp_all [Realize]
 
-    | ex q ih =>
-      simp [Realize]
-      simp_all only [schema.ex_def, forall_const]
-      apply Iff.intro
-      · intro ⟨w, h⟩
-        use w
-        apply ih.mp
-        simp [Realize, h]
-      · intro ⟨w, h⟩
-        use w
-        apply ih.mpr
-        simp [Realize, h]
+--     | ex q ih =>
+--       simp [Realize]
+--       simp_all only [schema.ex_def, forall_const]
+--       apply Iff.intro
+--       · intro ⟨w, h⟩
+--         use w
+--         apply ih.mp
+--         simp [Realize, h]
+--       · intro ⟨w, h⟩
+--         use w
+--         apply ih.mpr
+--         simp [Realize, h]
 
-    | or q₁ q₂ ih₁ ih₂ =>
-      simp [Realize]
-      simp [← Realize.def]
-      simp_all only [schema.or_def, Finset.coe_union, Set.union_subset_iff]
+--     | or q₁ q₂ ih₁ ih₂ =>
+--       simp [Realize]
+--       simp [← Realize.def]
+--       simp_all only [schema.or_def, Finset.coe_union, Set.union_subset_iff]
 
-    | not q ih =>
-      simp [Realize]
-      simp [← Realize.def]
-      simp_all only [schema.not_def]
+--     | not q ih =>
+--       simp [Realize]
+--       simp [← Realize.def]
+--       simp_all only [schema.not_def]
