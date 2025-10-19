@@ -6,6 +6,8 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Rename
 
 open RM
 
+set_option maxHeartbeats 2000000
+
 theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema raQ) :
   (ra_to_fol_query raQ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
     induction raQ with
@@ -18,12 +20,51 @@ theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWel
       simp_all [ra_to_fol_query, ra_to_fol_query_schema]
       simp [FOL.Query.evaluateT, FOL.BoundedQuery.Realize, unionT, ← ih₁, ← ih₂]
       simp_all [ra_to_fol_query_schema]
-      aesop
+      ext t
+      unfold FOL.TupleToFun
+      simp_all only [Set.mem_setOf_eq, Set.mem_union]
+      obtain ⟨left, right⟩ := h
+      obtain ⟨left_1, right⟩ := right
+      apply Iff.intro
+      · intro a
+        simp_all only [forall_true_left, true_and]
+        obtain ⟨left_2, right_1⟩ := a
+        convert right_1 left_2
+      · intro a
+        cases a with
+        | inl h =>
+          simp_all only [forall_true_left, true_and]
+          obtain ⟨left_2, right_1⟩ := h
+          apply Or.inl
+          convert right_1 left_2
+        | inr h_1 =>
+          simp_all only [forall_true_left, true_and]
+          obtain ⟨left_2, right_1⟩ := h_1
+          apply Or.inr
+          convert right_1 left_2
     | d q nq ih nih =>
       simp_all [ra_to_fol_query, ra_to_fol_query_schema]
       simp [FOL.Query.evaluateT, FOL.BoundedQuery.Realize, diffT, ← ih, ← nih, Set.diff]
       simp_all [ra_to_fol_query_schema]
-      aesop
+      ext t
+      unfold FOL.TupleToFun
+      simp_all only [Set.mem_setOf_eq]
+      obtain ⟨left, right⟩ := h
+      obtain ⟨left_1, right⟩ := right
+      apply Iff.intro
+      . intro h
+        apply And.intro
+        . apply And.intro h.1
+          intro x
+          convert (h.2 x).1
+        . intro x
+          convert (h.2 x).2
+      . intro h
+        apply And.intro h.1.1
+        intro x
+        apply And.intro
+        . convert h.1.2 x
+        . convert h.2 x
 
 theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
   (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h_ra_wt := by

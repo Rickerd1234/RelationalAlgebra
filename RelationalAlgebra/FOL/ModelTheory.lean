@@ -29,18 +29,36 @@ open Language
 
 -- Define variable indexing types
 
-instance dec_dom {t : Tuple} {rs : RelationSchema} (h : t.Dom = rs) : Decidable (t a).Dom := by
+@[simp]
+instance dec_dom {t : Tuple} {rs : RelationSchema} (h : t.Dom = rs) : ∀a, Decidable (t a).Dom := by
+  intro a
   simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
   exact Finset.decidableMem a rs
 
-def TupleToFun {rs : RelationSchema} {t : Tuple} (h : t.Dom = rs) : Attribute → Value :=
+noncomputable def TupleToFun {rs : RelationSchema} {t : Tuple} (h : t.Dom = rs) : Attribute → Value :=
   by
-    haveI : ∀ a, Decidable (t a).Dom := fun a => dec_dom h
-    exact λ a => (t a).getOrElse default
+    haveI : ∀ a, Decidable (t a).Dom := dec_dom h
+    exact λ a => (t a).getOrElse (Classical.arbitrary Value)
 
 @[simp]
 theorem TupleToFun.def {rs : RelationSchema} {t : Tuple} (h : t.Dom = rs) [∀a, Decidable (t a).Dom] :
-  TupleToFun h = λ a => (t a).getOrElse default := by rfl
+  TupleToFun h = λ a => (t a).getOrElse (Classical.arbitrary Value) := by
+    unfold TupleToFun
+    simp_all only [Nat.default_eq_zero, Part.getOrElse, Part.ext]
+    ext x : 1
+    split
+    next h_1 => simp_all only
+    next h_1 => simp_all only
+
+@[simp]
+theorem TupleToFun.tup_eq {rs rs' : RelationSchema} {t t' : Tuple} (h : t.Dom = rs) (h' : t'.Dom = rs')  (h'' : t = t'):
+  TupleToFun h = TupleToFun h' := by
+    unfold TupleToFun
+    simp_all only [Nat.default_eq_zero, Part.getOrElse, Part.ext]
+    ext x : 1
+    subst h''
+    split
+    all_goals simp_all [Finset.coe_inj]
 
 def ArityToTuple {rs: RelationSchema} (va : Fin rs.card → Value) : Tuple :=
   λ att => dite (att ∈ rs) (λ h => va (rs.index h)) (λ _ => Part.none)
@@ -51,14 +69,15 @@ theorem ArityToTuple.def_dite {rs : RelationSchema} (va : Fin rs.card → Value)
 
 theorem ArityToTuple.def_fromIndex {rs : RelationSchema} {t : Tuple} (h : t.Dom = ↑rs) :
   ArityToTuple (fun i : Fin rs.card ↦ (TupleToFun h (RM.RelationSchema.fromIndex i))) = t := by
+    haveI := dec_dom h
     simp_all [ArityToTuple.def_dite]
     ext a v
     apply Iff.intro
     · intro a_1
       split at a_1
       next h_1 =>
-        simp [Set.ext_iff, ← Part.dom_iff_mem] at h;
-        simp_all [RelationSchema.fromIndex_index_eq, Part.getOrElse, Part.get_mem]
+        have : (t a).Dom := by simp_all [Set.ext_iff, Part.dom_iff_mem]
+        simp_all only [Part.getOrElse, dite_true, Part.some_get]
       next h_1 => simp_all only [Part.not_mem_none]
     · intro a_1
       split
