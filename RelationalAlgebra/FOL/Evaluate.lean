@@ -15,9 +15,7 @@ theorem Query.evaluateT.def {dbi : DatabaseInstance} [struc : folStruc dbi] {fol
 
 @[simp]
 theorem realize_query_dom {t : Attribute →. Value} (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] (h_realize : t ∈ q.evaluateT dbi) :
-  t.Dom = q.schema := by
-    ext a
-    simp_all [PFun.mem_dom, Finset.mem_coe, Query.evaluateT]
+  t.Dom = q.schema := h_realize.1
 
 def Query.evaluate (dbi : DatabaseInstance) {q : Query dbi.schema} [folStruc dbi] :
   RelationInstance := ⟨q.schema, q.evaluateT dbi, λ _ ht ↦ realize_query_dom dbi ht⟩
