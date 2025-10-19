@@ -11,15 +11,14 @@ theorem ra_to_fol_evalT.R_def.mp :
         FOL.folStruc_apply_RelMap, FOL.BoundedQuery.schema.R_def,
         FirstOrder.Language.Term.varFinsetLeft.eq_1, Finset.mem_singleton,
         RM.RelationSchema.Dom_sub_fromIndex, Finset.toFinset_coe, RA.Query.evaluateT.R_def, and_imp]
-      intro a a_1
-      simp at a_1
+      intro ⟨h, a_1⟩
       convert a_1
-      apply (FOL.ArityToTuple.def_fromIndex a).symm
+      apply (FOL.ArityToTuple.def_fromIndex h).symm
 
 theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
   ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query (.R rn) dbi.schema).RealizeMin dbi t := by
     intro t h_RA_eval
-    apply And.intro
+    apply Exists.intro
       (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval, ra_to_fol_query_schema])
 
     simp only [ra_to_fol_query]
@@ -30,7 +29,6 @@ theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) 
       FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula_rel, Nat.default_eq_zero, Pi.default_def,
       FirstOrder.Language.BoundedFormula.realize_rel, FirstOrder.Language.Term.realize_var,
       Sum.elim_inl, FOL.folStruc_apply_RelMap]
-    intro h
 
     rw [FOL.ArityToTuple.def_fromIndex]
     . exact h_RA_eval

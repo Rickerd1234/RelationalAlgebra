@@ -5,14 +5,14 @@ variable {dbi f q} [struc : FOL.folStruc dbi]
 theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (ra_to_fol_query (.r f q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.r f q) := by
-      simp only [RA.Query.isWellTyped.r_def, ra_to_fol_query, FOL.Query.RealizeMin,
+      simp only [RA.Query.isWellTyped.r_def, ra_to_fol_query, FOL.Query.RealizeMin.and_def,
         FOL.BoundedQuery.Realize.relabel_def, Nat.add_zero, Fin.castAdd_zero, Fin.cast_refl,
         CompTriple.comp_eq, Fin.natAdd_zero, FOL.BoundedQuery.relabel_schema, Function.comp_apply,
         Sum.getLeft?_inl, Part.coe_some, Finset.pimage_some, Finset.coe_image,
         RA.Query.evaluateT.r_def, renameT, exists_eq_right', Set.mem_setOf_eq, and_imp] at ⊢ h
       intro t h_dom h_rel
       apply ih
-      . simp_all
+      . simp_all [FOL.Query.RealizeMin.and_def]
         apply And.intro
         . ext a
           rw [Set.ext_iff] at h_dom
@@ -44,10 +44,11 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeMin dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.r f q) → (ra_to_fol_query (.r f q) dbi.schema).RealizeMin dbi t := by
       intro t h_RA_eval
+      rw [FOL.Query.RealizeMin.and_def]
       apply And.intro (by simp_all [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval, ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
-      simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema,
+      simp_all only [ra_to_fol_query_schema, FOL.Query.RealizeMin.and_def,
         RA.Query.isWellTyped.r_def, RA.Query.evaluateT.r_def, renameT, exists_eq_right',
         Set.mem_setOf_eq, forall_const, and_self, implies_true]
       obtain ⟨left, right⟩ := h

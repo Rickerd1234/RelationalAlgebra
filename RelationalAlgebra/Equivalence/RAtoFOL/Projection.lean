@@ -7,7 +7,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
     (ra_to_fol_query (.p rs q) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.p rs q) := by
       simp at h
       obtain ⟨left, right⟩ := h
-      simp only [FOL.Query.evaluateT, ra_to_fol_query, FOL.Query.RealizeMin]
+      simp only [FOL.Query.evaluateT, ra_to_fol_query, FOL.Query.RealizeMin.and_def]
       rw [← ra_to_fol_query_schema left] at right
       rw [projectQuery.schema_def (ra_to_fol_query q dbi.schema) rs right]
       simp only [RA.Query.evaluateT.p_def, projectionT]
@@ -25,7 +25,8 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
         obtain ⟨w, hw⟩ := right_1
         unfold projectAttribute at hw
         rw [← ih]
-        simp
+        simp only [FOL.Query.evaluateT.def, FOL.Query.RealizeMin.and_def, Pi.default_def,
+          Nat.default_eq_zero]
         have : ∀a' ∈ dropSet, a' ∈ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs := by
           intro a_1 a_2
           rw [h_dropSet]
@@ -130,7 +131,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
           )
           rw [← ih] at left_1
           simp at left_1
-          apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp (left_1.2 left_1.1)
+          apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp left_1.2
           . ext a
             exact Fin.elim0 a
           . obtain ⟨left_1, right_2⟩ := left_1
@@ -140,6 +141,8 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
             . simp_all only [FOL.TupleToFun.def, Finset.mem_sdiff, not_true_eq_false, and_false,
                 not_false_eq_true, projectAttribute_not_mem, Sum.elim_inl]
             . unfold projectAttribute
+              simp_all only [FOL.TupleToFun.def, Pi.default_def, Nat.default_eq_zero,
+                Finset.mem_sdiff, not_false_eq_true, and_true]
               by_cases hc : (w a).Dom
               all_goals
               . have := by rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom] at hc; exact hc;

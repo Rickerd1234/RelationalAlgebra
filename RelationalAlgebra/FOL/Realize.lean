@@ -72,6 +72,18 @@ theorem BoundedQuery.Realize.assignment_eq_ext {dbi} [folStruc dbi] {n : ℕ} {�
 
 -- -- Realize a query, without any additional attributes in the 'tuple'
 
-@[simp]
 nonrec def Query.RealizeMin (dbi : DatabaseInstance) (φ : Query dbi.schema) [folStruc dbi] (t : Tuple) : Prop :=
-  t.Dom = φ.schema ∧ ((h : t.Dom = φ.schema) → (φ.Realize dbi (TupleToFun h) default))
+  ∃(h : t.Dom = φ.schema), (φ.Realize dbi (TupleToFun h) default)
+
+theorem Query.RealizeMin.ex_def (dbi : DatabaseInstance) (φ : Query dbi.schema) [folStruc dbi] (t : Tuple) :
+  Query.RealizeMin dbi φ t ↔ ∃(h : t.Dom = φ.schema), (φ.Realize dbi (TupleToFun h) default) := by
+    rfl
+
+theorem Query.RealizeMin.and_def (dbi : DatabaseInstance) (φ : Query dbi.schema) [folStruc dbi] (t : Tuple) :
+  Query.RealizeMin dbi φ t ↔ (t.Dom = φ.schema ∧ ((h : t.Dom = φ.schema) → (φ.Realize dbi (TupleToFun h) default))) := by
+    simp [Query.RealizeMin.ex_def]
+    apply Iff.intro
+    . intro ⟨w, h⟩
+      simp_all only [imp_self, and_self]
+    . intro a
+      simp_all only [exists_const]
