@@ -50,6 +50,8 @@ theorem Query.schema_u {dbs : DatabaseSchema} :
 theorem Query.schema_d {dbs : DatabaseSchema} :
   (d q nq).schema dbs = q.schema dbs := by rfl
 
+def Query.empty (rn : RelationName) : RA.Query := .d (.R rn) (.R rn)
+
 def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   match q with
   | .R _ => (True)
@@ -170,72 +172,6 @@ def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.s
     q.evaluateT dbi,
     by exact fun t a ↦ evaluate.validSchema q h t a
   ⟩
-
-def adomRs (dbs : DatabaseSchema) : Set RelationName :=
-  {rn | dbs rn ≠ ∅}
-
-def adomAtts (dbs : DatabaseSchema) : Set Attribute :=
-  {a | ∃rn, a ∈ dbs rn}
-
-def getColumn (rn : RelationName) (a : Attribute) (as : List Attribute) : RA.Query :=
-  as.foldr (λ a' q => q.u (.p {a} (.r (renameFunc a a') (.R rn)))) (.p {a} (.R rn))
-
-@[simp]
-theorem getColumn.schema_def : (getColumn rn a as).schema dbs = {a} := by
-  induction as with
-  | nil => simp [getColumn]
-  | cons hd tl ih => simp_all [getColumn]
-
-@[simp]
-theorem getColumn.isWellTyped_def (h : a ∈ dbs rn) (h' : a ∉ as) (h'' : ∀a', a' ∈ as → a' ∈ dbs rn) : (getColumn rn a as).isWellTyped dbs := by
-  induction as with
-  | nil => simp [getColumn, h]
-  | cons hd tl ih =>
-    simp_all [getColumn]
-    apply And.intro
-    · apply And.intro
-      · exact rename_func_bijective a hd h'.1
-      · use hd
-        simp_all [renameFunc]
-    · exact schema_def
-
-def joinColumns (rn : RelationName) (as : List Attribute) : RA.Query :=
-  as.foldr (λ a q => q.j (getColumn rn a (as.erase a))) (.p {} (.R rn))
-
-@[simp]
-theorem joinColumns.isWellTyped_def {as : List Attribute} (h' : as.dedup = as) (h'' : ∀a', a' ∈ as → a' ∈ dbs rn) : (joinColumns rn as).isWellTyped dbs := by
-  induction as with
-  | nil => simp [joinColumns]
-  | cons hd tl ih =>
-    simp [@List.dedup_eq_cons] at h'
-    have : tl.dedup = tl := by aesop
-
-    simp_all [joinColumns, getColumn]
-    obtain ⟨left, right⟩ := h''
-    obtain ⟨left_1, right_1⟩ := h'
-    simp_all only [not_false_eq_true, List.dedup_cons_of_not_mem, List.tail_cons]
-    apply And.intro
-    · sorry
-    · exact getColumn.isWellTyped_def left left_1 right
-
-def joinRels (rns : List RelationName) (as : List Attribute) : RA.Query :=
-  rns.foldr (λ rn q => q.j (joinColumns rn as)) (.p {} (.R default))
-
-@[simp]
-theorem joinRels.isWellTyped_def {as : List Attribute} : (joinRels rns as).isWellTyped dbs := by
-  induction rns with
-  | nil => simp [joinRels]
-  | cons rn rn_tl rn_ih =>
-    induction as with
-    | nil => simp_all [joinRels, joinColumns]
-    | cons a a_tl a_ih =>
-      simp_all [joinRels, joinColumns]
-      apply And.intro
-      · sorry
-      · apply getColumn.isWellTyped_def
-        . sorry
-        . sorry
-        . sorry
 
 @[simp]
 theorem PFun.restrict.def_eq {α β} {t : α →. β} {s : Set α} (h : s ⊆ t.Dom) (h' : s = t.Dom) : t.restrict h = t := by ext a b; aesop

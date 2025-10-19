@@ -1,6 +1,5 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.ProjectionDef
 import RelationalAlgebra.FOL.RelabelProperties
-import Mathlib.ModelTheory.Complexity
 
 open RM
 
@@ -44,17 +43,3 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
 theorem ra_to_fol_query_schema (h : raQ.isWellTyped dbs) :
 (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     refine ra_to_fol_query_schema.def raQ dbs h
-
-open FOL FirstOrder Language
-
-def toPrenex (q : FOL.BoundedQuery dbs n) : fol.BoundedFormula Attribute n :=
-  q.toFormula.toPrenex
-
-def toRA : fol.BoundedFormula Attribute n → RA.Query
-  | .falsum => sorry
-  | .equal t₁ t₂ => .s sorry sorry (sorry)
-  | .rel (.R dbs rn) ts => .R rn
-  | .imp f₁ ⊥ => .d sorry (toRA f₁)                 --  p → ⊥  = ¬p
-  | .imp (.not f₁) f₂ => .u (toRA f₁) (toRA f₂)     -- ¬p → q  =  p ∨ q
-  | .imp f₁ f₂ => .u (.d sorry (toRA f₁)) (toRA f₂) --  p → q  = ¬p ∨ q
-  | .all sf => .p (sf.freeVarFinset) (toRA sf)
