@@ -3,6 +3,14 @@ import RelationalAlgebra.FOL.Ordering
 
 open RM RA
 
+-- Utility for foldr
+@[simp]
+theorem RA.Query.foldr_join (xs : List α) (qb : α → RA.Query) (base : RA.Query) :
+  (xs.foldr (λ a q => q.j (qb a)) base).evaluateT dbi = (xs.foldr (λ a s => joinT s ((qb a).evaluateT dbi))) (base.evaluateT dbi) := by
+    induction xs
+    . simp
+    . simp_all
+
 def adomRs (dbs : DatabaseSchema) : Set RelationName :=
   {rn | dbs rn ≠ ∅}
 
@@ -24,12 +32,13 @@ theorem renameColumn.isWellTyped_def (h'' : a' ∈ dbs rn) : (renameColumn rn a 
   . use a'
     simp_all [renameFunc]
 
+@[simp]
 theorem renameColumn.evaluateT_def : (renameColumn rn a a').evaluateT dbi =
   projectionT (renameT (dbi.relations rn).tuples (renameFunc a a')) {a} := by
     simp [renameColumn]
 
 def getColumn (rn : RelationName) (a : Attribute) (as : List Attribute) : RA.Query :=
-  as.foldr (λ a' q => q.u (renameColumn rn a a')) (.d (.p {a} (.R rn)) (.p {a} (.R rn)))
+  as.foldr (λ a' q => q.u (renameColumn rn a a')) (.p {a} (Query.empty rn))
 
 @[simp]
 theorem getColumn.schema_def : (getColumn rn a as).schema dbs = {a} := by
@@ -40,23 +49,24 @@ theorem getColumn.schema_def : (getColumn rn a as).schema dbs = {a} := by
 @[simp]
 theorem getColumn.isWellTyped_def (h : a ∈ dbs rn) (h'' : ∀a', a' ∈ as → a' ∈ dbs rn) : (getColumn rn a as).isWellTyped dbs := by
   induction as with
-  | nil => simp [getColumn, h]
+  | nil => simp [getColumn, h, Query.empty]
   | cons hd tl ih =>
     simp_all [getColumn, ih]
     exact schema_def
 
+@[simp]
 theorem getColumn.evaluateT_def : (getColumn rn a as).evaluateT dbi =
   {t | ∃a' ∈ as, t ∈ (renameColumn rn a a').evaluateT dbi} := by
     induction as with
     | nil =>
-      simp [getColumn, diffT, Set.ext_iff, Set.diff]
+      simp [getColumn, projectionT, Query.evaluateT.empty_def]
     | cons hd tl ih =>
       simp [getColumn, unionT]
       rw [← getColumn, ih]
       aesop
 
 def joinColumns (rn : RelationName) (as as' : List Attribute) : RA.Query :=
-  as.foldr (λ a q => q.j (getColumn rn a as')) (.d (.p {} (.R rn)) (.p {} (.R rn)))
+  as.foldr (λ a q => q.j (getColumn rn a as')) (.p {} (Query.empty rn))
 
 @[simp]
 theorem joinColumns.schema_def : (joinColumns rn as as').schema dbs = as.toFinset := by
@@ -67,86 +77,25 @@ theorem joinColumns.schema_def : (joinColumns rn as as').schema dbs = as.toFinse
 @[simp]
 theorem joinColumns.isWellTyped_def {as as' : List Attribute} (h : ∀a', a' ∈ as → a' ∈ dbs rn) (h' : ∀a', a' ∈ as' → a' ∈ dbs rn) : (joinColumns rn as as').isWellTyped dbs := by
   induction as with
-  | nil => simp [joinColumns]
+  | nil => simp [joinColumns, Query.empty]
   | cons hd tl ih =>
     simp [joinColumns]
     simp_all
     exact ih
 
-set_option maxHeartbeats 2000000
-
+@[simp]
 theorem joinColumns.evaluateT_def : (joinColumns rn as as').evaluateT dbi =
-  {t | ∀a ∈ as, ∃ t2 ∈ (getColumn rn a as').evaluateT dbi,
-        (∀ x_1 ∈ t2 a, t a = t2 a) ∧ ((∀ (x : Value), x ∉ t a) → (∀ (x : Value), x ∉ t2 a) → t a = Part.none)} := by
+  (as.foldr (λ a s => joinT s ((getColumn rn a as').evaluateT dbi))) ((Query.empty rn).evaluateT dbi) := by
     induction as with
     | nil =>
-      simp [joinColumns, diffT]
+      simp [joinColumns, Query.evaluateT.empty_def, projectionT]
     | cons hd tl ih =>
-      simp [joinColumns, joinT, Set.ext_iff, Set.diff]
-      rw [← joinColumns, ih]
-      intro t
-      simp_all only [List.empty_eq, ne_eq, Set.mem_setOf_eq]
-      apply Iff.intro
-      · intro a
-        obtain ⟨w, h⟩ := a
-        obtain ⟨left, right⟩ := h
-        -- obtain ⟨left, right_1⟩ := left
-        obtain ⟨w_1, h⟩ := right
-        obtain ⟨left_1, right⟩ := h
-        -- simp_all only [not_false_eq_true, true_and]
-        apply And.intro
-        · use w_1
-          simp_all only [true_and]
-          apply And.intro
-          · intro x_1 a
-            exact (right hd).2.1 x_1 a
-          · intro a a_1
-            exact Part.eq_none_iff.mpr a
-        · intro a a_1
-          have ⟨w, hw⟩ := left a a_1
-          use w
-          simp_all only [true_and]
-          obtain ⟨left_2, right_2⟩ := hw
-          obtain ⟨left_3, right_2⟩ := right_2
-          apply And.intro
-          · intro x_1 a_2
-            rw [← left_3 x_1 a_2] at *
-            exact (right a).1 x_1 a_2
-          · intro a_2 a_3
-            simp_all only [not_isEmpty_of_nonempty, IsEmpty.forall_iff, not_true_eq_false, implies_true,
-              not_false_eq_true, forall_const]
-            exact Part.eq_none_iff.mpr a_2
-      · intro a
-        obtain ⟨left, right⟩ := a
-        obtain ⟨w, h⟩ := left
-        obtain ⟨left, right_1⟩ := h
-        obtain ⟨left_1, right_1⟩ := right_1
-        use w
-        apply And.intro
-        · intro a a_1
-          have ⟨w, hw⟩ := right a a_1
-          use w
-          simp_all only [true_and]
-          obtain ⟨left_2, right_2⟩ := hw
-          obtain ⟨left_3, right_2⟩ := right_2
-          apply And.intro
-          · intro x_1 a_2
-            rw [← left_3 x_1 a_2] at *
-            sorry
-          · intro a_2 a_3
-            simp_all only [not_isEmpty_of_nonempty, IsEmpty.forall_iff, not_true_eq_false, implies_true,
-              not_false_eq_true, forall_const]
-            exact Part.eq_none_iff.mpr a_2
-        · use t
-          simp_all only [not_false_eq_true, implies_true, forall_const, and_self_left, true_and]
-          aesop
-          convert left
-          sorry
+      simp [joinColumns, Set.ext_iff, Query.evaluateT.empty_def, projectionT]
 
 def unionRels (rns : List RelationName) (as : List Attribute) : RA.Query :=
-  rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.d (.p as.toFinset (.R default)) (.p as.toFinset (.R default)))
+  rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.p as.toFinset (Query.empty default))
 
-theorem unionRels_def (rns) (as) : unionRels rns as = rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.d (.p as.toFinset (.R default)) (.p as.toFinset (.R default))) := rfl
+theorem unionRels_def (rns) (as) : unionRels rns as = rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.p as.toFinset (Query.empty default)) := by rfl
 
 @[simp]
 theorem unionRels.schema_def : (unionRels rns as).schema dbs = as.toFinset := by
@@ -157,7 +106,7 @@ theorem unionRels.schema_def : (unionRels rns as).schema dbs = as.toFinset := by
 @[simp]
 theorem unionRels.isWellTyped_def {as : List Attribute} (h : ∀rn, ∀a', a' ∈ as → a' ∈ dbs rn) : (unionRels rns as).isWellTyped dbs := by
   induction rns with
-  | nil => simp [unionRels, Finset.subset_iff]; exact h ""
+  | nil => simp [unionRels, Finset.subset_iff, Query.empty]; exact h ""
   | cons hd tl ih =>
     simp [unionRels, ih]
     apply And.intro
@@ -167,11 +116,12 @@ theorem unionRels.isWellTyped_def {as : List Attribute} (h : ∀rn, ∀a', a' �
       . rw [← String.default_eq, ← unionRels_def tl as]
         exact schema_def
 
+@[simp]
 theorem unionRels.evaluateT_def : (unionRels rns as).evaluateT dbi =
   {t | ∃rn ∈ rns, t ∈ (joinColumns rn as as).evaluateT dbi} := by
     induction rns with
     | nil =>
-      simp [unionRels, diffT, Set.ext_iff, Set.diff]
+      simp [unionRels, projectionT, Query.evaluateT.empty_def]
     | cons hd tl ih =>
       simp [unionRels, unionT]
       rw [← String.default_eq, ← unionRels, ih]
@@ -188,8 +138,15 @@ theorem adom_schema : ↑((adom dbi).schema dbi.schema) = adomAtts dbi.schema :=
   simp [adom, adomAtts]
 
 @[simp]
-theorem adom_evaluateT : (adom dbi).evaluateT dbi = {t | ∃rn ∈ adomRs dbi.schema, ∃a ∈ adomAtts dbi.schema, ∃t' ∈ (dbi.relations rn).tuples, t a = t' a} := by
-  simp [adomRs, adomAtts, adom]; sorry
+theorem adom.evaluateT_def : (adom dbi).evaluateT dbi =
+  (unionRels
+    ((adomRs (dbi.schema)).toFinset.sort (.≤.))
+    (RelationSchema.ordering (adomAtts (dbi.schema)).toFinset)
+  ).evaluateT dbi :=
+    by rfl
 
-theorem adom_all (h : a ∈ adomAtts dbi.schema) (h' : v ∈ dbi.domain): ∃t ∈ (adom dbi).evaluateT dbi, t a = v := by
-  simp_all [adomAtts, Query.evaluateT, adom, DatabaseInstance.domain];
+-- main theorem
+theorem adom_all (h_attr : a ∈ adomAtts dbi.schema) (h_val : v ∈ dbi.domain) :
+  ∃ t ∈ (adom dbi).evaluateT dbi, t a = v := by
+    simp_all [DatabaseInstance.domain, adomAtts, adomRs]
+    sorry

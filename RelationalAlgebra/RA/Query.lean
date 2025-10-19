@@ -128,6 +128,10 @@ theorem Query.evaluateT.u_def :
 theorem Query.evaluateT.d_def :
   (d sq nsq).evaluateT dbi = diffT (sq.evaluateT dbi) (nsq.evaluateT dbi) := rfl
 
+@[simp]
+theorem Query.evaluateT.empty_def :
+  (Query.empty rn).evaluateT dbi = {} := by simp [empty, diffT, Set.diff]
+
 theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
   induction q with
   | R rn =>
