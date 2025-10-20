@@ -127,26 +127,30 @@ theorem unionRels.evaluateT_def : (unionRels rns as).evaluateT dbi =
       rw [← String.default_eq, ← unionRels, ih]
       aesop
 
-variable (dbi : DatabaseInstance) [h : Fintype ↑(adomRs (dbi.schema))] [h' : Fintype ↑(adomAtts (dbi.schema))]
+variable (dbs : DatabaseSchema) [hf : Fintype ↑(adomRs dbs)]
 
-def adom : Query :=
-  unionRels ((adomRs (dbi.schema)).toFinset.sort (.≤.)) (RelationSchema.ordering (adomAtts (dbi.schema)).toFinset)
+def adom (rs : RelationSchema) : Query :=
+  unionRels ((adomRs dbs).toFinset.sort (.≤.)) rs.ordering
 
 @[simp]
-theorem adom_schema : ↑((adom dbi).schema dbi.schema) = adomAtts dbi.schema := by
+theorem adom_schema : ↑((adom dbs rs).schema dbs) = rs := by
   ext a
   simp [adom, adomAtts]
 
 @[simp]
-theorem adom.evaluateT_def : (adom dbi).evaluateT dbi =
+theorem adom.isWellTyped_def (h : ↑rs ⊆ adomAtts dbs) : (adom dbs rs).isWellTyped dbs := by
+  simp [adom]; exact unionRels.isWellTyped_def (by simp_all [adomAtts]; intro rn a ha; sorry)
+
+@[simp]
+theorem adom.evaluateT_def (dbi : DatabaseInstance) : (adom dbs rs).evaluateT dbi =
   (unionRels
-    ((adomRs (dbi.schema)).toFinset.sort (.≤.))
-    (RelationSchema.ordering (adomAtts (dbi.schema)).toFinset)
+    ((adomRs (dbs)).toFinset.sort (.≤.))
+    (rs.ordering)
   ).evaluateT dbi :=
     by rfl
 
 -- main theorem
-theorem adom_all (h_attr : a ∈ adomAtts dbi.schema) (h_val : v ∈ dbi.domain) :
-  ∃ t ∈ (adom dbi).evaluateT dbi, t a = v := by
-    simp_all [DatabaseInstance.domain, adomAtts, adomRs]
+theorem adom_all {dbi : DatabaseInstance} (h_attr : a ∈ rs) (h_val : v ∈ dbi.domain) (h_wt : (adom dbs rs).isWellTyped dbs) :
+  ∃ t ∈ (adom dbs rs).evaluateT dbi, t a = v := by
+    simp_all [DatabaseInstance.domain, adomAtts, adomRs, adom]
     sorry
