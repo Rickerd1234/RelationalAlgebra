@@ -14,7 +14,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
   : q.Realize dbi (TupleToFun h'.symm) iv ↔ q.Realize dbi (TupleToFun h.symm) iv := by
     induction q with
     | R rn vMap =>
-      simp only [Realize, toFormula_rel, fol.Rel, BoundedFormula.realize_rel, folStruc.RelMap_R,
+      simp only [Realize, toFormula, fol.Rel, BoundedFormula.realize_rel, folStruc.RelMap_R,
         ArityToTuple.def_dite]
       rw [@iff_eq_eq, @Set.mem_def, @Set.mem_def]
       apply congr rfl

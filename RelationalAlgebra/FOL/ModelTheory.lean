@@ -79,19 +79,6 @@ theorem ArityToTuple.def_fromIndex {rs : RelationSchema} {t : Tuple} (h : t.Dom 
     split
     all_goals simp_all [Part.getOrElse, Part.dom_iff_mem]
 
-@[simp]
-theorem arityToTuple_dom {att} {rn : RelationName} {dbi : DatabaseInstance} {va : Fin (dbi.schema rn).card → Value}
-  (h: ArityToTuple va ∈ (dbi.relations rn).tuples)
-  : (ArityToTuple va att).Dom ↔ att ∈ dbi.schema rn := by
-    have h2 := RelationInstance.validSchema (dbi.relations rn) (ArityToTuple va) h
-    simp_all [DatabaseInstance.validSchema]
-    exact Iff.symm (Eq.to_iff (congrFun (id (Eq.symm h2)) att))
-
-@[simp]
-theorem arityToTuple_def {dbs: DatabaseSchema} {rn : RelationName} {i : Fin (Finset.card (dbs rn))} {va : Fin (dbs rn).card → Value}
-  : ArityToTuple va ((dbs rn).fromIndex i) = va i
-    := by simp [ArityToTuple]
-
 end ArityToTuple
 
 

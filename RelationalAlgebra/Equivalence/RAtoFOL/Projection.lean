@@ -63,19 +63,16 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
                 simp [← PFun.mem_dom]
                 exact (h a').mpr h_1
           · intro h'
-            apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp hw
-            . ext a
-              exact Fin.elim0 a
-            . ext a
-              simp
-              by_cases hc : a ∈ dropSet
-              . simp_all only [Finset.mem_sdiff, not_false_eq_true, and_self, ↓reduceDIte, Sum.elim_inr, PFun.coe_val,
-                  Part.getOrElse_some]
-              . subst h_dropSet
-                simp only [Finset.coe_inj, ↓reduceDIte, Sum.elim_inl, FOL.TupleToFun,
-                  FOL.decidable_dom, Finset.mem_sdiff, Function.comp_apply, eq_mpr_eq_cast, h, hc]
-                congr
-                simp only [↓reduceDIte, Sum.elim_inl, hc]
+            rw [← FOL.BoundedQuery.Realize] at hw
+            convert hw
+            ext a
+            by_cases hc : a ∈ dropSet
+            . subst h_dropSet
+              simp_all only [Finset.coe_inj, Finset.mem_sdiff, FOL.TupleToFun, Function.comp_apply, not_false_eq_true,
+                and_self, ↓reduceDIte, Sum.elim_inr, PFun.coe_val, Part.getOrElse_some]
+            . simp [hc]
+              congr
+              simp [hc]
         · intro a_1
           split
           next h_1 =>
@@ -101,7 +98,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
 
       . intro a
         simp_all only [projectQuery.def, Nat.add_zero, FOL.BoundedQuery.Realize.exs_def,
-          FOL.BoundedQuery.Realize.relabel_def, Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq]
+          Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq]
         obtain ⟨w, h⟩ := a
         obtain ⟨left_1, right_1⟩ := h
         apply And.intro
@@ -129,21 +126,20 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
           )
           rw [← ih] at left_1
           simp at left_1
-          apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp left_1.2
-          . ext a
-            exact Fin.elim0 a
-          . obtain ⟨left_1, right_2⟩ := left_1
-            ext a
-            simp_all [Function.comp_apply]
-            by_cases hc : a ∈ rs
-            . simp_all only [Finset.coe_inj, Finset.mem_sdiff, not_true_eq_false, and_false,
-                not_false_eq_true, projectAttribute_not_mem, Sum.elim_inl,
-                FOL.decidable_dom, eq_mpr_eq_cast]
-              exact FOL.TupleToFun.tuple_eq_att_ext ((right_1 a).1 hc).symm
-            . unfold projectAttribute
-              simp_all [FOL.TupleToFun, Pi.default_def, Nat.default_eq_zero,
-                Finset.mem_sdiff, not_false_eq_true, and_true]
-              by_cases hc' : (w a).Dom
-              all_goals
-              . have := by rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom] at hc'; exact hc';
-                simp_all [Part.getOrElse, ra_to_fol_query_schema left]
+          simp_all
+          convert left_1.2
+          ext a
+          simp_all
+          by_cases hc : a ∈ rs
+          . simp_all only [Finset.coe_inj, Finset.mem_sdiff, not_true_eq_false, and_false,
+              not_false_eq_true, projectAttribute_not_mem, Sum.elim_inl,
+              FOL.decidable_dom, eq_mpr_eq_cast]
+            rw [← FOL.TupleToFun]
+            exact FOL.TupleToFun.tuple_eq_att_ext ((right_1 a).1 hc)
+          . unfold projectAttribute
+            simp_all [FOL.TupleToFun, Pi.default_def, Nat.default_eq_zero,
+              Finset.mem_sdiff, not_false_eq_true, and_true]
+            by_cases hc' : (w a).Dom
+            all_goals
+            . have := by rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom] at hc'; exact hc';
+              simp_all [Part.getOrElse, ra_to_fol_query_schema left]

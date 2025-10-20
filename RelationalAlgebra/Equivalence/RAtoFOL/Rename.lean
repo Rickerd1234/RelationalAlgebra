@@ -6,7 +6,7 @@ theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (ra_to_fol_query (.r f q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.r f q) := by
       simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.Query.RealizeMin.and_def,
-        FOL.BoundedQuery.Realize.relabel_def, Nat.add_zero, Fin.castAdd_zero, Fin.cast_refl,
+        Nat.add_zero, Fin.castAdd_zero, Fin.cast_refl,
         CompTriple.comp_eq, Fin.natAdd_zero, FOL.BoundedQuery.relabel_schema, Function.comp_apply,
         Sum.getLeft?_inl, Part.coe_some, Finset.pimage_some, Finset.coe_image,
         RA.Query.evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq, and_imp] at ⊢ h
@@ -52,10 +52,11 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
         RA.Query.isWellTyped, RA.Query.evaluateT, renameT, exists_eq_right',
         Set.mem_setOf_eq, forall_const, and_self, implies_true]
       obtain ⟨left, right⟩ := h
-      simp_all only [FOL.BoundedQuery.Realize.relabel_def, Nat.add_zero,
-        Fin.castAdd_zero, Fin.cast_refl, CompTriple.comp_eq, Fin.natAdd_zero]
+      simp_all only [Finset.coe_inj, Pi.default_def, Nat.default_eq_zero,
+        FOL.BoundedQuery.Realize.relabel_formula, Nat.add_zero,
+        FirstOrder.Language.BoundedFormula.realize_relabel, Fin.castAdd_zero, Fin.cast_refl,
+        CompTriple.comp_eq, Fin.natAdd_zero]
       intro h_1
-      simp_all only [Pi.default_def, Nat.default_eq_zero]
       convert (ih (Sum.elim t (default : (Fin 0 →. RM.Value)) ∘ Sum.inl ∘ f) h_RA_eval).2 ?_
       . unfold FOL.TupleToFun
         ext a

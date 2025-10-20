@@ -7,12 +7,11 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q)
     ∀t, (ra_to_fol_query (.s a b q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
       intro t
       simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.outVar.def, FOL.Query.RealizeMin.ex_def,
-        FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula_and, FOL.BoundedQuery.toFormula_tEq,
-        Pi.default_def, Nat.default_eq_zero, FirstOrder.Language.BoundedFormula.realize_inf,
-        FOL.BoundedQuery.schema.and_def, FOL.BoundedQuery.schema.tEq_def,
-        FirstOrder.Language.Term.varFinsetLeft, Finset.coe_union, Finset.coe_singleton,
-        Set.union_singleton, Set.union_insert, RA.Query.evaluateT, selectionT, Set.mem_setOf_eq,
-        forall_exists_index, and_imp] at ⊢ h
+        FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula, Pi.default_def, Nat.default_eq_zero,
+        FirstOrder.Language.BoundedFormula.realize_inf, FOL.BoundedQuery.schema.and_def,
+        FOL.BoundedQuery.schema.tEq_def, FirstOrder.Language.Term.varFinsetLeft, Finset.coe_union,
+        Finset.coe_singleton, Set.union_singleton, Set.union_insert, RA.Query.evaluateT, selectionT,
+        Set.mem_setOf_eq, forall_exists_index, and_imp] at ⊢ h
       intro a_1 a_2 a_3
       obtain ⟨left, right⟩ := h
       obtain ⟨left_1, right⟩ := right
