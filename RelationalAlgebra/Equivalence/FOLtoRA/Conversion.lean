@@ -67,7 +67,7 @@ theorem toRA.schema_def {q : FOL.Query dbs} : (toRA dbs (toPrenex q)).schema dbs
 
 theorem toRA.isWellTyped_def {q : FOL.Query dbs} (h : ↑q.schema ⊆ adomAtts dbs) : (toRA dbs (toPrenex q)).isWellTyped dbs := by
   cases q with
-  | R => simp [toPrenex, BoundedFormula.toPrenex, Relations.boundedFormula]; unfold fol.Rel; simp [toRA]
+  | R => simp [toPrenex, BoundedFormula.toPrenex, Relations.boundedFormula, toRA]
   | tEq t₁ t₂ =>
     simp [toPrenex, BoundedFormula.toPrenex, Term.bdEqual, toRA, TermtoAtt]
     have := Term.cases t₁

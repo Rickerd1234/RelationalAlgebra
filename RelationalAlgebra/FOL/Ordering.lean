@@ -83,7 +83,7 @@ theorem RelationSchema.fromIndex_mem {rs : RelationSchema} (i : Fin rs.card) : r
 @[simp]
 theorem RelationSchema.fromIndex_Dom {dbi : DatabaseInstance} (h : t ∈ (dbi.relations rn).tuples) (i : Fin (dbi.schema rn).card) : (t ((dbi.schema rn).fromIndex i)).Dom := by
   have z := (dbi.relations rn).validSchema t h
-  rw [dbi.validSchema_def rn] at z
+  rw [dbi.validSchema rn] at z
   have z'' : fromIndex i ∈ t.Dom := by simp_all
   exact z''
 

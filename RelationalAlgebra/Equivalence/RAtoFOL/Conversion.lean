@@ -31,7 +31,7 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
     | p rs sq sq_ih =>
       ext a
       obtain ⟨left, right⟩ := h
-      rw [ra_to_fol_query, RA.Query.schema_p, projectQuery.schema_def (ra_to_fol_query sq dbs) rs ?_]
+      rw [ra_to_fol_query, RA.Query.schema, projectQuery.schema_def (ra_to_fol_query sq dbs) rs ?_]
       simp_all only [forall_const]
 
     | r f sq ih => simp_all [ra_to_fol_query, FOL.BoundedQuery.relabel_schema]

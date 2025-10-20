@@ -8,8 +8,8 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
   (ih₂: ∀t, (ra_to_fol_query q₂ dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
     ∀t, (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
       intro t
-      simp only [RA.Query.isWellTyped.j_def, ra_to_fol_query, FOL.Query.RealizeMin,
-        FOL.BoundedQuery.schema.and_def, Finset.coe_union, RA.Query.evaluateT.j_def, joinT,
+      simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.Query.RealizeMin,
+        FOL.BoundedQuery.schema.and_def, Finset.coe_union, RA.Query.evaluateT, joinT,
         PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp,
         Set.mem_setOf_eq] at ⊢ h
       simp only [FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula_and,
@@ -92,7 +92,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       apply Exists.intro (by simp_all [ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
-      simp_all only [RA.Query.isWellTyped.j_def, RA.Query.evaluateT.j_def, joinT, PFun.mem_dom,
+      simp_all only [RA.Query.isWellTyped, RA.Query.evaluateT, joinT, PFun.mem_dom,
         forall_exists_index, Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq,
         forall_const]
       simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema]
@@ -155,11 +155,13 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
             simp_all only [Finset.mem_coe]
             obtain ⟨left_1, right_2⟩ := a_1
             obtain ⟨w, h⟩ := left_1
-            simp_all [(right_1 a).2.1 w h]
+            rw [← (right_1 a).2.1 w h]
+            exact right_2
           · intro a_1
             apply And.intro
             · use v
-            · simp_all [(right_1 a).2.1 v a_1]
+            · rw [(right_1 a).2.1 v a_1]
+              exact a_1
 
         rw [← FOL.BoundedQuery.Realize]
         rw [← FOL.BoundedQuery.Realize.enlarge h_sub ht' (by simp [ra_to_fol_query_schema right, w_Dom])]

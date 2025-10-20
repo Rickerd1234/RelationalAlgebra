@@ -11,6 +11,10 @@ theorem RA.Query.foldr_join (xs : List α) (qb : α → RA.Query) (base : RA.Que
     . simp
     . simp_all
 
+-- Database instance value domain
+def RM.DatabaseInstance.domain (dbi : DatabaseInstance) : Set Value :=
+    {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}
+
 def adomRs (dbs : DatabaseSchema) : Set RelationName :=
   {rn | dbs rn ≠ ∅}
 
@@ -125,7 +129,12 @@ theorem unionRels.evaluateT_def : (unionRels rns as).evaluateT dbi =
     | cons hd tl ih =>
       simp [unionRels, unionT]
       rw [← String.default_eq, ← unionRels, ih]
-      aesop
+      ext x : 1
+      simp_all only [joinColumns.evaluateT_def, joinT, getColumn.evaluateT_def,
+        renameColumn.evaluateT_def, projectionT, renameT, exists_eq_right', Set.mem_setOf_eq,
+        Finset.mem_singleton, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists,
+        and_imp, Query.evaluateT.empty_def]
+      apply Iff.intro Or.symm Or.symm
 
 variable (dbs : DatabaseSchema) [hf : Fintype ↑(adomRs dbs)]
 

@@ -4,6 +4,9 @@ import Mathlib.Data.Finset.Defs
 
 namespace RM
 
+-- Define the Relational Model
+section RelationalModel
+
 abbrev Attribute := String
 
 abbrev RelationName := String
@@ -26,34 +29,14 @@ structure DatabaseInstance where
     relations : RelationName → RelationInstance
     validSchema : ∀ rel : RelationName, (relations rel).schema = schema rel
 
-
--- Database instance variable domain
-def DatabaseInstance.domain (dbi : DatabaseInstance) : Set Value :=
-    {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}
+end RelationalModel
 
 
 -- Basic proofs
 @[simp]
-theorem RelationInstance.validSchema.def {t} {inst : RelationInstance} (h : t ∈ inst.tuples) :
-  t.Dom = inst.schema := by simp_all [inst.validSchema]
+theorem RelationInstance.validSchema.ext {a t} {inst : RelationInstance} (h : t ∈ inst.tuples) :
+  (t a).Dom ↔ a ∈ inst.schema := Set.ext_iff.mp (inst.validSchema t h) a
 
 @[simp]
-theorem RelationInstance.validSchema.iff_def {a t} {inst : RelationInstance} (h : t ∈ inst.tuples) :
-  a ∈ inst.schema ↔ (t a).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, RelationInstance.validSchema.def h, Finset.mem_coe]
-
-@[simp]
-theorem DatabaseInstance.validSchema_def {dbi : DatabaseInstance} (rn : RelationName) :
-  (dbi.relations rn).schema = dbi.schema rn := by simp_all [dbi.validSchema]
-
-@[simp]
-theorem DatabaseInstance.t_ran_sub_domain {dbi : DatabaseInstance} {rn : RelationName} (h : t ∈ (dbi.relations rn).tuples) :
-  t.ran ⊆ dbi.domain := by
-    simp_all [domain, PFun.ran]
-    intros v a h'
-    use rn, a, t, h
-    exact Part.eq_some_iff.mpr h'
-
-@[simp]
-theorem DatabaseInstance.default_ran_sub_domain {dbi : DatabaseInstance} :
-  (default : Fin 0 →. Value).ran ⊆ dbi.domain := by
-    simp [default, PFun.ran]
+theorem DatabaseInstance.validSchema.ext {dbi : DatabaseInstance} (rn : RelationName) :
+  a ∈ (dbi.relations rn).schema ↔ a ∈ dbi.schema rn := Finset.ext_iff.mp (dbi.validSchema rn) a

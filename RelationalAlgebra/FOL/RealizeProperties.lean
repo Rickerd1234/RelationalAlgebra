@@ -14,16 +14,14 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
   : q.Realize dbi (TupleToFun h'.symm) iv ↔ q.Realize dbi (TupleToFun h.symm) iv := by
     induction q with
     | R rn vMap =>
-      simp [Realize]
+      simp only [Realize, toFormula_rel, fol.Rel, BoundedFormula.realize_rel, folStruc.RelMap_R,
+        ArityToTuple.def_dite]
       rw [@iff_eq_eq, @Set.mem_def, @Set.mem_def]
       apply congr rfl
       ext a v
-      simp [ArityToTuple.def_dite]
       simp_all only [schema.R_def, Set.coe_toFinset]
       apply Iff.intro
       · intro a_1
-        have := dec_dom h'.symm
-        have := dec_dom h.symm
         split
         next h =>
           simp_all only [↓reduceDIte]
@@ -69,11 +67,12 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
             subst a_1
             have t'_dom : (PFun.restrict tup h_sub).Dom = rs ∩ rs' := by
               simp_all only [Finset.coe_inter, Set.right_eq_inter]
-            have := dec_dom t'_dom
-            rw [TupleToFun.tup_eq h'.symm t'_dom h_res.symm]
+            have : Fintype ↑(PFun.restrict tup h_sub).Dom := by
+              exact Fintype.ofFinset (rs ∩ rs') (Set.ext_iff.mp t'_dom.symm)
+            rw [TupleToFun.tuple_eq h'.symm t'_dom h_res.symm]
             rw [← h_res, PFun.mem_restrict] at h_2
             simp [TupleToFun]
-            simp_all only [PFun.mem_dom, dec_dom, eq_mpr_eq_cast, Part.getOrElse]
+            simp_all only [PFun.mem_dom, decidable_dom, eq_mpr_eq_cast, Part.getOrElse]
             have : (tup w).Dom := by simp_all [Part.dom_iff_mem]; use v'; exact h_2.2
             have : (tup' w).Dom := by simp_all [Part.dom_iff_mem]
             simp_all

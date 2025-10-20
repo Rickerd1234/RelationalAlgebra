@@ -11,6 +11,7 @@ open RM
 
 -- Selection and Difference are 'trivial', hence they do not include proofs yet
 
+@[simp]
 def selectionT (inTuples : Set Tuple) (x y : Attribute) : Set Tuple :=
   {t | t ∈ inTuples ∧ t x = t y}
 
@@ -27,6 +28,7 @@ def selection (inst : RelationInstance) (x y : Attribute) : RelationInstance :=
   fun _ ht ↦ selectionDom ht
 ⟩
 
+@[simp]
 def diffT (inTuplesA inTuplesB : Set Tuple) : Set Tuple :=
   Set.diff inTuplesA inTuplesB
 
@@ -42,6 +44,7 @@ def diff (inst inst' : RelationInstance) : RelationInstance :=
 -- Union
 section union
 
+@[simp]
 def unionT (inTuples inTuples' : Set Tuple) : Set Tuple :=
   inTuples ∪ inTuples'
 
@@ -70,6 +73,7 @@ end union
 -- Rename
 section rename
 
+@[simp]
 def renameSchema (schema : RelationSchema) (f : Attribute → Attribute) : RelationSchema := schema.image f
 
 @[simp]
@@ -77,6 +81,7 @@ theorem rename_schema_id (schema : RelationSchema) : renameSchema schema id = sc
     unfold renameSchema
     simp_all only [Finset.image_id]
 
+@[simp]
 def renameT (inTuples : Set Tuple) (f : Attribute → Attribute) : Set Tuple :=
   { t' | ∃ t ∈ inTuples, t' ∘ f = t }
 
@@ -134,6 +139,7 @@ end rename
 -- Join
 section join
 
+@[simp]
 def joinT (inTuples1 inTuples2 : Set Tuple) : Set Tuple :=
   { t | ∃ t1 ∈ inTuples1, ∃ t2 ∈ inTuples2,
     (∀ a : Attribute, (a ∈ t1.Dom → t a = t1 a) ∧ (a ∈ t2.Dom → t a = t2 a) ∧ (a ∉ t1.Dom ∪ t2.Dom → t a = Part.none))
@@ -247,6 +253,7 @@ end join
 -- Projection
 section projection
 
+@[simp]
 def projectionT (inTuples : Set Tuple) (s' : RelationSchema) : Set Tuple :=
   { t' | ∃ t ∈ inTuples, (∀ a, (a ∈ s' → t' a = t a) ∧ (a ∉ s' → t' a = Part.none)) }
 
