@@ -66,7 +66,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
             apply (FOL.BoundedQuery.Realize.assignment_eq_ext ?_ ?_).mp hw
             . ext a
               exact Fin.elim0 a
-              ext a
+            . ext a
               simp
               by_cases hc : a ∈ dropSet
               . simp_all only [Finset.mem_sdiff, not_false_eq_true, and_self, ↓reduceDIte, Sum.elim_inr, PFun.coe_val,
