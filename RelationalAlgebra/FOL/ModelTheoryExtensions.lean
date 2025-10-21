@@ -1,4 +1,5 @@
 import RelationalAlgebra.FOL.ModelTheory
+import Mathlib.ModelTheory.Complexity
 
 open FOL FirstOrder Language Term RM
 
@@ -159,3 +160,79 @@ theorem BoundedFormula.relabel_freeVarFinset {n k} (g : Attribute → Attribute 
       aesop
     . aesop
     . simp_all only [BoundedFormula.relabel_all, Nat.add_eq, BoundedFormula.freeVarFinset]
+
+open BoundedFormula
+
+@[simp]
+theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : fol.BoundedFormula Attribute m) (h : m = n) {h' : m ≤ n} :
+  (φ.castLE h').freeVarFinset = φ.freeVarFinset := by
+    induction φ with
+    | all f ih =>
+      rename_i k
+      subst h
+      simp only [castLE, castLE_rfl, freeVarFinset]
+    | _ => simp_all [BoundedFormula.liftAt, mapTermRel, Term.liftAt]
+
+@[simp]
+theorem liftAt_freeVarFinset {n n'} (φ : fol.BoundedFormula Attribute n) (hmn : m + n' ≤ n + 1) :
+  (φ.liftAt n' m).freeVarFinset = φ.freeVarFinset := by
+    rw [BoundedFormula.liftAt]
+    induction φ with
+    | all f ih =>
+      rename_i k
+      have h : k + 1 + n' = k + n' + 1 := by rw [add_assoc, add_comm 1 n', ← add_assoc]
+      simp only [mapTermRel, freeVarFinset, castLE_freeVarFinset ?_ h, ih (hmn.trans k.succ.le_succ)]
+    | _ => simp_all [BoundedFormula.liftAt, mapTermRel, Term.liftAt]
+
+theorem freeVarFinset_toPrenexImpRight {φ ψ : fol.BoundedFormula Attribute n} (hφ : IsQF φ) (hψ : IsPrenex ψ) :
+    (φ.toPrenexImpRight ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by
+  induction hψ with
+  | of_isQF hψ => rw [hψ.toPrenexImpRight]
+  | all _ ih =>
+    rw [@toPrenexImpRight.eq_def]
+    simp
+    rw [ih]
+    simp only [freeVarFinset, le_refl, liftAt_freeVarFinset]
+    exact IsQF.liftAt hφ
+  | ex _ ih =>
+    rw [@toPrenexImpRight.eq_def]
+    simp
+    rw [ih]
+    simp only [freeVarFinset, le_refl, liftAt_freeVarFinset]
+    exact IsQF.liftAt hφ
+
+theorem freeVarFinset_toPrenexImp {φ ψ : fol.BoundedFormula Attribute n} (hφ : IsPrenex φ) (hψ : IsPrenex ψ) :
+    (φ.toPrenexImp ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by
+  revert ψ
+  induction hφ with
+  | of_isQF hφ =>
+    intro ψ hψ
+    rw [hφ.toPrenexImp]
+    exact freeVarFinset_toPrenexImpRight hφ hψ
+  | all _ ih =>
+    intro ψ hψ
+    rw [toPrenexImp]
+    simp_all only [freeVarFinset, Finset.union_empty]
+    rw [ih]
+    . simp
+    . exact IsPrenex.liftAt hψ
+  | ex _ ih =>
+    rename_i n' φ hφ
+    intro ψ hψ
+    have : (liftAt 1 n' ψ).IsPrenex := hψ.liftAt
+    have := ih this
+    simp at *
+    exact this
+
+@[simp]
+theorem freeVarFinset_toPrenex (φ : fol.BoundedFormula Attribute n) :
+    φ.toPrenex.freeVarFinset = φ.freeVarFinset := by
+  induction φ with
+  | falsum => exact rfl
+  | equal => exact rfl
+  | rel => exact rfl
+  | imp f1 f2 h1 h2 =>
+    rw [toPrenex, freeVarFinset_toPrenexImp f1.toPrenex_isPrenex f2.toPrenex_isPrenex, freeVarFinset,
+      freeVarFinset, h1, h2]
+  | all _ h =>
+    rw [freeVarFinset, toPrenex, freeVarFinset, h]
