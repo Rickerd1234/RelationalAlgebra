@@ -32,8 +32,8 @@ theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped
     exact ra_to_fol_eval raQ h
 
 
-theorem fol_to_ra_eval {dbi} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] [Fintype (adomAtts dbi.schema)] (q : FOL.Query dbi.schema):
-  (toRA dbi.schema (toPrenex q)).evaluate dbi (toRA.isWellTyped_def dbi.schema (by sorry)) = q.evaluate dbi := by
+theorem fol_to_ra_eval {dbi} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] (q : FOL.Query dbi.schema):
+  (toRA dbi.schema (toPrenex q)).evaluate dbi (toRA.isWellTyped_def q) = q.evaluate dbi := by
     simp [RA.Query.evaluate, FOL.Query.evaluate, FOL.Query.evaluateT.def]
     apply And.intro
     · exact toRA.schema_def dbi.schema

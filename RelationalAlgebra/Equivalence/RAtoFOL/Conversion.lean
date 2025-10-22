@@ -41,5 +41,5 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
     | _ => simp_all [ra_to_fol_query]
 
 theorem ra_to_fol_query_schema (h : raQ.isWellTyped dbs) :
-(ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
+  (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     refine ra_to_fol_query_schema.def raQ dbs h
