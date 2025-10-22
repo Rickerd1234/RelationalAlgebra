@@ -21,71 +21,71 @@ def adomRs (dbs : DatabaseSchema) : Set RelationName :=
 def adomAtts (dbs : DatabaseSchema) : Set Attribute :=
   {a | ∃rn, a ∈ dbs rn}
 
-def renameColumn (rn : RelationName) (a a' : Attribute) : RA.Query :=
-  (.p {a} (.r (renameFunc a a') (.R rn)))
+def renameColumn (rn : RelationName) (a ra : Attribute) : RA.Query :=
+  .r (renameFunc a ra) (.p {ra} (.R rn))
 
 @[simp]
-theorem renameColumn.schema_def : (renameColumn rn a a').schema dbs = {a} := by
-  simp [renameColumn]
+theorem renameColumn.schema_def : (renameColumn rn a ra).schema dbs = {a} := by
+  simp [renameColumn, renameFunc]
 
 @[simp]
-theorem renameColumn.isWellTyped_def (h'' : a' ∈ dbs rn) : (renameColumn rn a a').isWellTyped dbs := by
+theorem renameColumn.isWellTyped_def (h'' : ra ∈ dbs rn) : (renameColumn rn a ra).isWellTyped dbs := by
   simp [renameColumn]
   apply And.intro
-  . exact rename_func_bijective a a'
-  . use a'
-    simp_all [renameFunc]
+  . exact h''
+  . exact rename_func_bijective a ra
+
+-- @[simp]
+-- theorem renameColumn.evaluateT_def : (renameColumn rn a ra).evaluateT dbi =
+--   (renameT (projectionT (dbi.relations rn).tuples {ra}) (renameFunc a ra)) := by
+--     simp [renameColumn]
+
+-- def getColumn (rn : RelationName) (a : Attribute) (ras : List Attribute) : RA.Query :=
+--   ras.foldr (λ ra q => q.u (renameColumn rn a ra)) (.p {} (Query.empty rn))
+
+-- @[simp]
+-- theorem getColumn.schema_def : (getColumn rn a as).schema dbs = {a} := by
+--   induction as with
+--   | nil => simp [getColumn]
+--   | cons hd tl ih => simp_all [getColumn]
+
+-- @[simp]
+-- theorem getColumn.isWellTyped_def (h'' : ∀a', a' ∈ ras → a' ∈ dbs rn) : (getColumn rn a ras).isWellTyped dbs := by
+--   induction ras with
+--   | nil => simp [getColumn, h, Query.empty]
+--   | cons hd tl ih =>
+--     simp_all [getColumn, ih]
+--     exact schema_def
+
+-- @[simp]
+-- theorem getColumn.evaluateT_def : (getColumn rn a as).evaluateT dbi =
+--   {t | ∃a' ∈ as, t ∈ (renameColumn rn a a').evaluateT dbi} := by
+--     induction as with
+--     | nil =>
+--       simp [getColumn, projectionT, Query.evaluateT.empty_def]
+--     | cons hd tl ih =>
+--       simp [getColumn, unionT]
+--       rw [← getColumn, ih]
+--       aesop
+
+def joinColumns (rn : RelationName) (ra : Attribute) (as : List Attribute) : RA.Query :=
+  as.foldr (λ a q => q.j (renameColumn rn a ra)) (.p as.toFinset (Query.empty rn))
 
 @[simp]
-theorem renameColumn.evaluateT_def : (renameColumn rn a a').evaluateT dbi =
-  projectionT (renameT (dbi.relations rn).tuples (renameFunc a a')) {a} := by
-    simp [renameColumn]
-
-def getColumn (rn : RelationName) (a : Attribute) (as : List Attribute) : RA.Query :=
-  as.foldr (λ a' q => q.u (renameColumn rn a a')) (.p {a} (Query.empty rn))
-
-@[simp]
-theorem getColumn.schema_def : (getColumn rn a as).schema dbs = {a} := by
-  induction as with
-  | nil => simp [getColumn]
-  | cons hd tl ih => simp_all [getColumn]
-
-@[simp]
-theorem getColumn.isWellTyped_def (h : a ∈ dbs rn) (h'' : ∀a', a' ∈ as → a' ∈ dbs rn) : (getColumn rn a as).isWellTyped dbs := by
-  induction as with
-  | nil => simp [getColumn, h, Query.empty]
-  | cons hd tl ih =>
-    simp_all [getColumn, ih]
-    exact schema_def
-
-@[simp]
-theorem getColumn.evaluateT_def : (getColumn rn a as).evaluateT dbi =
-  {t | ∃a' ∈ as, t ∈ (renameColumn rn a a').evaluateT dbi} := by
-    induction as with
-    | nil =>
-      simp [getColumn, projectionT, Query.evaluateT.empty_def]
-    | cons hd tl ih =>
-      simp [getColumn, unionT]
-      rw [← getColumn, ih]
-      aesop
-
-def joinColumns (rn : RelationName) (as as' : List Attribute) : RA.Query :=
-  as.foldr (λ a q => q.j (getColumn rn a as')) (.p {} (Query.empty rn))
-
-@[simp]
-theorem joinColumns.schema_def : (joinColumns rn as as').schema dbs = as.toFinset := by
+theorem joinColumns.schema_def : (joinColumns rn ra as).schema dbs = as.toFinset := by
   induction as with
   | nil => simp [joinColumns]
-  | cons hd tl ih => simp_all [joinColumns]; aesop
+  | cons hd tl ih => simp_all [joinColumns]; sorry
 
 @[simp]
-theorem joinColumns.isWellTyped_def {as as' : List Attribute} (h : ∀a', a' ∈ as → a' ∈ dbs rn) (h' : ∀a', a' ∈ as' → a' ∈ dbs rn) : (joinColumns rn as as').isWellTyped dbs := by
+theorem joinColumns.isWellTyped_def (h'' : ra ∈ dbs rn) : (joinColumns rn ra as).isWellTyped dbs := by
   induction as with
   | nil => simp [joinColumns, Query.empty]
   | cons hd tl ih =>
-    simp [joinColumns]
-    simp_all
-    exact ih
+    rw [joinColumns]
+    simp
+    aesop?
+
 
 @[simp]
 theorem joinColumns.evaluateT_def : (joinColumns rn as as').evaluateT dbi =
@@ -97,7 +97,7 @@ theorem joinColumns.evaluateT_def : (joinColumns rn as as').evaluateT dbi =
       simp [joinColumns, Set.ext_iff, Query.evaluateT.empty_def, projectionT]
 
 def unionRels (rns : List RelationName) (as : List Attribute) : RA.Query :=
-  rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.p as.toFinset (Query.empty default))
+  rns.foldr (λ rn q => q.u (joinColumns rn a ra)) (.p as.toFinset (Query.empty default))
 
 theorem unionRels_def (rns) (as) : unionRels rns as = rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.p as.toFinset (Query.empty default)) := by rfl
 
