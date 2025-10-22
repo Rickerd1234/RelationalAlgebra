@@ -55,7 +55,7 @@ theorem getColumn.isWellTyped_def (h : a ∈ dbs rn) (h'' : ∀a', a' ∈ as →
   induction as with
   | nil => simp [getColumn, h, Query.empty]
   | cons hd tl ih =>
-    simp_all [getColumn, ih]
+    simp_all [getColumn]
     exact schema_def
 
 @[simp]
@@ -76,7 +76,7 @@ def joinColumns (rn : RelationName) (as as' : List Attribute) : RA.Query :=
 theorem joinColumns.schema_def : (joinColumns rn as as').schema dbs = as.toFinset := by
   induction as with
   | nil => simp [joinColumns]
-  | cons hd tl ih => simp_all [joinColumns]; aesop
+  | cons hd tl ih => simp_all [joinColumns]
 
 @[simp]
 theorem joinColumns.isWellTyped_def {as as' : List Attribute} (h : ∀a', a' ∈ as → a' ∈ dbs rn) (h' : ∀a', a' ∈ as' → a' ∈ dbs rn) : (joinColumns rn as as').isWellTyped dbs := by
@@ -94,7 +94,7 @@ theorem joinColumns.evaluateT_def : (joinColumns rn as as').evaluateT dbi =
     | nil =>
       simp [joinColumns, Query.evaluateT.empty_def, projectionT]
     | cons hd tl ih =>
-      simp [joinColumns, Set.ext_iff, Query.evaluateT.empty_def, projectionT]
+      simp [joinColumns, Query.evaluateT.empty_def, projectionT]
 
 def unionRels (rns : List RelationName) (as : List Attribute) : RA.Query :=
   rns.foldr (λ rn q => q.u (joinColumns rn as as)) (.p as.toFinset (Query.empty default))
@@ -112,7 +112,7 @@ theorem unionRels.isWellTyped_def {as : List Attribute} (h : ∀rn, ∀a', a' �
   induction rns with
   | nil => simp [unionRels, Finset.subset_iff, Query.empty]; exact h ""
   | cons hd tl ih =>
-    simp [unionRels, ih]
+    simp [unionRels]
     apply And.intro
     · exact ih
     · apply And.intro
@@ -144,7 +144,7 @@ def adom (rs : RelationSchema) : Query :=
 @[simp]
 theorem adom_schema : ↑((adom dbs rs).schema dbs) = rs := by
   ext a
-  simp [adom, adomAtts]
+  simp [adom]
 
 @[simp]
 theorem adom.isWellTyped_def (h : ↑rs ⊆ adomAtts dbs) : (adom dbs rs).isWellTyped dbs := by
@@ -161,5 +161,5 @@ theorem adom.evaluateT_def (dbi : DatabaseInstance) : (adom dbs rs).evaluateT db
 -- main theorem
 theorem adom_all {dbi : DatabaseInstance} (h_attr : a ∈ rs) (h_val : v ∈ dbi.domain) (h_wt : (adom dbs rs).isWellTyped dbs) :
   ∃ t ∈ (adom dbs rs).evaluateT dbi, t a = v := by
-    simp_all [DatabaseInstance.domain, adomAtts, adomRs, adom]
+    simp_all [DatabaseInstance.domain, adomRs, adom]
     sorry

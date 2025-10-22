@@ -20,7 +20,7 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q)
       · apply ih
         simp [FOL.Query.RealizeMin.ex_def, ra_to_fol_query_schema left, a_1]
         convert a_2
-        simp [ra_to_fol_query_schema, left, left_1, right, Finset.union_subset_iff]
+        simp [ra_to_fol_query_schema, left, left_1, right]
       · simp [FirstOrder.Language.BoundedFormula.Realize] at a_3
         have : (t a).Dom := by simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
         have : (t b).Dom := by simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
@@ -33,10 +33,10 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q
       intro t h_RA_eval
       have h_1 := RA.Query.evaluate.validSchema (.s a b q) h t h_RA_eval
       apply Exists.intro
-        (by simp_all [h_1, ra_to_fol_query_schema])
+        (by simp_all [ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query, FOL.BoundedQuery.Realize]
-      simp_all only [RA.Query.isWellTyped, FOL.Query.RealizeMin.ex_def, Pi.default_def, Nat.default_eq_zero,
+      simp_all only [FOL.Query.RealizeMin.ex_def, Pi.default_def, Nat.default_eq_zero,
         RA.Query.evaluateT, FOL.outVar.def]
       obtain ⟨left, right⟩ := h
       obtain ⟨left_1, right⟩ := right

@@ -36,7 +36,7 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : 
 
     | r f sq ih => simp_all [ra_to_fol_query, FOL.BoundedQuery.relabel_schema]
 
-    | s => simp_all [ra_to_fol_query, Finset.union_subset_iff]
+    | s => simp_all [ra_to_fol_query]
 
     | _ => simp_all [ra_to_fol_query]
 

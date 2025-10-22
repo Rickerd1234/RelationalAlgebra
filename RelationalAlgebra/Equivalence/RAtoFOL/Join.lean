@@ -22,7 +22,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
       use t.restrict z'
       apply And.intro
       . apply ih₁
-        . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero, and_imp, forall_true_left]
+        . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero]
           obtain ⟨left, right⟩ := h
           apply Exists.intro
           · rw [FOL.BoundedQuery.Realize.enlarge]
@@ -38,7 +38,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
         use t.restrict z'
         apply And.intro
         . apply ih₂
-          . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero, and_imp, forall_true_left]
+          . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero]
             obtain ⟨left, right⟩ := h
             apply Exists.intro
             · rw [FOL.BoundedQuery.Realize.enlarge]
@@ -54,13 +54,13 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
           simp only [PFun.mem_restrict, Finset.mem_coe, and_imp, not_and]
           apply And.intro
           . intro x a_1 a_7
-            simp_all only [Set.subset_union_right]
+            simp_all only
             obtain ⟨left, right⟩ := h
             ext a_6 : 1
             simp_all only [PFun.mem_restrict, Finset.mem_coe, true_and]
           apply And.intro
           . intro x a_1 a_7
-            simp_all only [Set.subset_union_left]
+            simp_all only
             obtain ⟨left, right⟩ := h
             ext a_6 : 1
             simp_all only [PFun.mem_restrict, Finset.mem_coe, true_and]
@@ -68,13 +68,14 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             apply Part.eq_none_iff.mpr
             intro v
             by_cases c1 : (a ∈ q₁.schema dbi.schema)
-            . simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema, and_imp,
-              forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, not_false_eq_true,
-              implies_true]
+            . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero,
+              ra_to_fol_query_schema, forall_exists_index, Set.subset_union_left,
+              Set.subset_union_right, forall_const, not_false_eq_true, implies_true]
             . by_cases c2 : (a ∈ q₂.schema dbi.schema)
-              . simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema, and_imp,
-                forall_const, subset_refl, Set.subset_union_left, Set.subset_union_right, IsEmpty.forall_iff,
-                implies_true, not_false_eq_true]
+              . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero,
+                ra_to_fol_query_schema, forall_exists_index, Set.subset_union_left,
+                Set.subset_union_right, not_true_eq_false, implies_true, forall_const,
+                not_false_eq_true]
               . by_contra hc
                 have z : ¬(a ∈ t.Dom) := by simp [h_dom, c1, c2]
                 apply z
@@ -92,10 +93,9 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       apply Exists.intro (by simp_all [ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
-      simp_all only [RA.Query.isWellTyped, RA.Query.evaluateT, joinT, PFun.mem_dom,
-        forall_exists_index, Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq,
-        forall_const]
-      simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema]
+      simp_all only [RA.Query.evaluateT, joinT, PFun.mem_dom, forall_exists_index, Set.mem_union,
+        not_or, not_exists, and_imp, Set.mem_setOf_eq]
+      simp_all only [FOL.Query.RealizeMin]
 
       obtain ⟨left, right⟩ := h
       obtain ⟨w₁, h⟩ := h_RA_eval
@@ -108,14 +108,13 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       · have w_Dom : w₁.Dom = q₁.schema dbi.schema := by
           exact RA.Query.evaluate.validSchema q₁ left w₁ hw₁
         have z' : w₁.Dom ⊆ t.Dom := by simp [t_Dom, w_Dom]
-        simp_all only [Finset.coe_union, and_self, Set.subset_union_left, FOL.BoundedQuery.Realize]
+        simp_all only [FOL.BoundedQuery.Realize, Finset.coe_union, Set.subset_union_left]
         have z := (ih₁ w₁ hw₁)
         have ⟨h_sub, ht'⟩ : ∃h_sub : w₁.Dom ⊆ t.Dom, t.restrict h_sub = w₁ := by
           simp_all only [Finset.coe_union, Pi.default_def, Nat.default_eq_zero, Finset.coe_inj,
             Set.subset_union_left, exists_true_left]
           ext a v; simp [*]
-          simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union, Pi.default_def, Nat.default_eq_zero,
-            imp_self, and_self, implies_true]
+          simp_all only [Finset.coe_union]
           have := Set.ext_iff.mp (RA.Query.evaluate.validSchema q₁ left w₁ hw₁).symm a
           simp only [Finset.mem_coe] at this
           simp only [this, PFun.mem_dom]
@@ -139,14 +138,12 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
       · have w_Dom : w₂.Dom = q₂.schema dbi.schema := by
           exact RA.Query.evaluate.validSchema q₂ right w₂ hw₂
         have z' : w₂.Dom ⊆ t.Dom := by simp [t_Dom, w_Dom]
-        simp_all only [Finset.coe_union, and_self, Set.subset_union_left, FOL.BoundedQuery.Realize]
+        simp_all only [FOL.BoundedQuery.Realize, Finset.coe_union]
         have z := (ih₂ w₂ hw₂)
         have ⟨h_sub, ht'⟩ : ∃h_sub : w₂.Dom ⊆ t.Dom, t.restrict h_sub = w₂ := by
-          simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union, Pi.default_def,
-            Nat.default_eq_zero, imp_self, and_self, exists_true_left]
+          simp_all only [Finset.coe_union, Pi.default_def, Nat.default_eq_zero, exists_true_left]
           ext a v; simp [*]
-          simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union, Pi.default_def, Nat.default_eq_zero,
-            imp_self, and_self, implies_true]
+          simp_all only [Finset.coe_union]
           have := Set.ext_iff.mp (RA.Query.evaluate.validSchema q₂ right w₂ hw₂).symm a
           simp only [Finset.mem_coe] at this
           simp only [this, PFun.mem_dom]

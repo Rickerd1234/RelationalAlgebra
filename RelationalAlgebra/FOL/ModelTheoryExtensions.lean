@@ -50,7 +50,7 @@ theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : fol.T
     · intro a_1
       split
       next x i => simp_all only [relabel, Sum.map_inl, id_eq, Finset.mem_singleton]
-      next x _i => simp_all only [relabel, Sum.map_inr, Finset.not_mem_empty]
+      next x _i => simp_all only [relabel, Sum.map_inr, Finset.notMem_empty]
       next x l _f ts => exact False.elim (fol_empty_fun _f)
     · intro a_1
       split
@@ -61,10 +61,10 @@ theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : fol.T
         next x_1 _i => simp_all only [relabel, Sum.map_inr, var.injEq, reduceCtorEq]
         next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
       next x _i heq =>
-        simp_all only [Finset.not_mem_empty]
+        simp_all only [Finset.notMem_empty]
         split at a_1
         next x_1 i => simp_all only [relabel, Sum.map_inl, id_eq, var.injEq, reduceCtorEq]
-        next x_1 _i_1 => simp_all only [relabel, Sum.map_inr, var.injEq, Sum.inr.injEq, Finset.not_mem_empty]
+        next x_1 _i_1 => simp_all only [relabel, Sum.map_inr, var.injEq, Sum.inr.injEq, Finset.notMem_empty]
         next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
       next x l _f ts heq =>
         exact False.elim (fol_empty_fun _f)
@@ -86,17 +86,17 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : Attribute → Attri
           simp_all only [var.injEq, Finset.mem_singleton]
           subst a_1
           simp_all [relabelAux_sumInl]
-        next x_1 _i heq => simp_all only [var.injEq, Finset.not_mem_empty]
+        next x_1 _i heq => simp_all only [var.injEq, Finset.notMem_empty]
         next x_1 l _f ts heq => simp_all only [reduceCtorEq]
       next x _i =>
-        simp_all only [relabel, Finset.not_mem_empty, false_and, exists_const]
+        simp_all only [relabel, Finset.notMem_empty, false_and, exists_const]
         split at a_1
         next x_1 i heq =>
           simp_all only [var.injEq, Finset.mem_singleton, BoundedFormula.relabelAux]
           subst a_1
           simp_all only [Function.comp_apply, Sum.map_inr, id_eq, Equiv.sumAssoc_apply_inr,
             finSumFinEquiv_apply_right, reduceCtorEq]
-        next x_1 _i_1 heq => simp_all only [var.injEq, Finset.not_mem_empty]
+        next x_1 _i_1 heq => simp_all only [var.injEq, Finset.notMem_empty]
         next x_1 l _f ts heq => simp_all only [reduceCtorEq]
       next x l _f ts => exact False.elim (fol_empty_fun _f)
 
@@ -117,14 +117,14 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : Attribute → Attri
             finSumFinEquiv_apply_right, var.injEq, reduceCtorEq]
         next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
       next x _i heq =>
-        simp_all only [Finset.not_mem_empty]
+        simp_all only [Finset.notMem_empty]
         split at left
         next x_1 i =>
           simp_all only [relabel, Function.comp_apply, Sum.map_inl, var.injEq, Finset.mem_singleton,
             Equiv.sumAssoc_apply_inl_inl, id_eq, reduceCtorEq]
         next x_1 _i_1 =>
           simp_all only [relabel, Function.comp_apply, Sum.map_inr, id_eq, Equiv.sumAssoc_apply_inr,
-            finSumFinEquiv_apply_right, var.injEq, Sum.inr.injEq, Finset.not_mem_empty]
+            finSumFinEquiv_apply_right, var.injEq, Sum.inr.injEq, Finset.notMem_empty]
         next x_1 l _f ts => simp_all only [relabel, reduceCtorEq]
       next x l _f ts heq =>
         simp_all only [Finset.mem_biUnion, Finset.mem_univ, true_and]
@@ -171,7 +171,7 @@ theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : fol.BoundedFormula Attri
       rename_i k
       subst h
       simp only [castLE, castLE_rfl, freeVarFinset]
-    | _ => simp_all [BoundedFormula.liftAt, mapTermRel, Term.liftAt]
+    | _ => simp_all
 
 @[simp]
 theorem liftAt_freeVarFinset {n n'} (φ : fol.BoundedFormula Attribute n) (hmn : m + n' ≤ n + 1) :
@@ -182,7 +182,7 @@ theorem liftAt_freeVarFinset {n n'} (φ : fol.BoundedFormula Attribute n) (hmn :
       rename_i k
       have h : k + 1 + n' = k + n' + 1 := by rw [add_assoc, add_comm 1 n', ← add_assoc]
       simp only [mapTermRel, freeVarFinset, castLE_freeVarFinset ?_ h, ih (hmn.trans k.succ.le_succ)]
-    | _ => simp_all [BoundedFormula.liftAt, mapTermRel, Term.liftAt]
+    | _ => simp_all [mapTermRel, Term.liftAt]
 
 theorem freeVarFinset_toPrenexImpRight {φ ψ : fol.BoundedFormula Attribute n} (hφ : IsQF φ) (hψ : IsPrenex ψ) :
     (φ.toPrenexImpRight ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by

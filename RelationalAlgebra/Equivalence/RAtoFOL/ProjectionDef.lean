@@ -21,7 +21,7 @@ theorem projectAttribute_eq {dropSet x y} : projectAttribute dropSet x = Sum.inl
     intro a
     split at a
     next h => simp_all only [reduceCtorEq]
-    next h => simp_all only [not_and, Decidable.not_not, Sum.inl.injEq]
+    next h => simp_all only [Sum.inl.injEq]
 
 @[simp]
 theorem projectAttribute_not_mem {dropSet a'} (h : a' ∉ dropSet) : projectAttribute dropSet a' = Sum.inl a' := by
@@ -32,7 +32,7 @@ theorem projectAttribute_not_mem {dropSet a'} (h : a' ∉ dropSet) : projectAttr
 theorem projectAttribute_mem {dropSet a'} (h : a' ∈ dropSet) :
   ∃x, projectAttribute dropSet a' = Sum.inr x := by
     simp [projectAttribute.def]
-    simp_all only [not_false_eq_true, and_self, ↓reduceDIte, Sum.inr.injEq, exists_eq']
+    simp_all only [↓reduceDIte, Sum.inr.injEq, exists_eq']
 
 def projectQuery (folQ : FOL.Query dbs) (rs : RelationSchema) : FOL.Query dbs :=
   (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs
@@ -57,7 +57,7 @@ theorem projectQuery.schema_def (folQ : FOL.Query dbs) (rs : RelationSchema) (h 
     have z := projectAttribute_eq right
     subst z
     by_cases h : w ∈ rs
-    . simp_all only [projectAttribute_not_mem]
+    . simp_all only
     . have z : w ∈ (folQ.schema \ rs) := by simp_all
       have z := projectAttribute_mem z
       simp_all only [reduceCtorEq, exists_false]

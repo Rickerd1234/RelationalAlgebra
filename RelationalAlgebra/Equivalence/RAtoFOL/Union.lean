@@ -6,8 +6,8 @@ theorem ra_to_fol_evalT.u_def_eq (h : RA.Query.isWellTyped dbi.schema (.u q₁ q
   (ih₁ : FOL.Query.evaluateT dbi (ra_to_fol_query q₁ dbi.schema) = RA.Query.evaluateT dbi q₁)
   (ih₂ : FOL.Query.evaluateT dbi (ra_to_fol_query q₂ dbi.schema) = RA.Query.evaluateT dbi q₂) :
     FOL.Query.evaluateT dbi (ra_to_fol_query (q₁.u q₂) dbi.schema) = RA.Query.evaluateT dbi (q₁.u q₂) := by
-      simp_all [ra_to_fol_query, ra_to_fol_query_schema]
-      simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.and_def, FOL.BoundedQuery.Realize, unionT, ← ih₁, ← ih₂]
+      simp_all [ra_to_fol_query]
+      simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.and_def, FOL.BoundedQuery.Realize, ← ih₁, ← ih₂]
       simp_all [ra_to_fol_query_schema]
       ext t
       unfold FOL.TupleToFun

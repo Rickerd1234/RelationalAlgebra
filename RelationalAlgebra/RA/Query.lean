@@ -70,8 +70,7 @@ theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.sche
     exact (dbi.relations rn).validSchema t h_t
   | s a b sq ih =>
     simp_all only [isWellTyped, evaluateT, selectionT, schema]
-    simp_all only [forall_const, Part.coe_some, bind_pure_comp, ne_eq, Set.mem_setOf_eq,
-      implies_true]
+    simp_all only [forall_const, Set.mem_setOf_eq, implies_true]
   | p rs sq ih =>
     intro t h_t
     simp_all [isWellTyped, evaluateT, projectionT, schema]
@@ -79,7 +78,7 @@ theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.sche
     . simp_all only [projectionT, Set.mem_setOf_eq]
   | j sq1 sq2 ih1 ih2 =>
     intro t h_t
-    simp_all only [isWellTyped, joinT, forall_const, Finset.coe_union]
+    simp_all only [isWellTyped, forall_const]
     apply joinDom
       ⟨sq1.schema dbi.schema, evaluateT dbi sq1, ih1⟩
       ⟨sq2.schema dbi.schema, evaluateT dbi sq2, ih2⟩

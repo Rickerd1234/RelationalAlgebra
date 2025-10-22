@@ -26,9 +26,9 @@ def BoundedFormula.safeDBS (f : fol.BoundedFormula Attribute n) (dbs : DatabaseS
 theorem BoundedFormula.safeDBS_ToPrenex (q : fol.BoundedFormula Attribute n) : BoundedFormula.safeDBS q.toPrenex dbs ↔ BoundedFormula.safeDBS q dbs := by
   induction q with
   | falsum =>
-    simp_all only [safeDBS, iff_true, BoundedFormula.toPrenex]
+    simp_all only [safeDBS, BoundedFormula.toPrenex]
   | equal =>
-    simp_all only [safeDBS, iff_true, BoundedFormula.toPrenex, Term.bdEqual]
+    simp_all only [safeDBS, BoundedFormula.toPrenex, Term.bdEqual]
   | imp =>
     simp_all only [safeDBS]
     unfold BoundedFormula.toPrenex
@@ -61,11 +61,11 @@ section toRA
 variable (dbs : DatabaseSchema) [Fintype ↑(adomRs dbs)]
 
 def toRAImpRight : RA.Query → RA.Query → RA.Query
-  | f₁, (.p rs sq) => .d (adom dbs (f₁.schema dbs)) f₁
+  | f₁, (.p _ _) => .d (adom dbs (f₁.schema dbs)) f₁
   | f₁, f₂ => .u (.d (adom dbs (f₁.schema dbs ∪ f₂.schema dbs)) f₁) f₂
 
 def toRAImp : RA.Query → RA.Query → RA.Query
-  | (.d sq nq), f₂ => .u nq f₂
+  | (.d _ nq), f₂ => .u nq f₂
   | f₁,  f₂ => toRAImpRight dbs f₁ f₂
 
 -- | .imp f₁ ⊥ => .d (adom dbs f₁.freeVarFinset) (toRA f₁)                                       --  p → ⊥  = ¬p
@@ -89,12 +89,12 @@ theorem toRAImpRight.freeVarFinset_def
   (h₂ : q₂.isWellTyped dbs) (h₃ : q₁.schema dbs = q₂.schema dbs) :
     (toRAImpRight dbs q₁ q₂).schema dbs = q₁.schema dbs ∪ q₂.schema dbs := by
       induction q₂ with
-      | _ => simp_all [toRA, toRAImp, toRAImpRight]
+      | _ => simp_all [toRAImpRight]
 
 @[simp]
 theorem toRAImp.freeVarFinset_def (h₁ : q₁.isWellTyped dbs) (h₂ : q₂.isWellTyped dbs) (h₃ : q₁.schema dbs = q₂.schema dbs) : (toRAImp dbs q₁ q₂).schema dbs = q₁.schema dbs ∪ q₂.schema dbs := by
   induction q₁ with
-  | d => simp only [toRAImp]; simp_all [toRAImpRight.freeVarFinset_def dbs h₂ h₃]
+  | d => simp only [toRAImp]; simp_all
   | _ => simp only [toRAImp]; simp only [toRAImpRight.freeVarFinset_def dbs h₂ h₃]
 
 theorem toRA.freeVarFinset_def : (toRA dbs φ).schema dbs = φ.freeVarFinset := by
@@ -117,11 +117,11 @@ theorem toRA.freeVarFinset_def : (toRA dbs φ).schema dbs = φ.freeVarFinset := 
         next h =>
           use RelationSchema.index h
           have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index h))
-          simp_all [hk]
+          simp_all
           cases k with
           | inl val => simp_all only [Term.varFinsetLeft, Finset.mem_singleton]
           | inr val_1 =>
-            simp_all only [Term.varFinsetLeft, Finset.not_mem_empty]
+            simp_all only [Term.varFinsetLeft, Finset.notMem_empty]
             sorry
         next h => sorry
       · intro a_2
@@ -136,7 +136,7 @@ theorem toRA.freeVarFinset_def : (toRA dbs φ).schema dbs = φ.freeVarFinset := 
     convert this
     . exact id (Eq.symm ih₁)
     . exact id (Eq.symm ih₂)
-  | _ => simp_all [toRA, BoundedQuery.schema]
+  | _ => simp_all [toRA]
 
 @[simp]
 theorem toRA.schema_def {q : FOL.Query dbs} : (toRA dbs (toPrenex q)).schema dbs = q.schema := by
@@ -157,8 +157,7 @@ theorem toRAImpRight.isWellTyped_def {q₁ q₂ : RA.Query} [Fintype ↑(adomRs 
         simp_all [toRAImpRight]
         refine adom.isWellTyped_def dbs ?_
         simp [adomAtts]
-        intro a
-        intro h
+        intro a h
         simp_all only [Finset.mem_coe, Set.mem_setOf_eq]
         apply Exists.intro
         · exact h
@@ -166,8 +165,7 @@ theorem toRAImpRight.isWellTyped_def {q₁ q₂ : RA.Query} [Fintype ↑(adomRs 
         simp_all [toRAImpRight]
         refine adom.isWellTyped_def dbs ?_
         simp [adomAtts]
-        intro a
-        intro h
+        intro a h
         simp_all only [Finset.mem_coe, Set.mem_setOf_eq]
         sorry
       | _ =>

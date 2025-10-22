@@ -16,7 +16,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
     | R rn vMap =>
       simp only [Realize, toFormula, fol.Rel, BoundedFormula.realize_rel, folStruc.RelMap_R,
         ArityToTuple.def_dite]
-      rw [@iff_eq_eq, @Set.mem_def, @Set.mem_def]
+      rw [@iff_eq_eq]
       apply congr rfl
       ext a v
       simp_all only [schema.R_def, Set.coe_toFinset]
@@ -50,7 +50,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
           | inr h_2 =>
             obtain ⟨w, h_1⟩ := h_2
             simp_all only [realize_var, Sum.elim_inr]
-        next h => simp_all only [↓reduceDIte, Part.not_mem_none]
+        next h => simp_all only [↓reduceDIte, Part.notMem_none]
       · intro a_1
         split
         next ha =>
@@ -72,7 +72,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
             rw [TupleToFun.tuple_eq h'.symm t'_dom h_res.symm]
             rw [← h_res, PFun.mem_restrict] at h_2
             simp [TupleToFun]
-            simp_all only [PFun.mem_dom, decidable_dom, eq_mpr_eq_cast, Part.getOrElse]
+            simp_all only [PFun.mem_dom, Part.getOrElse]
             have : (tup w).Dom := by simp_all [Part.dom_iff_mem]; use v'; exact h_2.2
             have : (tup' w).Dom := by simp_all [Part.dom_iff_mem]
             simp_all
@@ -83,7 +83,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
           | inr h_2 =>
             obtain ⟨w, h_1⟩ := h_2
             simp_all only [realize_var, Sum.elim_inr]
-        next h => simp_all only [↓reduceDIte, Part.not_mem_none]
+        next h => simp_all only [↓reduceDIte, Part.notMem_none]
 
     | tEq t₁ t₂ =>
       simp_all [Realize, BoundedFormula.Realize]
@@ -113,15 +113,16 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
           simp [Part.get_eq_iff_eq_some, ← h_res]
           rw [@Part.ext_iff]
           simp [PFun.mem_restrict, PFun.mem_dom, ← Part.dom_iff_mem, t2, t4, Part.ext_iff]
+          simp_all only [true_and]
 
         | inr
           val_2 =>
-          simp_all only [varFinsetLeft, Finset.coe_singleton, Set.singleton_subset_iff, PFun.mem_dom,
-            Finset.coe_empty, Set.empty_subset, Sum.elim_inl, Sum.elim_inr]
+          simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Sum.elim_inr]
           simp_all [Part.getOrElse]
           simp [Part.get_eq_iff_eq_some, ← h_res]
           rw [@Part.ext_iff]
           simp [PFun.mem_restrict, PFun.mem_dom, ← Part.dom_iff_mem, t2, Part.ext_iff]
+          simp_all only [true_and]
 
       | inr val_1 =>
         cases t₂ with
@@ -133,9 +134,11 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
           have t3 : (tup val).Dom := by simp_all [Part.dom_iff_mem]; use w; rw [← h_res, PFun.mem_restrict] at h_1; exact h_1.2
           have t4 : (tup' val).Dom := by simp_all [Part.dom_iff_mem]; use w
           simp_all [Part.getOrElse]
-          simp [Part.get_eq_iff_eq_some, ← h_res]
+          simp [← h_res]
           rw [@Part.eq_get_iff_mem]
-          simp [PFun.mem_restrict, PFun.mem_dom, ← Part.dom_iff_mem, t4, Part.ext_iff, Part.eq_get_iff_mem]
+          simp [PFun.mem_restrict, PFun.mem_dom, ← Part.dom_iff_mem, t4, Part.eq_get_iff_mem]
+          intro a
+          simp_all only
 
         | inr val_2 => simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Sum.elim_inr]
 

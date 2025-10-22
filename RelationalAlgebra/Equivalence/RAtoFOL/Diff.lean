@@ -6,8 +6,9 @@ theorem ra_to_fol_evalT.d_def_eq (h : RA.Query.isWellTyped dbi.schema (.d q nq))
   (ih : FOL.Query.evaluateT dbi (ra_to_fol_query q dbi.schema) = RA.Query.evaluateT dbi q)
   (nih : FOL.Query.evaluateT dbi (ra_to_fol_query nq dbi.schema) = RA.Query.evaluateT dbi nq) :
     FOL.Query.evaluateT dbi (ra_to_fol_query (q.d nq) dbi.schema) = RA.Query.evaluateT dbi (q.d nq) := by
-      simp_all [ra_to_fol_query, ra_to_fol_query_schema]
-      simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.and_def, FOL.BoundedQuery.Realize, diffT, ← ih, ← nih, Set.diff]
+      simp_all [ra_to_fol_query]
+      simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.and_def, FOL.BoundedQuery.Realize, ← ih,
+        ← nih, Set.diff]
       simp_all [ra_to_fol_query_schema]
       ext t
       unfold FOL.TupleToFun

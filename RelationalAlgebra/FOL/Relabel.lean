@@ -35,12 +35,12 @@ theorem BoundedQuery.castLE_formula {m n} (_h : m ≤ n) (φ : BoundedQuery dbs 
 @[simp]
 theorem castLE_rfl {n} (h : n ≤ n) (φ : BoundedQuery dbs n) : φ.castLE h = φ := by
   induction φ with
-  | R => simp [Fin.castLE_of_eq]
-  | tEq _ _ => simp [Fin.castLE_of_eq]
-  | and _ _ ih₁ ih₂ => simp [Fin.castLE_of_eq, ih₁, ih₂]
-  | ex _ ih => simp [Fin.castLE_of_eq, ih]
-  | or _ _ ih₁ ih₂ => simp [Fin.castLE_of_eq, ih₁, ih₂]
-  | not _ ih => simp [Fin.castLE_of_eq, ih]
+  | R => simp
+  | tEq _ _ => simp
+  | and _ _ ih₁ ih₂ => simp [ih₁, ih₂]
+  | ex _ ih => simp [ih]
+  | or _ _ ih₁ ih₂ => simp [ ih₁, ih₂]
+  | not _ ih => simp [ih]
 
 @[simp]
 theorem castLE_castLE {k m n} (km : k ≤ m) (mn : m ≤ n) (φ : BoundedQuery dbs k) :
@@ -61,7 +61,7 @@ theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term 
     (h : ∀n, g (n + 1) ≤ g n + 1) (φ : BoundedQuery dbs m) :
   (φ.mapTermRel ft (λ n => castLE (h n))).toFormula = φ.toFormula.mapTermRel ft (λ _ => id) (λ n => BoundedFormula.castLE (h n)) := by
     induction φ
-    all_goals simp_all only [mapTermRel, castLE, BoundedQuery.toFormula, castLE_formula]; rfl
+    all_goals simp_all only [mapTermRel, BoundedQuery.toFormula, castLE_formula]; rfl
 
 /-- Raises all of the `Fin`-indexed variables of a formula greater than or equal to `m` by `n'`. -/
 def BoundedQuery.liftAt : ∀ {n : ℕ} (n' _m : ℕ), BoundedQuery dbs n → BoundedQuery dbs (n + n') :=
@@ -113,7 +113,7 @@ theorem BoundedQuery.relabel_formula (g : Attribute → Attribute ⊕ (Fin n)) {
 @[simp]
 theorem BoundedQuery.relabel_Sum_inl {k} {h : k ≤ n + k} (φ : BoundedQuery dbs k) (h' : n = 0) :
   (φ.relabel (λ t => (Sum.inl t : (Attribute ⊕ Fin n)))) = φ.castLE h := by
-    simp_all [relabel, castLE_rfl]
+    simp_all [relabel]
     induction φ with
     | R => subst h'; simp_all only [Fin.natAdd_zero, castLE]; rfl
     | tEq => subst h'; simp_all [mapTermRel]; apply And.intro; all_goals rfl

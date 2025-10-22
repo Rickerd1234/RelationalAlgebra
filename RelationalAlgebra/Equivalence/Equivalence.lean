@@ -22,7 +22,7 @@ theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWel
 
 theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
   (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h_ra_wt := by
-    simp [RA.Query.evaluate, FOL.Query.evaluate, FOL.Query.evaluateT.def]
+    simp [RA.Query.evaluate, FOL.Query.evaluate]
     simp_all [ra_to_fol_query_schema]
     exact ra_to_fol_evalT h_ra_wt
 
@@ -34,11 +34,11 @@ theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped
 
 theorem fol_to_ra_eval {dbi} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] (q : FOL.Query dbi.schema):
   (toRA dbi.schema (toPrenex q)).evaluate dbi (toRA.isWellTyped_def q) = q.evaluate dbi := by
-    simp [RA.Query.evaluate, FOL.Query.evaluate, FOL.Query.evaluateT.def]
+    simp [RA.Query.evaluate, FOL.Query.evaluate]
     apply And.intro
     · exact toRA.schema_def dbi.schema
     · cases q with
-      | _ => simp [RA.Query.evaluateT, FOL.Query.evaluateT, FOL.Query.RealizeMin.ex_def, FOL.BoundedQuery.Realize, toPrenex]; sorry
+      | _ => simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.ex_def, FOL.BoundedQuery.Realize]; sorry
 
 theorem fol_to_ra {dbi} [FOL.folStruc dbi] (folQ : FOL.Query dbi.schema) :
   ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by sorry

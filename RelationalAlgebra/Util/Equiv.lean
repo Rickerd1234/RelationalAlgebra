@@ -24,7 +24,6 @@ theorem RelationInstance.dom_eq_schema {t : Tuple} {r : RelationInstance} {h : t
 @[simp]
 theorem value_mem_tuple_attr {a : Attribute} {t : Tuple} {v : Value} (h : v ∈ t a) : PFun.Dom t a := by
   rw [PFun.dom_eq]
-  rw [@Set.setOf_app_iff]
   exact Exists.intro v h
 
 -- `PFun.Dom t a` derived from `a ∈ inst.schema ∧ t ∈ inst.tuples`
@@ -46,7 +45,7 @@ variable {a : Attribute} {f : Attribute → Attribute}
 
 @[simp]
 theorem inv_f_id (h : f.Bijective) : (Function.invFun f ∘ f) a = a
-  := by simp_all only [Function.invFun_comp h.1, id_eq, implies_true]
+  := by simp_all only [Function.invFun_comp h.1, id_eq]
 
 @[simp]
 theorem inv_f_id_apply (h : f.Bijective) : Function.invFun f (f a) = a

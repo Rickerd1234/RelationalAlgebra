@@ -38,10 +38,10 @@ theorem rename_func_surjective [DecidableEq Attribute] (old new : Attribute) : (
       }
       rename_i h_1
       subst h_1
-      simp_all only [not_true_eq_false]
+      simp_all only
   . by_cases h_a : a'' = old
     . subst h_a
-      simp_all only [not_false_eq_true, ite_eq_left_iff]
+      simp_all only [ite_eq_left_iff]
       apply Exists.intro
       · intro a
         split
@@ -70,15 +70,15 @@ theorem rename_func_injective [DecidableEq Attribute] (old new : Attribute) : (r
   intro a''
   by_cases h_a' : a'' = new
   . subst h_a'
-    simp_all
+    simp_all only [↓reduceIte]
     intro a' h
     split at h
     . simp_all only
     . split at h
       . simp_all only [not_true_eq_false]
-      . simp_all only [not_false_eq_true, not_true_eq_false]
+      . simp_all only [not_true_eq_false]
   . by_cases h_a : a'' = old
-    . simp_all only [not_false_eq_true, ite_true, ite_false]
+    . simp_all only [ite_true, ite_false]
       intro a' h
       split at h
       . simp_all only [not_true_eq_false]

@@ -57,4 +57,4 @@ theorem BoundedQuery.schema.exs_def {n : ℕ} (q : BoundedQuery dbs n) :
   (exs q).schema = q.schema := by
     induction n with
     | zero => rfl
-    | succ n' ih => simp [ih q.ex, schema]
+    | succ n' ih => simp [schema]

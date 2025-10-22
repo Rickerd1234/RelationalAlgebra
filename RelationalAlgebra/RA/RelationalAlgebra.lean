@@ -17,7 +17,7 @@ def selectionT (inTuples : Set Tuple) (x y : Attribute) : Set Tuple :=
 
 theorem selectionDom {x y t} {inst : RelationInstance} (h : t ∈ selectionT inst.tuples x y) :
   PFun.Dom t = inst.schema := by
-    simp_all only [selectionT, Part.coe_some, bind_pure_comp, Set.mem_setOf_eq]
+    simp_all only [selectionT, Set.mem_setOf_eq]
     cases y
     all_goals exact inst.validSchema t h.1
 
@@ -151,23 +151,23 @@ def joinDom {t} (inst1 inst2 : RelationInstance) (h : t ∈ joinT inst1.tuples i
     obtain ⟨left_1, right⟩ := h
     ext a
     simp_all only [PFun.mem_dom]
-    simp [← Finset.mem_coe]
-    rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1]
+    simp
+    rw [← Finset.mem_coe, ← inst1.validSchema w left, ← Finset.mem_coe, ← inst2.validSchema w_1 left_1]
     simp_all only [PFun.mem_dom]
     apply Iff.intro
     · intro a_1
       obtain ⟨w_2, h⟩ := a_1
       by_cases g : a ∈ w.Dom ∪ w_1.Dom
       simp_all only [forall_exists_index, Set.mem_union, PFun.mem_dom, not_or, not_exists, and_imp]
-      . simp_all only [not_false_eq_true, Part.not_mem_none]
+      . simp_all only [not_false_eq_true, Part.notMem_none]
     · intro a_1
       by_cases g : a ∈ inst1.schema ∪ inst2.schema
-      . simp_all only [Finset.mem_union, not_or, and_imp]
+      . simp_all only [Finset.mem_union]
         cases a_1
         all_goals (cases g; all_goals simp_all only)
       . simp [← Finset.mem_coe] at g
         rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1] at g
-        simp_all only [Finset.mem_union, not_or, and_imp, PFun.mem_dom, not_exists, exists_const, or_self]
+        simp_all only [PFun.mem_dom, not_exists, exists_const, or_self]
 
 def join (inst1 inst2 : RelationInstance) : RelationInstance :=
     ⟨
@@ -225,10 +225,10 @@ theorem joinT_self (ts : Set Tuple) (h : ∀t ∈ ts, ∀t' ∈ ts, t.Dom = t'.D
     simp_all only
   . intro h
     have g : ∀a : Attribute, (a ∉ t.Dom → t a = Part.none) := by
-        simp_all only [Set.union_self, PFun.mem_dom, not_exists]
+        simp_all only [PFun.mem_dom, not_exists]
         intro a a_1
         ext a_2 : 1
-        simp_all only [Part.not_mem_none]
+        simp_all only [Part.notMem_none]
     simp at g
     exact Exists.intro t (And.intro h (Exists.intro t (And.intro h (λ a => And.intro (λ _ => by simp) (And.intro (λ _ => by simp) (λ h' h'' => g a h'))))))
 
@@ -252,8 +252,8 @@ theorem projectionDom {s' t} (inst : RelationInstance) (h : t ∈ projectionT in
     · intro a_1
       obtain ⟨w_1, h⟩ := a_1
       by_cases h : a ∈ s'
-      . simp_all only [imp_self, not_true_eq_false, IsEmpty.forall_iff, and_self, Finset.mem_coe]
-      . simp_all only [not_false_eq_true, Part.not_mem_none]
+      . simp_all only
+      . simp_all only [not_false_eq_true, Part.notMem_none]
     · intro a_1
       have z : w.Dom = inst.schema := inst.validSchema w left
       have z2 : a ∈ inst.schema := h2 a_1
@@ -279,15 +279,15 @@ abbrev emptyProjection (inst : RelationInstance) : RelationInstance := ⟨
 ⟩
 
 theorem projectionT_empty (ts : Set Tuple) : projectionT ts ∅ = ts.image (λ _ => (λ _ => .none)) := by
-  simp_all only [projectionT, Finset.not_mem_empty, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and,
-    exists_and_right]
+  simp_all only [projectionT, Finset.notMem_empty, IsEmpty.forall_iff, not_false_eq_true,
+    forall_const, true_and, exists_and_right]
   ext x : 1
   simp_all only [Set.mem_setOf_eq, Set.mem_image, exists_and_right, and_congr_right_iff, forall_exists_index]
   intro x_1 h
   apply Iff.intro
   · intro a
     ext a_1 b : 1
-    simp_all only [Part.not_mem_none]
+    simp_all only [Part.notMem_none]
   · intro a a_1
     subst a
     simp_all only
@@ -305,7 +305,7 @@ theorem projectionT_id {rs : RelationSchema} (ts : Set Tuple) (h : ∀t ∈ ts, 
       ext a v
       by_cases hc : a ∈ rs
       . simp_all only
-      . simp_all only [not_false_eq_true, Part.not_mem_none, false_iff]
+      . simp_all only [not_false_eq_true, Part.notMem_none, false_iff]
         apply Aesop.BuiltinRules.not_intro
         intro a_1
         simp_all only [← Finset.mem_coe, PFun.mem_dom,
@@ -350,7 +350,7 @@ theorem projectionT_cascade {s0 s1 s2 : RelationSchema} (ts : Set Tuple) (h0 : �
               simp_all only [PFun.mem_restrict, Finset.mem_coe, true_and]
             · intro a_1
               ext a_2 : 1
-              simp_all only [PFun.mem_restrict, Finset.mem_coe, false_and, Part.not_mem_none]
+              simp_all only [PFun.mem_restrict, Finset.mem_coe, false_and, Part.notMem_none]
       · intro a a_1
         ext a_2 : 1
         simp_all only [PFun.mem_restrict, Finset.mem_coe, iff_and_self]

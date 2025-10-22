@@ -50,9 +50,6 @@ def RelationSchema.index? (rs : RelationSchema) (att : Attribute) : Option (Fin 
 @[simp]
 theorem RelationSchema.index?_isSome {rs : RelationSchema} {att : Attribute} : (rs.index? att).isSome ↔ att ∈ rs := by
   simp [← RelationSchema.ordering_mem, RelationSchema.index?]
-  induction (RelationSchema.ordering rs) with
-  | nil => simp_all
-  | cons a as tail_ih => aesop
 
 @[simp]
 theorem RelationSchema.index?_isSome_eq_iff {rs : RelationSchema} {att : Attribute} : (rs.index? att).isSome ↔ ∃i, rs.index? att = .some i := by
@@ -69,7 +66,7 @@ def RelationSchema.index {rs : RelationSchema} {att : Attribute} (h : att ∈ rs
 -- Proof usefull properties for index
 @[simp]
 theorem RelationSchema.index_lt_card {rs : RelationSchema} {att : Attribute} (h : att ∈ rs) : rs.index h < rs.card := by
-  simp [RelationSchema.ordering_mem, RelationSchema.index, RelationSchema.index?]
+  simp only [Fin.is_lt]
 
 -- Add fromIndex to RelationSchema
 def RelationSchema.fromIndex {rs : RelationSchema} (i : Fin rs.card) : Attribute := rs.ordering.get (i.cast (RelationSchema.ordering_card rs).symm)
@@ -77,7 +74,7 @@ def RelationSchema.fromIndex {rs : RelationSchema} (i : Fin rs.card) : Attribute
 -- Proof usefull properties for fromIndex
 @[simp]
 theorem RelationSchema.fromIndex_mem {rs : RelationSchema} (i : Fin rs.card) : rs.fromIndex i ∈ rs := by
-  apply (RelationSchema.ordering_mem (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) rs)[i] rs).mp
+  apply (RelationSchema.ordering_mem (Finset.sort rs (fun x1 x2 ↦ x1 ≤ x2))[i] rs).mp
   simp [RelationSchema.ordering]
 
 @[simp]
@@ -106,14 +103,14 @@ theorem RelationSchema.index?_inj {rs : RelationSchema} {i j : Attribute} : rs.i
   apply Iff.intro
   · intro a
     by_cases h : (rs.index? i).isSome
-    . simp_all only [index?_none, and_self]
+    . simp_all only
       refine Or.inl ?_
       simp_all only [index?_isSome_eq_iff]
       obtain ⟨w, h⟩ := h
       simp_all only
       unfold index? at *
       aesop
-    . simp_all only [Bool.not_eq_true, Option.not_isSome, Option.isNone_iff_eq_none, ← index?_none, and_self, or_true]
+    . simp_all only [index?_isSome, ← index?_none, and_self, or_true]
   · intro a
     cases a with
     | inl h =>
@@ -187,7 +184,7 @@ theorem RelationSchema.index_fromIndex_eq {rs : RelationSchema} (i : Fin rs.card
   unfold fromIndex index index? List.finIdxOf? Option.map Option.get
   simp_all only [Option.isSome_some, List.get_eq_getElem, Fin.coe_cast]
   induction i
-  simp_all only [Fin.cast_mk]
+  simp_all only
   split
   rename_i x x_1 x_2 x_3 heq heq_1
   simp_all only [Fin.cast_mk, List.get_eq_getElem, heq_eq_eq]

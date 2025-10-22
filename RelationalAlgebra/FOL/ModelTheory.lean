@@ -24,7 +24,7 @@ instance fintype_dom (h : t.Dom = rs) : Fintype ↑t.Dom := by
 @[simp]
 instance decidable_dom (h : t.Dom = rs) : ∀a, Decidable (t a).Dom := by
   intro a
-  simp_all [Part.dom_iff_mem, ← PFun.mem_dom, h]
+  simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
   exact Finset.decidableMem a rs
 
 @[simp]
@@ -47,7 +47,7 @@ theorem TupleToFun.tule_eq_self (h : t.Dom = rs) (h' : t.Dom = rs') :
 @[simp]
 theorem TupleToFun.tuple_eq_ext {h : t.Dom = rs} {h' : t.Dom = rs'} (h'' : t a = t b) :
   TupleToFun h a = TupleToFun h' b := by
-    simp [tuple_eq h h' rfl]
+    simp
     by_cases (t a).Dom
     all_goals simp_all [Part.getOrElse]
 

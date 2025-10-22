@@ -86,9 +86,9 @@ example : ∃t, t ∈ (j.evaluate dbI hj).tuples := by
   apply And.intro
   . simp only [relI, relI2, Set.mem_insert_iff, Set.mem_singleton_iff]
     use tup3
-    simp only [true_or, or_true, true_and]
+    simp only [or_true, true_and]
     use tupC
-    simp only [true_or, or_true, true_and]
+    simp only [or_true, true_and]
 
     intro a
     simp only [tup3, tupC]

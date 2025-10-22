@@ -10,7 +10,7 @@ theorem ran_mem {b : β} : b ∈ f.ran ↔ (∃a, f a = Part.some b)
 variable [DecidableEq α] [DecidableEq β] [Fintype f.Dom]
 
 instance (a : α) : Decidable (f a).Dom := by
-  simp only [Part.dom_iff_mem, ← PFun.mem_dom, Finset.mem_coe]
+  simp only [Part.dom_iff_mem, ← PFun.mem_dom]
   exact f.Dom.decidableMemOfFintype a
 
 theorem ran_def_finset : f.Dom.toFinset.pimage f = f.ran := by

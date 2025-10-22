@@ -66,7 +66,7 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute �
             simp_all [Fin.cast, Fin.castAdd, Fin.castLE]
             exact Fin.elim0 w
           | succ n' ih =>
-            simp_all [Fin.cast, Fin.castAdd, Fin.natAdd, Fin.castLE]
+            simp_all [Fin.castAdd, Fin.natAdd, Fin.castLE]
             rw [@Nat.le_antisymm_iff] at a_1
             have ⟨a_1, hc⟩ := a_1
             simp only [← Nat.not_gt_eq] at hc
@@ -92,12 +92,12 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute �
             simp_all [Fin.cast, Fin.castAdd, Fin.castLE]
             exact Fin.elim0 w
           | succ n' ih =>
-            simp_all [Fin.cast, Fin.castAdd, Fin.natAdd, Fin.castLE]
+            simp_all [Fin.castAdd, Fin.natAdd, Fin.castLE]
             rw [@Nat.le_antisymm_iff] at a_1
             have ⟨hc, a_1⟩ := a_1
             simp only [← Nat.not_gt_eq] at hc
             apply hc
-            simp_all only [true_and, gt_iff_lt, not_lt]
+            simp_all only [gt_iff_lt, not_lt]
             apply Fin.val_lt_of_le w
             simp
       · intro b_1 a
