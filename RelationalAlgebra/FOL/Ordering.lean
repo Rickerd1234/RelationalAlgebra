@@ -25,6 +25,34 @@ def RelationSchema.ordering (rs : RelationSchema) : List Attribute
 theorem RelationSchema.ordering_mem (a : Attribute) (rs : RelationSchema) : a ∈ rs.ordering ↔ a ∈ rs:= by simp [ordering]
 
 @[simp]
+theorem RelationSchema.ordering_nil_iff_empty (rs : RelationSchema) : rs.ordering = [] ↔ rs = ∅:= by
+  simp only [List.eq_nil_iff_forall_not_mem, ordering_mem, Finset.eq_empty_iff_forall_notMem]
+
+@[simp]
+theorem RelationSchema.ordering_eq_empty : (∅ : RelationSchema).ordering = [] := by
+  simp only [ordering_nil_iff_empty]
+
+@[simp]
+theorem RelationSchema.ordering_head?_self_notEmpty {rs : RelationSchema} {a : Attribute} (h : rs ≠ ∅) : rs.ordering.head?.getD a ∈ rs := by
+  simp_all [Option.getD]
+  split
+  next opt x heq =>
+    simp [List.head?_eq_some_iff] at heq
+    obtain ⟨w, h_1⟩ := heq
+    exact (RelationSchema.ordering_mem x rs).mp (by simp only [h_1, List.mem_cons, true_or])
+  next opt heq =>
+    simp_all only [List.head?_eq_none_iff, ordering_nil_iff_empty]
+
+@[simp]
+theorem RelationSchema.ordering_head?_self_mem {rs : RelationSchema} {a a' : Attribute} (h : a ∈ rs) : rs.ordering.head?.getD a' ∈ rs := by
+  apply ordering_head?_self_notEmpty
+  simp_all [← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]
+  use a
+
+@[simp]
+theorem RelationSchema.ordering_eq_toFinset (rs : RelationSchema) : rs.ordering.toFinset = rs:= by simp [ordering]
+
+@[simp]
 theorem RelationSchema.ordering_nodup (rs : RelationSchema) : List.Nodup rs.ordering := by simp [ordering]
 
 @[simp]
