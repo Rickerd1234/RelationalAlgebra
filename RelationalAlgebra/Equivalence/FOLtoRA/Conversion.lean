@@ -37,7 +37,7 @@ theorem BoundedFormula.safeDBS_ToPrenex (q : fol.BoundedFormula Attribute n) : B
     simp_all only [safeDBS, BoundedFormula.toPrenex, Term.bdEqual]
   | imp =>
     simp_all only [safeDBS]
-    unfold BoundedFormula.toPrenex
+    simp [BoundedFormula.toPrenex]
     sorry
   | _ => aesop
 
@@ -87,8 +87,9 @@ theorem toRA.freeVarFinset_def : (toRA dbs rs φ).schema dbs = rs := by
 end toRA
 
 theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula Attribute n}
-  (hq : q.IsAtomic) (h : BoundedFormula.safeDBS q dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
-    (toRA dbs q.freeVarFinset q).isWellTyped dbs := by
+  (hq : q.IsAtomic) (h : BoundedFormula.safeDBS q dbs) (h' : q.freeVarFinset ⊆ rs)
+  [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+    (toRA dbs rs q).isWellTyped dbs := by
       induction hq with
       | equal =>
         simp [Term.bdEqual, toRA, adom.isWellTyped_def]
@@ -104,22 +105,25 @@ theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula Attribute n}
           . sorry
 
 theorem toRA.isWellTyped_def_IsQF {q : fol.BoundedFormula Attribute n}
-  (hq : q.IsQF) (h : BoundedFormula.safeDBS q dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
-    (toRA dbs q.freeVarFinset q).isWellTyped dbs := by
-      cases hq with
+  (hq : q.IsQF) (h : BoundedFormula.safeDBS q dbs) (h' : q.freeVarFinset ⊆ rs)
+  [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+    (toRA dbs rs q).isWellTyped dbs := by
+      induction hq with
       | falsum => simp_all [toRA, adom.isWellTyped_def, adom.schema_def]
-      | of_isAtomic h' => exact isWellTyped_def_IsAtomic h' h
-      | imp h' =>
-        unfold toRA
+      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at h h'
+      | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
+        rename_i q₁ q₂
+        rw [toRA]
+        have : q₁.freeVarFinset ⊆ rs := Finset.union_subset_left h'
+        have : q₂.freeVarFinset ⊆ rs := Finset.union_subset_right h'
         simp_all [adom.isWellTyped_def, adom.schema_def, toRA.freeVarFinset_def]
-        apply And.intro
-        all_goals sorry
 
 theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula Attribute n}
-  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
-    (toRA dbs q.freeVarFinset q).isWellTyped dbs := by
+  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) (h' : q.freeVarFinset ⊆ rs)
+  [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+    (toRA dbs rs q).isWellTyped dbs := by
       induction hq with
-      | of_isQF h' => exact isWellTyped_def_IsQF h' h
+      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf h h'
       | all =>
         simp [toRA, toRA.freeVarFinset_def]
         simp_all
@@ -148,8 +152,9 @@ theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] : 
 theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
   (fol_to_ra_query q).isWellTyped dbs := by
     rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex]
-    refine toRA.isWellTyped_def_IsPrenex ?_ (BoundedQuery.safeDBS_toPrenex q)
-    simp [BoundedFormula.toPrenex_isPrenex]
+    refine toRA.isWellTyped_def_IsPrenex ?_ (BoundedQuery.safeDBS_toPrenex q) ?_
+    . simp [BoundedFormula.toPrenex_isPrenex]
+    . simp
 
 theorem fol_to_ra_query.evalT [folStruc dbi] [Fintype (adomRs dbi.schema)] (q : FOL.Query dbi.schema) :
   RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q := by
