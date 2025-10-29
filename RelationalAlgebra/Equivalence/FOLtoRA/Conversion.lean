@@ -99,7 +99,8 @@ theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula Attribute n}
       | rel R =>
         cases R with
         | R =>
-          simp [Relations.boundedFormula, toRA]
+          simp [Relations.boundedFormula, toRA] at h h' ⊢
+          subst h
           apply And.intro
           . sorry
           . sorry

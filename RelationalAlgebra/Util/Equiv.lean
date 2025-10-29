@@ -41,7 +41,7 @@ theorem not_tuple_valid_schema {a : Attribute} {inst : RelationInstance} {t : Tu
 
 section invFun
 
-variable {a : Attribute} {f : Attribute → Attribute}
+variable [Nonempty α] {a : α} {b : β} {f : α  → β}
 
 @[simp]
 theorem inv_f_id (h : f.Bijective) : (Function.invFun f ∘ f) a = a
@@ -52,5 +52,5 @@ theorem inv_f_id_apply (h : f.Bijective) : Function.invFun f (f a) = a
   := inv_f_id h
 
 @[simp]
-theorem f_inv_id (h : f.Bijective) : f (Function.invFun f a) = a
+theorem f_inv_id (h : f.Bijective) : f (Function.invFun f b) = b
   := by simp_all only [Function.Bijective, Function.Surjective, Function.invFun_eq]
