@@ -9,7 +9,11 @@ import RelationalAlgebra.Equivalence.FOLtoRA.Conversion
 
 open RM
 
-theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWellTyped dbi.schema raQ) :
+section RAtoFOL
+
+variable {dbi : DatabaseInstance} [FOL.folStruc dbi] (raQ : RA.Query) (h : RA.Query.isWellTyped dbi.schema raQ)
+
+theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
   (ra_to_fol_query raQ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
     induction raQ with
     | R rn => exact ra_to_fol_evalT.R_def_eq h
@@ -20,24 +24,34 @@ theorem ra_to_fol_evalT {raQ dbi} [struc : FOL.folStruc dbi] (h : RA.Query.isWel
     | u q₁ q₂ ih₁ ih₂ => exact ra_to_fol_evalT.u_def_eq h (ih₁ h.1) (ih₂ h.2.1)
     | d q nq ih nih => exact ra_to_fol_evalT.d_def_eq h (ih h.1) (nih h.2.1)
 
-theorem ra_to_fol_eval {dbi} [struc : FOL.folStruc dbi] (raQ : RA.Query) (h_ra_wt : raQ.isWellTyped dbi.schema) :
-  (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h_ra_wt := by
+theorem ra_to_fol_eval :
+  (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h := by
     simp [RA.Query.evaluate, FOL.Query.evaluate]
     simp_all [ra_to_fol_query_schema]
-    exact ra_to_fol_evalT h_ra_wt
+    exact ra_to_fol_evalT raQ h
 
-theorem ra_to_fol {dbi} [FOL.folStruc dbi] (raQ : RA.Query) (h : raQ.isWellTyped dbi.schema) :
+theorem ra_to_fol :
   ∃folQ : FOL.Query dbi.schema, folQ.evaluate dbi = raQ.evaluate dbi h := by
     use ra_to_fol_query raQ dbi.schema
     exact ra_to_fol_eval raQ h
 
+end RAtoFOL
 
-theorem fol_to_ra_eval {dbi} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] (q : FOL.Query dbi.schema):
-  (fol_to_ra_query q).evaluate dbi (fol_to_ra_query.isWellTyped_def q) = q.evaluate dbi := by
+section FOLtoRA
+
+variable {dbi} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
+
+theorem fol_to_ra_eval :
+  (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluate dbi := by
     simp [RA.Query.evaluate, FOL.Query.evaluate]
     apply And.intro
-    · exact fol_to_ra_query.schema_def q
-    · exact fol_to_ra_query.evalT q
+    · exact fol_to_ra_query.schema_def folQ
+    · exact fol_to_ra_query.evalT folQ
 
-theorem fol_to_ra {dbi} [FOL.folStruc dbi] (folQ : FOL.Query dbi.schema) :
-  ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by sorry
+theorem fol_to_ra :
+  ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by
+    use fol_to_ra_query folQ
+    use fol_to_ra_query.isWellTyped_def folQ
+    exact fol_to_ra_eval folQ
+
+end FOLtoRA
