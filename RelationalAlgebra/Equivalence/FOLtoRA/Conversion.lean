@@ -1,4 +1,5 @@
 import RelationalAlgebra.Equivalence.FOLtoRA.Adom
+import RelationalAlgebra.Equivalence.FOLtoRA.AttBuilder
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.Evaluate
 import RelationalAlgebra.FOL.ModelTheoryExtensions
@@ -69,14 +70,15 @@ variable (dbs : DatabaseSchema) [Fintype (adomRs dbs)]
 noncomputable def tsToRenameFunc (ts : Fin (Finset.card (dbs rn)) → fol.Term (Attribute ⊕ Fin n)) (a : Attribute) : Attribute :=
   dite (a ∈ dbs rn) (λ h => TermtoAtt (ts (RelationSchema.index h))) (λ _ => a)
 
-noncomputable def toRA : RelationSchema → fol.BoundedFormula Attribute n → RA.Query
-  | rs, .falsum => .d (adom dbs rs) (adom dbs rs)
-  | rs, .equal t₁ t₂ => .s (TermtoAtt t₁) (TermtoAtt t₂) (adom dbs rs)
-  | rs, .rel (.R dbs rn) ts => .p rs (.r (tsToRenameFunc dbs ts) (.R rn))
-  | rs, .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA rs f₁) (toRA rs f₂))
-  | rs, .all f => .p rs (toRA rs f)
+noncomputable def toRA (d : ℕ) (f : fol.BoundedFormula Attribute n) (ab : AttBuilder d) : RA.Query :=
+  match f with
+  | .falsum => .d (adom dbs ab.schema) (adom dbs ab.schema)
+  | .equal t₁ t₂ => .s (TermtoAtt t₁) (TermtoAtt t₂) (adom dbs ab.schema)
+  | .rel (.R dbs rn) ts => .p ab.schema (.r (tsToRenameFunc dbs ts) (.R rn))
+  | .imp f₁ f₂ => .d (adom dbs ab.schema) (.d (toRA d f₁ ab) (toRA d f₂ ab))
+  | .all f => .p ab.schema (toRA (d + 1) f ab.lift)
 
-theorem toRA.freeVarFinset_def : (toRA dbs rs φ).schema dbs = rs := by
+theorem toRA.freeVarFinset_def : (toRA dbs d φ ab).schema dbs = ab.schema := by
   induction φ with
   | rel R ts =>
     cases R
