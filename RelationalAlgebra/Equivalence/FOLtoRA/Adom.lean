@@ -316,13 +316,13 @@ theorem RelationNamesToColumns.evalT_def  (h : dbi.schema baseRn ≠ ∅) (h' : 
         . exact h' rn h''.1
 
 
-noncomputable def adom (dbs : DatabaseSchema) (rs : RelationSchema) [Fintype ↑(adomRs dbs)] : RA.Query :=
+noncomputable def adom (dbs : DatabaseSchema) (rs : RelationSchema) [Fintype (adomRs dbs)] : RA.Query :=
   RelationNamesToColumns dbs (adomRs dbs).toFinset.toList rs.ordering ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary RelationName))
 
-theorem adom.schema_def [Fintype ↑(adomRs dbs)] : (adom dbs rs).schema dbs = rs := by
+theorem adom.schema_def [Fintype (adomRs dbs)] : (adom dbs rs).schema dbs = rs := by
   simp [adom, RelationNamesToColumns.schema_def]
 
-theorem adom.isWellTyped_def[Fintype ↑(adomRs dbs)] [ne : Nonempty (adomRs dbs)] :
+theorem adom.isWellTyped_def [Fintype (adomRs dbs)] [ne : Nonempty (adomRs dbs)] :
     (adom dbs rs).isWellTyped dbs := by
       simp [adom]
       refine RelationNamesToColumns.isWellTyped_def ?_ ?_
@@ -343,13 +343,13 @@ theorem adom.isWellTyped_def[Fintype ↑(adomRs dbs)] [ne : Nonempty (adomRs dbs
         simp_all only [Finset.mem_toList, Set.mem_toFinset, ne_eq]
         exact a
 
-theorem adom.evaluateT_def [Fintype ↑(adomRs dbs)] : (adom dbs as).evaluateT dbi =
+theorem adom.evaluateT_def [Fintype (adomRs dbs)] : (adom dbs as).evaluateT dbi =
   {t | t ∈ ((RelationNameToColumns dbs ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary RelationName)) as.ordering).evaluateT dbi)
     ∨ (∃rn ∈ (adomRs dbs).toFinset.toList, t ∈ ((RelationNameToColumns dbs rn as.ordering).evaluateT dbi)) } := by
       rw [adom, ← @RelationNamesToColumns.evaluateT_def]
 
 @[simp]
-theorem adom.complete_def [Fintype ↑(adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =
+theorem adom.complete_def [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =
   {t | t.Dom = ↑as ∧ ∃a ∈ as, ∃v ∈ dbi.domain, t a = .some v} := by
     rw [adom, RelationNamesToColumns.evalT_def]
     . rw [DatabaseInstance.domain]

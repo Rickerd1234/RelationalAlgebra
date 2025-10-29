@@ -2,6 +2,7 @@ import RelationalAlgebra.Equivalence.FOLtoRA.Adom
 import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.Evaluate
 import RelationalAlgebra.FOL.ModelTheoryExtensions
+import RelationalAlgebra.FOL.RealizeProperties
 
 open RM FOL FirstOrder Language
 
@@ -63,7 +64,7 @@ theorem TermtoAtt.Fin0_def (t : fol.Term (Attribute ⊕ Fin 0)) : TermtoAtt t �
 
 section toRA
 
-variable (dbs : DatabaseSchema) [Fintype ↑(adomRs dbs)]
+variable (dbs : DatabaseSchema) [Fintype (adomRs dbs)]
 
 noncomputable def tsToRenameFunc (ts : Fin (Finset.card (dbs rn)) → fol.Term (Attribute ⊕ Fin n)) (a : Attribute) : Attribute :=
   dite (a ∈ dbs rn) (λ h => TermtoAtt (ts (RelationSchema.index h))) (λ _ => a)
@@ -73,49 +74,132 @@ noncomputable def toRA : RelationSchema → fol.BoundedFormula Attribute n → R
   | rs, .equal t₁ t₂ => .s (TermtoAtt t₁) (TermtoAtt t₂) (adom dbs rs)
   | rs, .rel (.R dbs rn) ts => .p rs (.r (tsToRenameFunc dbs ts) (.R rn))
   | rs, .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA rs f₁) (toRA rs f₂))
-  | rs, .all f => .p f.freeVarFinset (toRA rs f)
+  | rs, .all f => .p rs (toRA rs f)
 
-theorem toRA.freeVarFinset_def : (toRA dbs φ.freeVarFinset φ).schema dbs = φ.freeVarFinset := by
+theorem toRA.freeVarFinset_def : (toRA dbs rs φ).schema dbs = rs := by
   induction φ with
   | rel R ts =>
-    simp
     cases R
     next n dbs rn =>
       simp [toRA]
-  | _ => simp [toRA]
+  | _ => simp [toRA, adom.schema_def]
 
 end toRA
 
-theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula Attribute 0}
-  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) [Fintype ↑(adomRs dbs)] :
+theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula Attribute n}
+  (hq : q.IsAtomic) (h : BoundedFormula.safeDBS q dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+    (toRA dbs q.freeVarFinset q).isWellTyped dbs := by
+      induction hq with
+      | equal =>
+        simp [Term.bdEqual, toRA, adom.isWellTyped_def]
+        split_ands
+        . simp [adom.schema_def]; sorry
+        . simp [adom.schema_def]; sorry
+      | rel R =>
+        cases R with
+        | R =>
+          simp [Relations.boundedFormula, toRA]
+          apply And.intro
+          . sorry
+          . sorry
+
+theorem toRA.isWellTyped_def_IsQF {q : fol.BoundedFormula Attribute n}
+  (hq : q.IsQF) (h : BoundedFormula.safeDBS q dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
     (toRA dbs q.freeVarFinset q).isWellTyped dbs := by
       cases hq with
-      | _ => sorry --unfold toRA; aesop; all_goals sorry
+      | falsum => simp_all [toRA, adom.isWellTyped_def, adom.schema_def]
+      | of_isAtomic h' => exact isWellTyped_def_IsAtomic h' h
+      | imp h' =>
+        unfold toRA
+        simp_all [adom.isWellTyped_def, adom.schema_def, toRA.freeVarFinset_def]
+        apply And.intro
+        all_goals sorry
 
-theorem toRA.evalT_def_IsPrenex [folStruc dbi] {q : fol.BoundedFormula Attribute 0}
-  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) [Fintype ↑(adomRs dbs)] :
-    (toRA dbs q.freeVarFinset q).evaluateT dbi =
+theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula Attribute n}
+  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+    (toRA dbs q.freeVarFinset q).isWellTyped dbs := by
+      induction hq with
+      | of_isQF h' => exact isWellTyped_def_IsQF h' h
+      | all =>
+        simp [toRA, toRA.freeVarFinset_def]
+        simp_all
+      | ex =>
+        simp at h ⊢
+        simp [toRA, adom.isWellTyped_def, toRA.freeVarFinset_def, adom.schema_def]
+        simp_all
+
+theorem toRA.evalT_def_IsPrenex [folStruc dbi] {q : fol.BoundedFormula Attribute n}
+  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbi.schema) [Fintype (adomRs dbi.schema)] :
+    (toRA dbi.schema q.freeVarFinset q).evaluateT dbi =
       {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' q.freeVarFinset} := by
-        cases hq with
-        | _ => sorry --unfold toRA; aesop; all_goals sorry
+        induction hq with
+        | _ => unfold toRA; aesop; all_goals (try simp_all [Set.diff, BoundedFormula.Realize]); all_goals sorry;
 
 
 -- Complete conversion
 @[simp]
-noncomputable def fol_to_ra_query (q : FOL.Query dbs) [Fintype ↑(adomRs dbs)] : RA.Query :=
+noncomputable def fol_to_ra_query (q : FOL.Query dbs) [Fintype (adomRs dbs)] : RA.Query :=
   toRA dbs q.schema (toPrenex q)
 
 @[simp]
-theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype ↑(adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
+theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
   rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, toRA.freeVarFinset_def]
 
-theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype ↑(adomRs dbs)] :
+theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
   (fol_to_ra_query q).isWellTyped dbs := by
     rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex]
     refine toRA.isWellTyped_def_IsPrenex ?_ (BoundedQuery.safeDBS_toPrenex q)
     simp [BoundedFormula.toPrenex_isPrenex]
 
-theorem fol_to_ra_query.evalT [folStruc dbi] [Fintype ↑(adomRs dbi.schema)] (q : FOL.Query dbi.schema) :
+theorem fol_to_ra_query.evalT [folStruc dbi] [Fintype (adomRs dbi.schema)] (q : FOL.Query dbi.schema) :
   RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q := by
-    cases q with
-    | _ => simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.ex_def, FOL.BoundedQuery.Realize]; sorry
+    rw [FOL.Query.evaluateT, Set.ext_iff]
+    intro t
+    rw [Set.mem_setOf_eq, FOL.Query.RealizeMin.ex_def dbi q t, FOL.BoundedQuery.Realize]
+    rw [fol_to_ra_query, BoundedQuery.schema, toPrenex]
+    have hq := BoundedFormula.toPrenex_isPrenex (BoundedQuery.toFormula q)
+    have h_safe := BoundedQuery.safeDBS_toPrenex q
+    rw [← freeVarFinset_toPrenex, toRA.evalT_def_IsPrenex hq h_safe]
+    rw [Set.mem_setOf_eq]
+    simp only [BoundedFormula.realize_toPrenex]
+    simp_all only [BoundedFormula.safeDBS_ToPrenex, BoundedQuery.safeDBS, freeVarFinset_toPrenex,
+      exists_and_right]
+    apply Iff.intro
+    · intro a
+      obtain ⟨w, h⟩ := a
+      obtain ⟨left, right⟩ := h
+      subst right
+      refine Exists.intro rfl ?_
+      rw [← BoundedQuery.Realize] at left ⊢
+      obtain ⟨vs, left⟩ := left
+      have : vs = default := by ext v; exact False.elim (Fin.elim0 v)
+      subst this
+      refine (BoundedQuery.Realize.restrict ?_ ?_).mp left
+      . rw [freeVarFinset_toPrenex]
+      . rw [freeVarFinset_toPrenex, BoundedQuery.schema]
+    · intro a
+      obtain ⟨w, h⟩ := a
+      use TupleToFun w
+      apply And.intro ?_
+      . ext a v
+        rw [PFun.mem_res]
+        simp_all only [Finset.mem_coe, Pi.default_def,
+          Nat.default_eq_zero, TupleToFun]
+        simp_rw [Set.ext_iff, PFun.mem_dom t, ← Part.dom_iff_mem, Finset.mem_coe] at w
+        apply Iff.intro
+        · intro a_1
+          have ta_dom : (t a).Dom := (PFun.mem_dom t a).mpr (Exists.intro v a_1)
+          apply And.intro
+          · simp_all
+          · simp [Part.getOrElse, ta_dom, Part.get_eq_of_mem a_1 ta_dom]
+        · intro a_1
+          obtain ⟨left, right⟩ := a_1
+          subst right
+          rw [← w a] at left
+          simp [Part.getOrElse, left, Part.get_mem]
+      . use default
+        rw [← BoundedQuery.Realize] at h ⊢
+        have : ∀x x' t, x = x' → (q.Realize dbi x t → q.Realize dbi x' t) := by simp
+        apply (this (TupleToFun ?_) (TupleToFun w) default ?_) h
+        . simp [w]
+        . simp [w]

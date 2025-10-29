@@ -143,3 +143,92 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
         | inr val_2 => simp_all only [varFinsetLeft, Finset.coe_empty, Set.empty_subset, Sum.elim_inr]
 
     | _ => simp_all [Realize]
+
+
+@[simp]
+theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : RelationSchema} {w : Attribute → Value} {tup : Tuple} {iv : Fin n → Value} {q : BoundedQuery dbi.schema n}
+  (h_res : PFun.res w rs = tup)
+  (h_min : ↑q.schema ⊆ rs)
+  {h : tup.Dom = rs}
+  : q.Realize dbi w iv ↔ q.Realize dbi (TupleToFun h) iv := by
+    unfold TupleToFun
+    rw [BoundedQuery.Realize]
+    rw [BoundedQuery.schema] at h_min
+
+    induction q with
+    | R rn ts =>
+        simp_all only [toFormula, fol.Rel, BoundedFormula.realize_rel]
+        simp only [folStruc.RelMap_R, iff_eq_eq]
+        apply congr rfl
+        ext a v
+        simp_all
+        split
+        next h' =>
+          simp only [Part.mem_some_iff]
+          apply Eq.congr_right
+          have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index h'))
+          rw [hk, realize_var, realize_var]
+          cases k with
+          | inl a' =>
+            have : (tup a').Dom := by
+              simp [Relations.boundedFormula] at h_min
+              have := h_min (RelationSchema.index h')
+              simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
+            subst h_res
+            simp_all [Part.getOrElse]
+            rfl
+          | inr i => simp_all only [Sum.elim_inr]
+        next h => rfl
+
+    | tEq t₁ t₂ =>
+      simp_all [BoundedFormula.Realize]
+      have ⟨k, hk⟩ := Term.cases t₁
+      have ⟨k', hk'⟩ := Term.cases t₂
+      subst hk hk'
+      cases k with
+      | inl v =>
+        have t1 : (tup v).Dom := by
+          rw [Part.dom_iff_mem, ← PFun.mem_dom]
+          simp_rw [Set.ext_iff, Finset.mem_coe] at h
+          rw [varFinsetLeft, Finset.singleton_union, Finset.insert_subset_iff] at h_min
+          exact (h v).mpr h_min.1
+
+        cases k' with
+        | inl v' =>
+          have t2 : (tup v').Dom := by
+            rw [Part.dom_iff_mem, ← PFun.mem_dom]
+            simp_rw [Set.ext_iff, Finset.mem_coe] at h
+            rw [varFinsetLeft, Finset.singleton_union, Finset.insert_subset_iff] at h_min
+            rw [varFinsetLeft, Finset.singleton_subset_iff] at h_min
+            exact (h v').mpr h_min.2
+          simp [Part.getOrElse_of_dom, t1, t2]
+          subst h_res
+          rfl
+        | inr v' =>
+          simp [Part.getOrElse_of_dom, t1]
+          subst h_res
+          rfl
+      | inr v =>
+        cases k' with
+        | inl v' =>
+          have t2 : (tup v').Dom := by
+            rw [Part.dom_iff_mem, ← PFun.mem_dom]
+            simp_rw [Set.ext_iff, Finset.mem_coe] at h
+            rw [varFinsetLeft, Finset.union_singleton, Finset.insert_subset_iff] at h_min
+            exact (h v').mpr h_min.1
+          simp [Part.getOrElse_of_dom, t2]
+          subst h_res
+          rfl
+        | inr v' => simp
+
+    | and f₁ f₂ ih₁ ih₂ =>
+      simp_all [BoundedQuery.toFormula]
+      have : f₁.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_left h_min
+      have : f₂.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_right h_min
+      simp_all
+    | or f₁ f₂ ih₁ ih₂ =>
+      simp_all [BoundedQuery.toFormula]
+      have : f₁.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_left h_min
+      have : f₂.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_right h_min
+      simp_all
+    | _ => simp_all
