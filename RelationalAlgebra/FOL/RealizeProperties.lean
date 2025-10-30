@@ -4,8 +4,10 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
+variable {μ : Type} {dbi : DatabaseInstance String String μ} [Nonempty μ]
+
 @[simp]
-theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {tup tup' : Tuple} {iv : Fin n → Value} {q : BoundedQuery dbi.schema n}
+theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset String} {tup tup' : String →. μ} {q : BoundedQuery dbi.schema n}
   (h_sub : tup'.Dom ⊆ tup.Dom)
   (h_res : tup.restrict h_sub = tup')
   (h_min : ↑q.schema ⊆ tup'.Dom)
@@ -146,7 +148,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : RelationSchema} {t
 
 
 @[simp]
-theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : RelationSchema} {w : Attribute → Value} {tup : Tuple} {iv : Fin n → Value} {q : BoundedQuery dbi.schema n}
+theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : Finset String} {q : BoundedQuery dbi.schema n}
   (h_res : PFun.res w rs = tup)
   (h_min : ↑q.schema ⊆ rs)
   {h : tup.Dom = rs}

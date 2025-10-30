@@ -15,7 +15,7 @@ open RM
 -- (Partial) Tuple to complete function
 section TupleToFun
 
-variable {t t' : Tuple} {rs rs' : RelationSchema}
+variable {t t' : String →. μ} {rs rs' : Finset String} [DecidableEq String] [Nonempty μ]
 
 @[simp]
 instance fintype_dom (h : t.Dom = rs) : Fintype ↑t.Dom := by
@@ -28,10 +28,10 @@ instance decidable_dom (h : t.Dom = rs) : ∀a, Decidable (t a).Dom := by
   exact Finset.decidableMem a rs
 
 @[simp]
-noncomputable def TupleToFun (h : t.Dom = rs) : Attribute → Value :=
+noncomputable def TupleToFun (h : t.Dom = rs) : String → μ :=
   by
     haveI := decidable_dom h
-    exact λ a => (t a).getOrElse (Classical.arbitrary Value)
+    exact λ a => (t a).getOrElse (Classical.arbitrary μ)
 
 @[simp]
 theorem TupleToFun.tuple_eq (h : t.Dom = rs) (h' : t'.Dom = rs') (h'' : t = t') :
@@ -63,16 +63,18 @@ end TupleToFun
 -- Define variable indexing types
 section ArityToTuple
 
-def ArityToTuple {rs: RelationSchema} (va : Fin rs.card → Value) : Tuple :=
-  λ att => dite (att ∈ rs) (λ h => va (rs.index h)) (λ _ => Part.none)
+variable {μ : Type} {rs: Finset String} [Nonempty μ]
+
+def ArityToTuple (va : Fin rs.card → μ) : String →. μ :=
+  λ att => dite (att ∈ rs) (λ h => va (RelationSchema.index h)) (λ _ => Part.none)
 
 @[simp]
-theorem ArityToTuple.def_dite {rs : RelationSchema} (va : Fin rs.card → Value) :
-  ArityToTuple va = λ att => dite (att ∈ rs) (λ h => .some (va (rs.index h))) (λ _ => Part.none) := by
+theorem ArityToTuple.def_dite (va : Fin rs.card → Value) :
+  ArityToTuple va = λ att => dite (att ∈ rs) (λ h => .some (va (RelationSchema.index h))) (λ _ => Part.none) := by
     rfl
 
-theorem ArityToTuple.def_fromIndex {rs : RelationSchema} {t : Tuple} (h : t.Dom = ↑rs) :
-  ArityToTuple (fun i : Fin rs.card ↦ (TupleToFun h (RM.RelationSchema.fromIndex i))) = t := by
+theorem ArityToTuple.def_fromIndex {t : String →. μ} (h : t.Dom = ↑rs) :
+  ArityToTuple (fun i : Fin rs.card ↦ (TupleToFun h (RelationSchema.fromIndex i))) = t := by
     simp
     ext a v
     have : (t a).Dom ↔ a ∈ rs := by exact Iff.symm (Eq.to_iff (congrFun (id (Eq.symm h)) a))
@@ -87,9 +89,10 @@ section folStruc
 
 open FirstOrder
 
+
 /-- The type of Relations in FOL -/
 inductive relations : ℕ → Type
-  | R : (dbs: DatabaseSchema) → (rn: RelationName) → relations (dbs rn).card
+  | R : (dbs : String → Finset String) → (rn : String) → relations (dbs rn).card
 
 /-- The language of fol contains the relations -/
 def Language.fol : Language :=
@@ -98,16 +101,16 @@ def Language.fol : Language :=
   deriving Language.IsRelational
 
 @[simp]
-def fol.Rel (dbs: DatabaseSchema) (rn: RelationName) : Language.fol.Relations (dbs rn).card :=
+def fol.Rel (dbs: String → Finset String) (rn: String) : Language.fol.Relations (dbs rn).card :=
   relations.R dbs rn
 
 
 open Language
 
-class folStruc (dbi : DatabaseInstance) extends fol.Structure (Value) where
+class folStruc (dbi : DatabaseInstance String String μ) extends fol.Structure μ where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
-      (rn : RelationName)          →                      -- Every relation (and every arity)
-      (va : Fin (dbi.schema rn).card → Value) →             -- Every value assignment (for this arity)
+      (rn : String)          →                      -- Every relation (and every arity)
+      (va : Fin (dbi.schema rn).card → μ) →             -- Every value assignment (for this arity)
 
         RelMap (.R dbi.schema rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
         (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
@@ -115,15 +118,15 @@ class folStruc (dbi : DatabaseInstance) extends fol.Structure (Value) where
         )
 
 @[simp]
-theorem folStruc_apply_RelMap (dbi : DatabaseInstance) [folStruc dbi] {rn va} :
+theorem folStruc_apply_RelMap (dbi : DatabaseInstance String String μ) [folStruc dbi] {rn va} :
   Structure.RelMap (fol.Rel dbi.schema rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
     := (folStruc.RelMap_R rn va)
 
 @[simp]
-theorem fol_empty_fun {n} (_f : fol.Functions n) : False := by
+theorem fol_empty_fun (_f : fol.Functions n) : False := by
   exact Aesop.BuiltinRules.empty_false _f
 
-theorem Term.cases {n} (t : fol.Term (Attribute ⊕ (Fin n))) : ∃k, t = var k := by
+theorem Term.cases (t : fol.Term (α ⊕ (Fin n))) : ∃k, t = var k := by
   cases t with | var k => use k | func _f _ => exact False.elim (fol_empty_fun _f)
 
 end folStruc

@@ -4,7 +4,7 @@ open RM
 
 -- Projection over union
 @[simp ←]
-theorem projectionT_unionT {rs : RelationSchema} (ts1 ts2 : Set Tuple) :
+theorem projectionT_unionT {rs : Finset α} (ts1 ts2 : Set (α →. μ)) :
   projectionT (unionT ts1 ts2) rs = unionT (projectionT ts1 rs) (projectionT ts2 rs) := by
     simp_all only [projectionT, unionT, Set.mem_union]
     ext x : 1

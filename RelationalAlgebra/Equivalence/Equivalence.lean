@@ -11,7 +11,7 @@ open RM
 
 section RAtoFOL
 
-variable {dbi : DatabaseInstance} [FOL.folStruc dbi] (raQ : RA.Query) (h : RA.Query.isWellTyped dbi.schema raQ)
+variable {dbi : DatabaseInstance _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] (raQ : RA.Query String String) (h : RA.Query.isWellTyped dbi.schema raQ)
 
 theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
   (ra_to_fol_query raQ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
@@ -39,7 +39,7 @@ end RAtoFOL
 
 section FOLtoRA
 
-variable {dbi} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
+variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
 
 theorem fol_to_ra_eval :
   (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluate dbi := by
@@ -49,7 +49,7 @@ theorem fol_to_ra_eval :
     · exact fol_to_ra_query.evalT folQ
 
 theorem fol_to_ra :
-  ∃raQ : RA.Query, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by
+  ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by
     use fol_to_ra_query folQ
     use fol_to_ra_query.isWellTyped_def folQ
     exact fol_to_ra_eval folQ

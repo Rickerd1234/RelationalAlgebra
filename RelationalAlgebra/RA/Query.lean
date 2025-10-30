@@ -4,20 +4,20 @@ open RM
 
 namespace RA
 
-inductive Query : Type
-  | R: RelationName → Query
-  | s: Attribute → Attribute → Query → Query
-  | p: RelationSchema → Query → Query
-  | j: Query → Query → Query
-  | r: (Attribute → Attribute) → Query → Query
-  | u: Query → Query → Query
-  | d: Query → Query → Query
+inductive Query (ρ α : Type) : Type
+  | R: ρ → Query ρ α
+  | s: α → α → Query ρ α → Query ρ α
+  | p: Finset α → Query ρ α → Query ρ α
+  | j: Query ρ α → Query ρ α → Query ρ α
+  | r: (α → α) → Query ρ α → Query ρ α
+  | u: Query ρ α → Query ρ α → Query ρ α
+  | d: Query ρ α → Query ρ α → Query ρ α
 
-def Query.empty (rn : RelationName) : RA.Query := .d (.R rn) (.R rn)
+def Query.empty (rn : ρ) : RA.Query ρ α := .d (.R rn) (.R rn)
 
 
 @[simp]
-def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
+def Query.schema [DecidableEq α] : (q : Query ρ α) → (dbs : ρ → Finset α) → Finset α
   | .R rn => λ dbs => dbs rn
   | .s _ _ sq => sq.schema
   | .p rs _ => λ _ => rs
@@ -27,12 +27,12 @@ def Query.schema : (q : Query) → (dbs : DatabaseSchema) → RelationSchema
   | .d sq1 _ => sq1.schema
 
 @[simp]
-theorem Query.schema.empty_def :
-  (Query.empty rn).schema dbi = dbi rn := by simp only [empty, schema]
+theorem Query.schema.empty_def [DecidableEq α] :
+  (Query.empty rn : Query ρ α).schema dbi = dbi rn := by simp only [empty, schema]
 
 
 @[simp]
-def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
+def Query.isWellTyped [DecidableEq α] (dbs : ρ → Finset α) (q : Query ρ α) : Prop :=
   match q with
   | .R _ => (True)
   | .s a b sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b ∈ sq.schema dbs
@@ -43,11 +43,11 @@ def Query.isWellTyped (dbs : DatabaseSchema) (q : Query) : Prop :=
   | .d sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
 
 @[simp]
-theorem Query.isWellTyped.empty_def :
-  (Query.empty rn).isWellTyped dbs := by simp only [empty, isWellTyped, schema, and_self]
+theorem Query.isWellTyped.empty_def [DecidableEq α] :
+  (Query.empty rn : Query ρ α).isWellTyped dbs := by simp only [empty, isWellTyped, schema, and_self]
 
 @[simp]
-def Query.evaluateT (dbi : DatabaseInstance) (q : Query) : Set Tuple :=
+def Query.evaluateT (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) : Set (α →. μ) :=
   match q with
   | .R rn => (dbi.relations rn).tuples
   | .s a b sq => selectionT (sq.evaluateT dbi) a b
@@ -62,7 +62,7 @@ theorem Query.evaluateT.empty_def :
   (Query.empty rn).evaluateT dbi = {} := by simp [empty, diffT, Set.diff]
 
 
-theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
+theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
   induction q with
   | R rn =>
     intro t h_t
@@ -98,7 +98,7 @@ theorem Query.evaluate.validSchema {dbi} (q : Query) (h : q.isWellTyped dbi.sche
     cases ht
     all_goals simp_all only
 
-def Query.evaluate (dbi : DatabaseInstance) (q : Query) (h : q.isWellTyped dbi.schema) : RelationInstance :=
+def Query.evaluate [DecidableEq α] (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) (h : q.isWellTyped dbi.schema) : RelationInstance α μ :=
   ⟨
     q.schema dbi.schema,
     q.evaluateT dbi,
@@ -112,7 +112,7 @@ theorem PFun.restrict.def_eq {α β} {t : α →. β} {s : Set α} (h : s ⊆ t.
     ext a b; aesop
 
 @[simp]
-theorem Query.evaluateT.mem_restrict {dbi t} {q : Query} (z : ↑(q.schema dbi.schema) ⊆ t.Dom)
+theorem Query.evaluateT.mem_restrict [DecidableEq α] {q : Query ρ α} (z : ↑(q.schema dbi.schema) ⊆ t.Dom)
   (h : q.isWellTyped dbi.schema) (h' : t ∈ q.evaluateT dbi) :
     t.restrict z ∈ q.evaluateT dbi := by
       have z' := (q.evaluate dbi h).validSchema t h'; have z'' := PFun.restrict.def_eq z z'.symm; simp_all only

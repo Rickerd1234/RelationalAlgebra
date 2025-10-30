@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi f q} [struc : FOL.folStruc dbi]
+variable {dbi f q} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
@@ -50,11 +50,11 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
       simp_all only [ra_to_fol_query_schema, FOL.Query.RealizeMin.and_def, RA.Query.isWellTyped,
         RA.Query.evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq]
       obtain ⟨left, right⟩ := h
-      simp_all only [Pi.default_def, Nat.default_eq_zero, FOL.BoundedQuery.Realize.relabel_formula,
+      simp_all only [FOL.BoundedQuery.Realize.relabel_formula,
         Nat.add_zero, FirstOrder.Language.BoundedFormula.realize_relabel, Fin.castAdd_zero,
         Fin.cast_refl, Fin.natAdd_zero]
       intro h_1
-      convert (ih (Sum.elim t (default : (Fin 0 →. RM.Value)) ∘ Sum.inl ∘ f) h_RA_eval).2 ?_
+      convert (ih (Sum.elim t (default : (Fin 0 →. μ)) ∘ Sum.inl ∘ f) h_RA_eval).2 ?_
       . unfold FOL.TupleToFun
         ext a
         simp_all only [Function.comp_apply, Sum.elim_inl]

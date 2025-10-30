@@ -6,8 +6,8 @@ open FOL FirstOrder Language RM Term
 namespace FOL
 
 @[simp]
-theorem relabel.Injective_def {k n : ℕ} {g : (Attribute ⊕ Fin k) → (Attribute ⊕ Fin n)} (h : g.Injective) :
-  Function.Injective (Term.relabel g : fol.Term (Attribute ⊕ Fin k) → fol.Term (Attribute ⊕ Fin n)) := by
+theorem relabel.Injective_def {k n : ℕ} {g : (α ⊕ Fin k) → (α ⊕ Fin n)} (h : g.Injective) :
+  Function.Injective (Term.relabel g : fol.Term (α ⊕ Fin k) → fol.Term (α ⊕ Fin n)) := by
     simp_all [Function.Injective]
     intros t₁ t₂ h'
     have ⟨t₁, ht₁⟩ := Term.cases t₁
@@ -30,7 +30,7 @@ theorem relabel.Injective_def {k n : ℕ} {g : (Attribute ⊕ Fin k) → (Attrib
         exact (right val_1).2 val_2 h'
 
 @[simp]
-theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute ⊕ Fin n)} (h : g.Injective) :
+theorem relabel.Injective_relabelAux {k n : ℕ} {g : String → (String ⊕ Fin n)} (h : g.Injective) :
   Function.Injective (BoundedFormula.relabelAux g k) := by
     simp_all [Function.Injective]
     apply And.intro
@@ -103,7 +103,7 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : Attribute → (Attribute �
       · intro b_1 a
         simp_all [BoundedFormula.relabelAux]
 
-theorem BoundedQuery.relabel_schema {n k} (g : Attribute → Attribute ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel_schema {n k} (g : String → String ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
     | _ => aesop

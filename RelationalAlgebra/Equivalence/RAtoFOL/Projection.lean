@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi rs q} [FOL.folStruc dbi]
+variable {dbi rs q} [FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
   (ih: (ra_to_fol_query q dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q) :
@@ -23,8 +23,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
         obtain ⟨w, hw⟩ := right_1
         unfold projectAttribute at hw
         rw [← ih]
-        simp only [FOL.Query.evaluateT.def, FOL.Query.RealizeMin.and_def, Pi.default_def,
-          Nat.default_eq_zero]
+        simp only [FOL.Query.evaluateT.def, FOL.Query.RealizeMin.and_def]
         have : ∀a' ∈ dropSet, a' ∈ FOL.BoundedQuery.schema (ra_to_fol_query q dbi.schema) \ rs := by
           intro a_1 a_2
           rw [h_dropSet]

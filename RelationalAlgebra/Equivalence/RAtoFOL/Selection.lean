@@ -1,13 +1,13 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi a b p q} [struc : FOL.folStruc dbi]
+variable {dbi a b p q} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (ra_to_fol_query (.s a b q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
       intro t
       simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.outVar.def, FOL.Query.RealizeMin.ex_def,
-        FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula, Pi.default_def, Nat.default_eq_zero,
+        FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula,
         FirstOrder.Language.BoundedFormula.realize_inf, FOL.BoundedQuery.schema.and_def,
         FOL.BoundedQuery.schema.tEq_def, FirstOrder.Language.Term.varFinsetLeft, Finset.coe_union,
         Finset.coe_singleton, Set.union_singleton, Set.union_insert, RA.Query.evaluateT, selectionT,
@@ -36,8 +36,7 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q
         (by simp_all [ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query, FOL.BoundedQuery.Realize]
-      simp_all only [FOL.Query.RealizeMin.ex_def, Pi.default_def, Nat.default_eq_zero,
-        RA.Query.evaluateT, FOL.outVar.def]
+      simp_all only [FOL.Query.RealizeMin.ex_def, RA.Query.evaluateT, FOL.outVar.def]
       obtain ⟨left, right⟩ := h
       obtain ⟨left_1, right⟩ := right
       simp_all [FOL.BoundedQuery.Realize, selectionT]

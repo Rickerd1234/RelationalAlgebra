@@ -4,36 +4,39 @@ import Mathlib.Data.Finset.Sort
 
 namespace RM
 
+variable {α μ : Type}
 section order
 
+variable [LE α] [DecidableRel (α := α) (.≤.)] [IsTrans α (.≤.)] [IsAntisymm α (.≤.)] [IsTotal α (.≤.)]
+
 -- Add ordering to Attribute
-instance Attribute.instLE : IsTrans Attribute (.≤.) where
-  trans {_ _ _: Attribute} := String.le_trans
+instance Attribute.instLE : IsTrans String (.≤.) where
+  trans {_ _ _: String} := String.le_trans
 
-instance Attribute.instAntisymm : IsAntisymm Attribute (.≤.) where
-  antisymm {_ _: Attribute} := String.le_antisymm
+instance Attribute.instAntisymm : IsAntisymm String (.≤.) where
+  antisymm {_ _: String} := String.le_antisymm
 
-instance Attribute.instTotal : IsTotal Attribute (.≤.) where
+instance Attribute.instTotal : IsTotal String (.≤.) where
   total := String.le_total
 
 -- Add ordering to RelationSchema
-def RelationSchema.ordering (rs : RelationSchema) : List Attribute
+def RelationSchema.ordering (rs : Finset α) : List α
   := rs.sort (.≤.)
 
 -- Proof usefull properties for ordering
 @[simp]
-theorem RelationSchema.ordering_mem (a : Attribute) (rs : RelationSchema) : a ∈ rs.ordering ↔ a ∈ rs:= by simp [ordering]
+theorem RelationSchema.ordering_mem (a : α) (rs : Finset α) : a ∈ ordering rs ↔ a ∈ rs:= by simp [ordering]
 
 @[simp]
-theorem RelationSchema.ordering_nil_iff_empty (rs : RelationSchema) : rs.ordering = [] ↔ rs = ∅:= by
+theorem RelationSchema.ordering_nil_iff_empty (rs : Finset α) : ordering rs = [] ↔ rs = ∅:= by
   simp only [List.eq_nil_iff_forall_not_mem, ordering_mem, Finset.eq_empty_iff_forall_notMem]
 
 @[simp]
-theorem RelationSchema.ordering_eq_empty : (∅ : RelationSchema).ordering = [] := by
+theorem RelationSchema.ordering_eq_empty : ordering (∅ : Finset α) = [] := by
   simp only [ordering_nil_iff_empty]
 
 @[simp]
-theorem RelationSchema.ordering_head?_self_notEmpty {rs : RelationSchema} {a : Attribute} (h : rs ≠ ∅) : rs.ordering.head?.getD a ∈ rs := by
+theorem RelationSchema.ordering_head?_self_notEmpty {rs : Finset α} (h : rs ≠ ∅) : (ordering rs).head?.getD a ∈ rs := by
   simp_all [Option.getD]
   split
   next opt x heq =>
@@ -44,20 +47,20 @@ theorem RelationSchema.ordering_head?_self_notEmpty {rs : RelationSchema} {a : A
     simp_all only [List.head?_eq_none_iff, ordering_nil_iff_empty]
 
 @[simp]
-theorem RelationSchema.ordering_head?_self_mem {rs : RelationSchema} {a a' : Attribute} (h : a ∈ rs) : rs.ordering.head?.getD a' ∈ rs := by
+theorem RelationSchema.ordering_head?_self_mem {rs : Finset α} (h : a ∈ rs) : (ordering rs).head?.getD a' ∈ rs := by
   apply ordering_head?_self_notEmpty
   simp_all [← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]
   use a
 
 @[simp]
-theorem RelationSchema.ordering_eq_toFinset (rs : RelationSchema) : rs.ordering.toFinset = rs:= by simp [ordering]
+theorem RelationSchema.ordering_eq_toFinset (rs : Finset α) [DecidableEq α] : (ordering rs).toFinset = rs:= by simp [ordering]
 
 @[simp]
-theorem RelationSchema.ordering_nodup (rs : RelationSchema) : List.Nodup rs.ordering := by simp [ordering]
+theorem RelationSchema.ordering_nodup (rs : Finset α) [DecidableEq α] : List.Nodup (ordering rs) := by simp [ordering]
 
 @[simp]
-theorem RelationSchema.ordering_inj (rs : RelationSchema) {i j : Fin rs.ordering.length}
-  : rs.ordering.get i = rs.ordering.get j ↔ i = j := by
+theorem RelationSchema.ordering_inj (rs : Finset α) {i j : Fin (ordering rs).length}
+  : (ordering rs).get i = (ordering rs).get j ↔ i = j := by
     simp_all [ordering]
     apply Iff.intro
     · intro a
@@ -68,52 +71,54 @@ theorem RelationSchema.ordering_inj (rs : RelationSchema) {i j : Fin rs.ordering
       simp_all only
 
 @[simp]
-theorem RelationSchema.ordering_card (rs : RelationSchema) : rs.ordering.length = rs.card := by simp [ordering]
+theorem RelationSchema.ordering_card (rs : Finset α) : (ordering rs).length = rs.card := by simp [ordering]
 
 -- Add index? to RelationSchema
-def RelationSchema.index? (rs : RelationSchema) (att : Attribute) : Option (Fin rs.card) :=
-  (rs.ordering.finIdxOf? att).map (λ x : Fin (rs.ordering.length) => x.cast (RelationSchema.ordering_card rs))
+variable [BEq α] {rs : Finset α}
+
+def RelationSchema.index? (rs : Finset α) (att : α) : Option (Fin rs.card) :=
+  ((ordering rs).finIdxOf? att).map (λ x : Fin ((ordering rs).length) => x.cast (RelationSchema.ordering_card rs))
 
 -- Proof usefull properties for index?
 @[simp]
-theorem RelationSchema.index?_isSome {rs : RelationSchema} {att : Attribute} : (rs.index? att).isSome ↔ att ∈ rs := by
+theorem RelationSchema.index?_isSome [LawfulBEq α] : (index? rs att).isSome ↔ att ∈ rs := by
   simp [← RelationSchema.ordering_mem, RelationSchema.index?]
 
 @[simp]
-theorem RelationSchema.index?_isSome_eq_iff {rs : RelationSchema} {att : Attribute} : (rs.index? att).isSome ↔ ∃i, rs.index? att = .some i := by
+theorem RelationSchema.index?_isSome_eq_iff : (index? rs att).isSome ↔ ∃i, index? rs att = .some i := by
   simp_all only [@Option.isSome_iff_exists]
 
 @[simp]
-theorem RelationSchema.index?_none {rs : RelationSchema} {att : Attribute} : rs.index? att = .none ↔ att ∉ rs := by
-  simp [← RelationSchema.ordering_mem, RelationSchema.index?]
+theorem RelationSchema.index?_none [LawfulBEq α] : index? rs att = .none ↔ att ∉ rs := by
+  rw [index?, Option.map_eq_none_iff, List.finIdxOf?_eq_none_iff, ← ordering_mem]
 
 -- Add index to RelationSchema
-def RelationSchema.index {rs : RelationSchema} {att : Attribute} (h : att ∈ rs) : Fin rs.card :=
+def RelationSchema.index [LawfulBEq α] (h : att ∈ rs) : Fin rs.card :=
   (RelationSchema.index? rs att).get (index?_isSome.mpr h)
 
 -- Proof usefull properties for index
 @[simp]
-theorem RelationSchema.index_lt_card {rs : RelationSchema} {att : Attribute} (h : att ∈ rs) : rs.index h < rs.card := by
+theorem RelationSchema.index_lt_card [LawfulBEq α] (h : att ∈ rs) : index h < rs.card := by
   simp only [Fin.is_lt]
 
 -- Add fromIndex to RelationSchema
-def RelationSchema.fromIndex {rs : RelationSchema} (i : Fin rs.card) : Attribute := rs.ordering.get (i.cast (RelationSchema.ordering_card rs).symm)
+def RelationSchema.fromIndex [LawfulBEq α] (i : Fin rs.card) : α := (ordering rs).get (i.cast (ordering_card rs).symm)
 
 -- Proof usefull properties for fromIndex
 @[simp]
-theorem RelationSchema.fromIndex_mem {rs : RelationSchema} (i : Fin rs.card) : rs.fromIndex i ∈ rs := by
+theorem RelationSchema.fromIndex_mem [LawfulBEq α] (i : Fin rs.card) : fromIndex i ∈ rs := by
   apply (RelationSchema.ordering_mem (Finset.sort rs (fun x1 x2 ↦ x1 ≤ x2))[i] rs).mp
   simp [RelationSchema.ordering]
 
 @[simp]
-theorem RelationSchema.fromIndex_Dom {dbi : DatabaseInstance} (h : t ∈ (dbi.relations rn).tuples) (i : Fin (dbi.schema rn).card) : (t ((dbi.schema rn).fromIndex i)).Dom := by
+theorem RelationSchema.fromIndex_Dom [LawfulBEq α] {dbi : DatabaseInstance ρ α μ} (h : t ∈ (dbi.relations rn).tuples) (i : Fin (dbi.schema rn).card) : (t (fromIndex i)).Dom := by
   have z := (dbi.relations rn).validSchema t h
   rw [dbi.validSchema rn] at z
   have z'' : fromIndex i ∈ t.Dom := by simp_all
   exact z''
 
 -- Proof uniqueness/injectivity for fromIndex and index functions
-theorem RelationSchema.fromIndex_inj {rs : RelationSchema} {i j : Fin rs.card} : RelationSchema.fromIndex i = RelationSchema.fromIndex j ↔ i = j := by
+theorem RelationSchema.fromIndex_inj [LawfulBEq α] {i j : Fin rs.card} : fromIndex i = fromIndex j ↔ i = j := by
   apply Iff.intro
   · intro a
     unfold fromIndex at a
@@ -127,10 +132,10 @@ theorem RelationSchema.fromIndex_inj {rs : RelationSchema} {i j : Fin rs.card} :
     simp_all only
 
 @[simp]
-theorem RelationSchema.index?_inj {rs : RelationSchema} {i j : Attribute} : rs.index? i = rs.index? j ↔ i = j ∨ i ∉ rs ∧ j ∉ rs := by
+theorem RelationSchema.index?_inj [LawfulBEq α] : index? rs i = index? rs j ↔ i = j ∨ i ∉ rs ∧ j ∉ rs := by
   apply Iff.intro
   · intro a
-    by_cases h : (rs.index? i).isSome
+    by_cases h : (index? rs i).isSome
     . simp_all only
       refine Or.inl ?_
       simp_all only [index?_isSome_eq_iff]
@@ -149,11 +154,11 @@ theorem RelationSchema.index?_inj {rs : RelationSchema} {i j : Attribute} : rs.i
       simp_all only [← index?_none]
 
 @[simp]
-theorem RelationSchema.index?_inj_mem {rs : RelationSchema} {i j : Attribute} (h1 : i ∈ rs) (h2 : j ∈ rs) : rs.index? i = rs.index? j ↔ i = j := by
+theorem RelationSchema.index?_inj_mem [LawfulBEq α]  (h1 : i ∈ rs) (h2 : j ∈ rs) : index? rs i = index? rs j ↔ i = j := by
   aesop
 
 @[simp]
-theorem RelationSchema.index_inj {rs : RelationSchema} {i j : Attribute} (h1 : i ∈ rs) (h2 : j ∈ rs) : RelationSchema.index h1 = RelationSchema.index h2 ↔ i = j := by
+theorem RelationSchema.index_inj [LawfulBEq α] (h1 : i ∈ rs) (h2 : j ∈ rs) : index h1 = index h2 ↔ i = j := by
   apply Iff.intro
   · intro a
     unfold index at *
@@ -173,7 +178,7 @@ theorem RelationSchema.index_inj {rs : RelationSchema} {i j : Attribute} (h1 : i
 
 
 @[simp]
-theorem RelationSchema.index_fromIndex_inj {rs : RelationSchema} {i j : Fin rs.card} : rs.index? (RelationSchema.fromIndex i) = rs.index? (RelationSchema.fromIndex j) ↔ i = j := by
+theorem RelationSchema.index_fromIndex_inj [LawfulBEq α] {i j : Fin rs.card} : index? rs (fromIndex i) = index? rs (fromIndex j) ↔ i = j := by
   simp_all only [index?_inj, fromIndex_mem, not_true_eq_false, and_self, or_false]
   apply Iff.intro
   · intro a
@@ -184,7 +189,7 @@ theorem RelationSchema.index_fromIndex_inj {rs : RelationSchema} {i j : Fin rs.c
 
 
 @[simp]
-theorem RelationSchema.fromIndex_index_inj {att1 att2} {rs : RelationSchema} (h1 : att1 ∈ rs) (h2 : att2 ∈ rs) : RelationSchema.fromIndex (RelationSchema.index h1) = RelationSchema.fromIndex (RelationSchema.index h2) ↔ att1 = att2 := by
+theorem RelationSchema.fromIndex_index_inj [LawfulBEq α] (h1 : att1 ∈ rs) (h2 : att2 ∈ rs) : fromIndex (index h1) = fromIndex (index h2) ↔ att1 = att2 := by
   apply Iff.intro
   · intro a
     exact (index_inj h1 h2).mp (fromIndex_inj.mp a)
@@ -193,7 +198,7 @@ theorem RelationSchema.fromIndex_index_inj {att1 att2} {rs : RelationSchema} (h1
     simp_all only
 
 @[simp]
-theorem RelationSchema.fromIndex_index_eq {att} {rs : RelationSchema} (h : att ∈ rs) : RelationSchema.fromIndex (RelationSchema.index h) = att := by
+theorem RelationSchema.fromIndex_index_eq [LawfulBEq α] (h : att ∈ rs) : fromIndex (index h) = att := by
   unfold fromIndex index index? List.finIdxOf? Option.map Option.get
   simp_all only [Option.isSome_some, List.get_eq_getElem, Fin.coe_cast]
   split
@@ -208,7 +213,7 @@ theorem RelationSchema.fromIndex_index_eq {att} {rs : RelationSchema} (h : att �
   next opt heq_1 => simp_all only [List.findFinIdx?_eq_none_iff, beq_iff_eq, reduceCtorEq]
 
 @[simp]
-theorem RelationSchema.index_fromIndex_eq {rs : RelationSchema} (i : Fin rs.card) : RelationSchema.index (RelationSchema.fromIndex_mem i) = i := by
+theorem RelationSchema.index_fromIndex_eq [LawfulBEq α] (i : Fin rs.card) : index (fromIndex_mem i) = i := by
   unfold fromIndex index index? List.finIdxOf? Option.map Option.get
   simp_all only [Option.isSome_some, List.get_eq_getElem, Fin.coe_cast]
   induction i
@@ -224,13 +229,13 @@ theorem RelationSchema.index_fromIndex_eq {rs : RelationSchema} (i : Fin rs.card
     subst heq
     obtain ⟨left, right⟩ := heq_1
     simp [Option.isSome_iff_exists] at x_1
-    exact index_fromIndex_inj.mp (congrArg rs.index? left)
+    exact index_fromIndex_inj.mp (congrArg (index? rs) left)
   next opt heq_1 =>
     simp_all only [List.findFinIdx?_eq_none_iff, ordering_mem, beq_iff_eq, Finset.forall_mem_not_eq', reduceCtorEq]
 
 
 @[simp]
-theorem RelationSchema.Dom_sub_fromIndex {dbi : DatabaseInstance} : {a | ∃(i : Fin (dbi.schema rn).card), a = RelationSchema.fromIndex i} = dbi.schema rn := by
+theorem RelationSchema.Dom_sub_fromIndex [LawfulBEq α] {dbi : DatabaseInstance ρ α μ} : {a | ∃(i : Fin (dbi.schema rn).card), a = fromIndex i} = dbi.schema rn := by
   ext a
   simp_all only [Set.mem_setOf_eq, Finset.mem_coe]
   apply Iff.intro
@@ -239,7 +244,7 @@ theorem RelationSchema.Dom_sub_fromIndex {dbi : DatabaseInstance} : {a | ∃(i :
     subst h
     simp_all only [fromIndex_mem]
   · intro a_1
-    use (dbi.schema rn).index a_1
+    use index a_1
     simp_all only [fromIndex_index_eq]
 
 end order

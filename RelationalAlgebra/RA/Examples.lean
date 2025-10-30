@@ -2,47 +2,47 @@ import RelationalAlgebra.RA.Query
 
 open RM RA
 
-def tup1 : Tuple
+def tup1 : String →. ℕ
   | "0" => .some 11
   | "1" => .some 12
   | _ => .none
 
-def tup2 : Tuple
+def tup2 : String →. ℕ
   | "0" => .some 21
   | "1" => .some 22
   | _ => .none
 
-def tup3 : Tuple
+def tup3 : String →. ℕ
   | "0" => .some 31
   | "1" => .some 31
   | _ => .none
 
-def tupA : Tuple
+def tupA : String →. ℕ
   | "1" => .some 11
   | "2" => .some 12
   | _ => .none
 
-def tupB : Tuple
+def tupB : String →. ℕ
   | "1" => .some 21
   | "2" => .some 22
   | _ => .none
 
-def tupC : Tuple
+def tupC : String →. ℕ
   | "1" => .some 31
   | "2" => .some 32
   | _ => .none
 
-def relS : RelationSchema := {"0", "1"}
-def relS2 : RelationSchema := {"1", "2"}
+def relS : Finset String := {"0", "1"}
+def relS2 : Finset String := {"1", "2"}
 
-def relI : RelationInstance := ⟨
+def relI : RelationInstance String ℕ := ⟨
   relS,
   {tup1, tup2, tup3},
   by
     simp [relS, tup1, tup2, tup3, PFun.Dom]
     aesop
 ⟩
-def relI2 : RelationInstance := ⟨
+def relI2 : RelationInstance String ℕ := ⟨
   relS2,
   {tupA, tupB, tupC},
   by
@@ -50,7 +50,7 @@ def relI2 : RelationInstance := ⟨
     aesop
 ⟩
 
-def dbI : DatabaseInstance := ⟨
+def dbI : DatabaseInstance String String ℕ := ⟨
   λ x => match x with
   | "R1" => relS
   | "R2" => relS2
@@ -66,7 +66,7 @@ def dbI : DatabaseInstance := ⟨
     all_goals try rfl; try simp_all only [imp_false]
 ⟩
 
-def j : Query :=
+def j : Query String String :=
   .s "0" "1" (.j (.R "R1") (.R "R2"))
 
 theorem hj : j.isWellTyped dbI.schema := by

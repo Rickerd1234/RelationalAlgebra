@@ -7,26 +7,28 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
+variable {μ : Type} {dbi : DatabaseInstance String String μ}
+
 -- Formal realization definition
-def BoundedQuery.Realize (dbi) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbs n): (Attribute → Value) → (Fin n → Value) → Prop :=
+def BoundedQuery.Realize (dbi : DatabaseInstance String String μ) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbs n): (String → μ) → (Fin n → μ) → Prop :=
   q.toFormula.Realize
 
 @[simp]
-theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbs n) {t: Attribute → Value}
-  : (exs q).Realize dbi t (default : Fin 0 → Value) ↔ ∃iv : Fin n → Value, q.Realize dbi t iv := by
+theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbs n) {t: String → μ}
+  : (exs q).Realize dbi t (default : Fin 0 → μ) ↔ ∃iv : Fin n → μ, q.Realize dbi t iv := by
     simp_all only [Realize, toFormula_exs, Formula.boundedFormula_realize_eq_realize]
     exact BoundedFormula.realize_exs
 
 @[simp]
-theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery dbs n}  {g : Attribute → Attribute ⊕ (Fin m)} {t : Attribute → Value}
-  {xs : Fin (m + n) → Value} :
+theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery dbs n}  {g : String → String ⊕ (Fin m)} {t : String → μ}
+  {xs : Fin (m + n) → μ} :
   (φ.relabel g).Realize dbi t xs ↔
     (φ.toFormula.relabel g).Realize t xs := by
       simp [Realize]
 
 -- -- Realize a query, without any additional attributes in the 'tuple'
 section RealizeMin
-variable (dbi : DatabaseInstance) (φ : Query dbi.schema) [folStruc dbi] (t : Tuple)
+variable (dbi) (φ : Query dbi.schema) [folStruc dbi] (t : String →. μ) [Nonempty μ]
 
 nonrec def Query.RealizeMin : Prop :=
   ∃(h : t.Dom = φ.schema), (φ.Realize dbi (TupleToFun h) default)

@@ -6,7 +6,7 @@ section empty
 
 -- Utility to create empty RelationInstances
 @[simp]
-abbrev RelationInstance.empty (schema : RelationSchema) : RelationInstance := ⟨
+abbrev RelationInstance.empty (schema : Finset α) : RelationInstance α μ := ⟨
   schema,
   ∅,
   by simp only [Set.mem_empty_iff_false, IsEmpty.forall_iff, implies_true]
@@ -20,11 +20,11 @@ end empty
 section rename
 
 -- Function for renaming a single attribute
-def renameFunc [DecidableEq Attribute] (old new : Attribute) : Attribute → Attribute :=
+def renameFunc [DecidableEq α] (old new : α) : α → α :=
   (λ a'' => if (a'' = new) then old else if (a'' = old) then new else a'')
 
 -- Theorem proving that renameFunc is surjective
-theorem rename_func_surjective [DecidableEq Attribute] (old new : Attribute) : (renameFunc old new).Surjective := by
+theorem rename_func_surjective [DecidableEq α] (old new : α) : (renameFunc old new).Surjective := by
   simp only [renameFunc, Function.Surjective]
   intro a''
   by_cases h_a' : a'' = new
@@ -65,7 +65,7 @@ theorem rename_func_surjective [DecidableEq Attribute] (old new : Attribute) : (
         simp_all only [not_false_eq_true, not_true_eq_false]
 
 -- Theorem proving that renameFunc is bijective
-theorem rename_func_injective [DecidableEq Attribute] (old new : Attribute) : (renameFunc old new).Injective := by
+theorem rename_func_injective [DecidableEq α] (old new : α) : (renameFunc old new).Injective := by
   simp only [renameFunc, Function.Injective]
   intro a''
   by_cases h_a' : a'' = new
@@ -91,7 +91,7 @@ theorem rename_func_injective [DecidableEq Attribute] (old new : Attribute) : (r
       simp_all only [ite_eq_left_iff, Classical.not_imp, ite_false, ite_eq_right_iff, imp_false,
         Decidable.not_not, not_false_eq_true, and_true, IsEmpty.forall_iff]
 
-theorem rename_func_bijective [DecidableEq Attribute] (old new : Attribute) : (renameFunc old new).Bijective := by
+theorem rename_func_bijective [DecidableEq α] (old new : α) : (renameFunc old new).Bijective := by
   apply And.intro (rename_func_injective old new) (rename_func_surjective old new)
 
 end rename

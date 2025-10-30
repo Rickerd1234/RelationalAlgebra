@@ -3,9 +3,9 @@ import RelationalAlgebra.FOL.RelabelProperties
 
 open RM
 
-noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.Query dbs :=
+noncomputable def ra_to_fol_query (raQ : RA.Query String String) (dbs : String → Finset String) : FOL.Query dbs :=
   match raQ with
-  | .R rn => .R rn (FOL.outVar ∘ (dbs rn).fromIndex)
+  | .R rn => .R rn (FOL.outVar ∘ RelationSchema.fromIndex)
   | .s a b sq => .and (ra_to_fol_query sq dbs) (.tEq (FOL.outVar a) (FOL.outVar b))
   | .p rs sq => projectQuery (ra_to_fol_query sq dbs) rs
   | .j sq1 sq2 => .and (ra_to_fol_query sq1 dbs) (ra_to_fol_query sq2 dbs)
@@ -13,7 +13,7 @@ noncomputable def ra_to_fol_query (raQ : RA.Query) (dbs : DatabaseSchema) : FOL.
   | .u sq₁ sq₂ => .or (ra_to_fol_query sq₁ dbs) (ra_to_fol_query sq₂ dbs)
   | .d sq nq => .and (ra_to_fol_query sq dbs) (.not (ra_to_fol_query nq dbs))
 
-theorem ra_to_fol_query_schema.def (raQ : RA.Query) (dbs : DatabaseSchema) (h : raQ.isWellTyped dbs) :
+theorem ra_to_fol_query_schema.def (raQ : RA.Query String String) (dbs : String → Finset String) (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
     induction raQ with
     | R rn =>

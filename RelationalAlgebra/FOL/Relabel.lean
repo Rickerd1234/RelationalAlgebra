@@ -5,7 +5,7 @@ open FOL FirstOrder Language Term RM
 namespace FOL
 
 /-- Maps bounded formulas along a map of terms and a map of relations. -/
-def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
+def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (String ⊕ (Fin n)) → fol.Term (String ⊕ (Fin (g n))))
     (h : ∀ n, BoundedQuery dbs (g (n + 1)) → BoundedQuery dbs (g n + 1)) :
     ∀ {n}, BoundedQuery dbs n → BoundedQuery dbs (g n)
   | _n, .R rn vMap      => .R rn (λ i => ft _ (vMap i))
@@ -57,7 +57,7 @@ theorem castLE_comp_castLE {k m n} (km : k ≤ m) (mn : m ≤ n) :
   funext (castLE_castLE km mn)
 
 @[simp]
-theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (Attribute ⊕ (Fin n)) → fol.Term (Attribute ⊕ (Fin (g n))))
+theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (String ⊕ (Fin n)) → fol.Term (String ⊕ (Fin (g n))))
     (h : ∀n, g (n + 1) ≤ g n + 1) (φ : BoundedQuery dbs m) :
   (φ.mapTermRel ft (λ n => castLE (h n))).toFormula = φ.toFormula.mapTermRel ft (λ _ => id) (λ n => BoundedFormula.castLE (h n)) := by
     induction φ
@@ -70,49 +70,49 @@ def BoundedQuery.liftAt : ∀ {n : ℕ} (n' _m : ℕ), BoundedQuery dbs n → Bo
     castLE (by rw [add_assoc, add_comm 1, add_assoc])
 
 /-- Relabels a bounded formula's variables along a particular function. -/
-def BoundedQuery.relabel (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) : BoundedQuery dbs (n + k) :=
+def BoundedQuery.relabel (g : String → String ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) : BoundedQuery dbs (n + k) :=
   φ.mapTermRel (fun _ t => t.relabel (BoundedFormula.relabelAux g _)) fun _ =>
     castLE (ge_of_eq (add_assoc _ _ _))
 
 @[simp]
-theorem BoundedQuery.relabel.R_def (g : Attribute → Attribute ⊕ (Fin n)) :
+theorem BoundedQuery.relabel.R_def (g : String → String ⊕ (Fin n)) :
   (R rn t).relabel g = R rn (fun i => (t i).relabel (BoundedFormula.relabelAux g _)) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel.tEq_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (t₁ t₂ : fol.Term (Attribute ⊕ (Fin k))) :
+theorem BoundedQuery.relabel.tEq_def (g : String → String ⊕ (Fin n)) {k} (t₁ t₂ : fol.Term (String ⊕ (Fin k))) :
   (tEq t₁ t₂ : BoundedQuery dbs k).relabel g = tEq (t₁.relabel (BoundedFormula.relabelAux g _)) (t₂.relabel (BoundedFormula.relabelAux g _)) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel.and_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ ψ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel.and_def (g : String → String ⊕ (Fin n)) {k} (φ ψ : BoundedQuery dbs k) :
   (and φ ψ).relabel g = and (φ.relabel g) (ψ.relabel g) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel.ex_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery dbs (k + 1)) :
+theorem BoundedQuery.relabel.ex_def (g : String → String ⊕ (Fin n)) {k} (φ : BoundedQuery dbs (k + 1)) :
   (ex φ).relabel g = ex (φ.relabel g) := by
     rw [relabel, mapTermRel, relabel]
     simp
 
 @[simp]
-theorem BoundedQuery.relabel.or_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ ψ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel.or_def (g : String → String ⊕ (Fin n)) {k} (φ ψ : BoundedQuery dbs k) :
   (or φ ψ).relabel g = or (φ.relabel g) (ψ.relabel g) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel.not_def (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel.not_def (g : String → String ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) :
   (not φ).relabel g = not (φ.relabel g) := by
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel_formula (g : Attribute → Attribute ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel_formula (g : String → String ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) :
   (φ.relabel g).toFormula = φ.toFormula.relabel g := by
     simp only [relabel, BoundedFormula.relabelAux, mapTermRel_formula, BoundedFormula.relabel]
 
 @[simp]
 theorem BoundedQuery.relabel_Sum_inl {k} {h : k ≤ n + k} (φ : BoundedQuery dbs k) (h' : n = 0) :
-  (φ.relabel (λ t => (Sum.inl t : (Attribute ⊕ Fin n)))) = φ.castLE h := by
+  (φ.relabel (λ t => (Sum.inl t : (String ⊕ Fin n)))) = φ.castLE h := by
     simp_all [relabel]
     induction φ with
     | R => subst h'; simp_all only [Fin.natAdd_zero, castLE]; rfl

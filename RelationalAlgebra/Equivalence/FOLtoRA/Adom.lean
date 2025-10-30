@@ -3,23 +3,25 @@ import RelationalAlgebra.FOL.Ordering
 
 open RM RA
 
+variable {α ρ μ : Type}
+
 -- Utility for foldr
 @[simp]
-theorem RA.Query.foldr_join_schema (xs : List α) (qb : α → RA.Query) (base : RA.Query) :
+theorem RA.Query.foldr_join_schema [DecidableEq α] (xs : List β) (qb : β → RA.Query ρ α) (base : RA.Query ρ α) :
   (xs.foldr (λ a q => q.j (qb a)) base).schema dbs = (xs.foldr (λ a s => s ∪ ((qb a).schema dbs))) (base.schema dbs) := by
     induction xs
     . simp
     . simp_all
 
 @[simp]
-theorem RA.Query.foldr_join_evalT (xs : List α) (qb : α → RA.Query) (base : RA.Query) :
+theorem RA.Query.foldr_join_evalT (xs : List β) (qb : β → RA.Query ρ α) (base : RA.Query ρ α) :
   (xs.foldr (λ a q => q.j (qb a)) base).evaluateT dbi = (xs.foldr (λ a s => joinT s ((qb a).evaluateT dbi))) (base.evaluateT dbi) := by
     induction xs
     . simp
     . simp_all
 
 @[simp]
-theorem RA.Query.foldr_union_evalT (xs : List α) (qb : α → RA.Query) (base : RA.Query) :
+theorem RA.Query.foldr_union_evalT (xs : List β) (qb : β → RA.Query ρ α) (base : RA.Query ρ α) :
   (xs.foldr (λ a q => q.u (qb a)) base).evaluateT dbi = {t | t ∈ base.evaluateT dbi ∨ ∃x ∈ xs, t ∈ (qb x).evaluateT dbi} := by
     induction xs with
     | nil =>
@@ -46,32 +48,32 @@ theorem RA.Query.foldr_union_evalT (xs : List α) (qb : α → RA.Query) (base :
 
 
 -- Database instance value domain
-def RM.DatabaseInstance.domain (dbi : DatabaseInstance) : Set Value :=
+def RM.DatabaseInstance.domain (dbi : DatabaseInstance ρ α μ) : Set μ :=
     {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}
 
-def adomRs (dbs : DatabaseSchema) : Set RelationName :=
+def adomRs (dbs : ρ → Finset α) : Set ρ :=
   {rn | dbs rn ≠ ∅}
 
-def adomAtts (dbs : DatabaseSchema) : Set Attribute :=
+def adomAtts (dbs : ρ → Finset α) : Set α :=
   {a | ∃rn, a ∈ dbs rn}
 
 
 
-def RelationAttributeToColumn (rn : RelationName) (ra a : Attribute) : RA.Query :=
+def RelationAttributeToColumn [DecidableEq α] (rn : ρ) (ra a : α) : RA.Query ρ α :=
   .r (renameFunc ra a) (.p {ra} (.R rn))
 
-theorem RelationAttributeToColumn.schema_def : (RelationAttributeToColumn rn ra a).schema dbs = {a} := by
+theorem RelationAttributeToColumn.schema_def [DecidableEq α] {a ra : α}: (RelationAttributeToColumn rn ra a).schema dbs = {a} := by
   simp [RelationAttributeToColumn, renameFunc]
 
-theorem RelationAttributeToColumn.isWellTyped_def (h : ra ∈ dbs rn) :
+theorem RelationAttributeToColumn.isWellTyped_def [DecidableEq α] {a ra : α} (h : ra ∈ dbs rn) :
   (RelationAttributeToColumn rn ra a).isWellTyped dbs := by
     simp [RelationAttributeToColumn, h, rename_func_bijective]
 
-theorem RelationAttributeToColumn.evaluateT_def : (RelationAttributeToColumn rn ra a).evaluateT dbi =
+theorem RelationAttributeToColumn.evaluateT_def [DecidableEq α] {a ra : α} : (RelationAttributeToColumn rn ra a).evaluateT dbi =
   {t | t ∈ (renameT (projectionT (dbi.relations rn).tuples {ra}) (renameFunc ra a))} := by
     simp [RelationAttributeToColumn]
 
-theorem RelationAttributeToColumn.evalT_def (h_schema : ra ∈ dbi.schema rn) : (RelationAttributeToColumn rn ra a).evaluateT dbi =
+theorem RelationAttributeToColumn.evalT_def [DecidableEq α] {dbi : DatabaseInstance ρ α μ} (h_schema : ra ∈ dbi.schema rn) : (RelationAttributeToColumn rn ra a).evaluateT dbi =
   {t | ∃t' ∈ (dbi.relations rn).tuples, t' ra = t a ∧ t.Dom = {a}} := by
     ext t
     simp [RelationAttributeToColumn]
@@ -118,16 +120,16 @@ theorem RelationAttributeToColumn.evalT_def (h_schema : ra ∈ dbi.schema rn) : 
           simp [h]
 
 
-def RelationAttributesToColumn (rn : RelationName) (ras : List Attribute) (a : Attribute) (baseRa : Attribute) : RA.Query :=
+def RelationAttributesToColumn [DecidableEq α] (rn : ρ) (ras : List α) (a : α) (baseRa : α) : RA.Query ρ α :=
   ras.foldr (λ ra sq => .u sq ((RelationAttributeToColumn rn ra a))) (RelationAttributeToColumn rn baseRa a)
 
-theorem RelationAttributesToColumn.schema_def : (RelationAttributesToColumn rn ras a baseRa).schema dbs = {a} := by
+theorem RelationAttributesToColumn.schema_def [DecidableEq α] {a : α} : (RelationAttributesToColumn rn ras a baseRa).schema dbs = {a} := by
   simp [RelationAttributesToColumn]
   induction ras with
   | nil => simp [List.foldr_nil, RelationAttributeToColumn.schema_def]
   | cons hd tl ih => simp_all only [List.foldr_cons, Query.schema.eq_6]
 
-theorem RelationAttributesToColumn.isWellTyped_def (h : baseRa ∈ dbs rn) (h' : ∀ra, ra ∈ ras → ra ∈ (dbs rn)) :
+theorem RelationAttributesToColumn.isWellTyped_def [DecidableEq α] {a : α}  (h : baseRa ∈ dbs rn) (h' : ∀ra, ra ∈ ras → ra ∈ (dbs rn)) :
   (RelationAttributesToColumn rn ras a baseRa).isWellTyped dbs := by
     simp [RelationAttributesToColumn]
     induction ras with
@@ -144,48 +146,50 @@ theorem RelationAttributesToColumn.isWellTyped_def (h : baseRa ∈ dbs rn) (h' :
           simp_all [schema_def, RelationAttributeToColumn.schema_def]
 
 
-theorem RelationAttributesToColumn.evaluateT_def : (RelationAttributesToColumn rn ras a bRa).evaluateT dbi =
+theorem RelationAttributesToColumn.evaluateT_def [DecidableEq α] {a : α}  : (RelationAttributesToColumn rn ras a bRa).evaluateT dbi =
   {t | t ∈ (RelationAttributeToColumn rn bRa a).evaluateT dbi ∨
     (∃ra ∈ ras, t ∈ (RelationAttributeToColumn rn ra a).evaluateT dbi)
   } := by
     simp only [RelationAttributesToColumn, Query.foldr_union_evalT]
 
-theorem RelationAttributesToColumn.evalT_def (h_schema : ∀ra ∈ ras, ra ∈ dbi.schema rn) (h_schema' : bRa ∈ dbi.schema rn) : (RelationAttributesToColumn rn ras a bRa).evaluateT dbi =
-  {t | ∃t' ∈ (dbi.relations rn).tuples, (t' bRa = t a ∨ (∃ra ∈ ras, t' ra = t a)) ∧ t.Dom = {a}} := by
-    ext t
-    simp [RelationAttributesToColumn]
-    rw [RelationAttributeToColumn.evalT_def h_schema']
-    rw [Set.mem_setOf_eq]
-    simp only [or_and_right]
-    nth_rewrite 3 [← @bex_def]
-    simp only [exists_or]
-    apply or_congr
-    . apply exists_congr
-      simp [and_comm, and_assoc]
-    . simp only [exists_prop]
-      apply Iff.intro
-      . intro ⟨ra, hra, ht⟩
-        simp [RelationAttributeToColumn.evalT_def (h_schema ra hra)] at ht
-        obtain ⟨t', ht', ht'', ht'''⟩ := ht
-        use t'
-        apply And.intro ht' (And.intro ?_ ht''')
-        . use ra
-      . intro ⟨t', ht', ⟨ra, hra, hra'⟩, ht'''⟩
-        use ra
-        apply And.intro hra
-        simp [RelationAttributeToColumn.evalT_def (h_schema ra hra)]
-        use t'
+theorem RelationAttributesToColumn.evalT_def [DecidableEq α] {a : α} {dbi : DatabaseInstance ρ α μ}
+  (h_schema : ∀ra ∈ ras, ra ∈ dbi.schema rn) (h_schema' : bRa ∈ dbi.schema rn) : (RelationAttributesToColumn rn ras a bRa).evaluateT dbi =
+    {t | ∃t' ∈ (dbi.relations rn).tuples, (t' bRa = t a ∨ (∃ra ∈ ras, t' ra = t a)) ∧ t.Dom = {a}} := by
+      ext t
+      simp [RelationAttributesToColumn]
+      rw [RelationAttributeToColumn.evalT_def h_schema']
+      rw [Set.mem_setOf_eq]
+      simp only [or_and_right]
+      nth_rewrite 3 [← @bex_def]
+      simp only [exists_or]
+      apply or_congr
+      . apply exists_congr
+        simp [and_comm, and_assoc]
+      . simp only [exists_prop]
+        apply Iff.intro
+        . intro ⟨ra, hra, ht⟩
+          simp [RelationAttributeToColumn.evalT_def (h_schema ra hra)] at ht
+          obtain ⟨t', ht', ht'', ht'''⟩ := ht
+          use t'
+          apply And.intro ht' (And.intro ?_ ht''')
+          . use ra
+        . intro ⟨t', ht', ⟨ra, hra, hra'⟩, ht'''⟩
+          use ra
+          apply And.intro hra
+          simp [RelationAttributeToColumn.evalT_def (h_schema ra hra)]
+          use t'
 
+variable [DecidableEq α] [LE α] [DecidableRel (α := α) (.≤.)] [IsTrans α (.≤.)] [IsAntisymm α (.≤.)] [IsTotal α (.≤.)] [Nonempty α]
 
-noncomputable def RelationNameToColumn (dbs : DatabaseSchema) (rn : RelationName) (a : Attribute) : RA.Query :=
-  RelationAttributesToColumn rn (dbs rn).ordering a ((dbs rn).ordering.headD (Classical.arbitrary Attribute))
+noncomputable def RelationNameToColumn (dbs : ρ → Finset α) (rn : ρ) (a : α) : RA.Query ρ α :=
+  RelationAttributesToColumn rn (RelationSchema.ordering (dbs rn)) a ((RelationSchema.ordering (dbs rn)).headD (Classical.arbitrary α))
 
-theorem RelationNameToColumn.schema_def :
+theorem RelationNameToColumn.schema_def {a : α} :
   (RelationNameToColumn dbs rn a).schema dbs = {a} := by
     simp [RelationNameToColumn]
     exact RelationAttributesToColumn.schema_def
 
-theorem RelationNameToColumn.isWellTyped_def (h : dbs rn ≠ ∅) :
+theorem RelationNameToColumn.isWellTyped_def {a : α} (h : dbs rn ≠ ∅) :
   (RelationNameToColumn dbs rn a).isWellTyped dbs := by
     simp [RelationNameToColumn]
     apply RelationAttributesToColumn.isWellTyped_def
@@ -193,10 +197,10 @@ theorem RelationNameToColumn.isWellTyped_def (h : dbs rn ≠ ∅) :
     . exact fun ra a ↦ (fun a rs ↦ (RelationSchema.ordering_mem a rs).mp) ra (dbs rn) a
 
 theorem RelationNameToColumn.evaluateT_def : (RelationNameToColumn dbs rn a).evaluateT dbi =
-  {t | (t ∈ ((RelationAttributesToColumn rn (dbs rn).ordering a ((dbs rn).ordering.headD (Classical.arbitrary Attribute))).evaluateT dbi))} := by
+  {t | (t ∈ ((RelationAttributesToColumn rn (RelationSchema.ordering (dbs rn)) a ((RelationSchema.ordering (dbs rn)).headD (Classical.arbitrary α))).evaluateT dbi))} := by
     simp [RelationNameToColumn]
 
-theorem RelationNameToColumn.evalT_def (h : dbi.schema rn ≠ ∅) : (RelationNameToColumn dbi.schema rn a).evaluateT dbi =
+theorem RelationNameToColumn.evalT_def {dbi : DatabaseInstance ρ α μ} (h : dbi.schema rn ≠ ∅) : (RelationNameToColumn dbi.schema rn a).evaluateT dbi =
   {t | ∃t' ∈ (dbi.relations rn).tuples, (∃ra ∈ (dbi.schema rn), t' ra = t a) ∧ t.Dom = {a}} := by
     rw [RelationNameToColumn, RelationAttributesToColumn.evalT_def]
     . ext t
@@ -211,7 +215,7 @@ theorem RelationNameToColumn.evalT_def (h : dbi.schema rn ≠ ∅) : (RelationNa
         | inl h_1 =>
           use w
           simp_all only [true_and]
-          use ((dbi.schema rn).ordering.head?.getD (Classical.arbitrary Attribute))
+          use ((RelationSchema.ordering (dbi.schema rn)).head?.getD (Classical.arbitrary α))
           simp_all
         | inr h_2 =>
           obtain ⟨w_1, h_1⟩ := h_2
@@ -234,16 +238,16 @@ theorem RelationNameToColumn.evalT_def (h : dbi.schema rn ≠ ∅) : (RelationNa
     . simp_all
 
 
-noncomputable def RelationNameToColumns (dbs : DatabaseSchema) (rn : RelationName) (as : List Attribute) : RA.Query :=
+noncomputable def RelationNameToColumns (dbs : ρ → Finset α) (rn : ρ) (as : List α) : RA.Query ρ α :=
   as.foldr (λ a sq => .j sq (RelationNameToColumn dbs rn a)) (.p ∅ (Query.empty rn))
 
-theorem RelationNameToColumns.schema_def : (RelationNameToColumns dbs rn as).schema dbs = as.toFinset := by
+theorem RelationNameToColumns.schema_def {as : List α} : (RelationNameToColumns dbs rn as).schema dbs = as.toFinset := by
   simp [RelationNameToColumns]
   induction as with
   | nil => simp
   | cons hd tl ih => simp_all [RelationNameToColumn.schema_def]
 
-theorem RelationNameToColumns.isWellTyped_def (h : dbs rn ≠ ∅) :
+theorem RelationNameToColumns.isWellTyped_def {as : List α} (h : dbs rn ≠ ∅) :
   (RelationNameToColumns dbs rn as).isWellTyped dbs := by
     simp [RelationNameToColumns]
     induction as with
@@ -251,7 +255,7 @@ theorem RelationNameToColumns.isWellTyped_def (h : dbs rn ≠ ∅) :
     | cons hd tl ih =>
       simp_all only [List.foldr_cons, Query.isWellTyped.eq_4, true_and, RelationNameToColumn.isWellTyped_def h]
 
-theorem RelationNameToColumns.evaluateT_def : (RelationNameToColumns dbs rn as).evaluateT dbi =
+theorem RelationNameToColumns.evaluateT_def {as : List α} : (RelationNameToColumns dbs rn as).evaluateT dbi =
   (as.foldr (λ a s => joinT s ((RelationNameToColumn dbs rn a).evaluateT dbi))) ∅ := by
     simp only [RelationNameToColumns]
     induction as with
@@ -262,20 +266,20 @@ theorem RelationNameToColumns.evaluateT_def : (RelationNameToColumns dbs rn as).
         Finset.notMem_empty, IsEmpty.forall_iff, not_false_eq_true, forall_const, true_and, false_and, exists_const,
         Set.setOf_false, List.foldr_cons, Query.evaluateT.eq_4]
 
-theorem RelationNameToColumns.evalT_def (h : dbi.schema rn ≠ ∅) : (RelationNameToColumns dbi.schema rn as).evaluateT dbi =
+theorem RelationNameToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : dbi.schema rn ≠ ∅) : (RelationNameToColumns dbi.schema rn as).evaluateT dbi =
   {t | t.Dom = as.toFinset.toSet ∧ ∃a ∈ as, ∃ra ∈ (dbi.schema rn), ∃t' ∈ (dbi.relations rn).tuples, (t' ra = t a)} := by
     sorry
 
-noncomputable def RelationNamesToColumns (dbs : DatabaseSchema) (rns : List RelationName) (as : List Attribute) (baseRn : RelationName) : RA.Query :=
+noncomputable def RelationNamesToColumns (dbs : ρ → Finset α) (rns : List ρ) (as : List α) (baseRn : ρ) : RA.Query ρ α :=
   rns.foldr (λ rn sq => .u sq (RelationNameToColumns dbs rn as)) (RelationNameToColumns dbs baseRn as)
 
-theorem RelationNamesToColumns.schema_def: (RelationNamesToColumns dbs rns as baseRn).schema dbs = as.toFinset := by
+theorem RelationNamesToColumns.schema_def {as : List α}: (RelationNamesToColumns dbs rns as baseRn).schema dbs = as.toFinset := by
   simp [RelationNamesToColumns]
   induction rns with
   | nil => simp [RelationNameToColumns.schema_def]
   | cons hd tl ih => simp_all only [List.foldr_cons, Query.schema.eq_6]
 
-theorem RelationNamesToColumns.isWellTyped_def (h : dbs baseRn ≠ ∅) (h' : ∀rn ∈ rns, dbs rn ≠ ∅) :
+theorem RelationNamesToColumns.isWellTyped_def {as : List α} (h : dbs baseRn ≠ ∅) (h' : ∀rn ∈ rns, dbs rn ≠ ∅) :
     (RelationNamesToColumns dbs rns as baseRn).isWellTyped dbs := by
       simp [RelationNamesToColumns]
       induction rns with
@@ -291,11 +295,11 @@ theorem RelationNamesToColumns.isWellTyped_def (h : dbs baseRn ≠ ∅) (h' : �
           rw [schema_def]
           rw [RelationNameToColumns.schema_def]
 
-theorem RelationNamesToColumns.evaluateT_def : (RelationNamesToColumns dbs rns as baseRn).evaluateT dbi =
+theorem RelationNamesToColumns.evaluateT_def {as : List α} : (RelationNamesToColumns dbs rns as baseRn).evaluateT dbi =
   {t | t ∈ ((RelationNameToColumns dbs baseRn as).evaluateT dbi) ∨ (∃rn ∈ rns, t ∈ ((RelationNameToColumns dbs rn as).evaluateT dbi)) } := by
       simp only [RelationNamesToColumns, Query.foldr_union_evalT]
 
-theorem RelationNamesToColumns.evalT_def  (h : dbi.schema baseRn ≠ ∅) (h' : ∀rn ∈ rns, dbi.schema rn ≠ ∅) : (RelationNamesToColumns dbi.schema rns as baseRn).evaluateT dbi =
+theorem RelationNamesToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : dbi.schema baseRn ≠ ∅) (h' : ∀rn ∈ rns, dbi.schema rn ≠ ∅) : (RelationNamesToColumns dbi.schema rns as baseRn).evaluateT dbi =
   {t | ∃rn, (rn = baseRn ∨ rn ∈ rns) ∧ t.Dom = as.toFinset.toSet ∧ ∃a ∈ as, ∃ra ∈ (dbi.schema rn), ∃t' ∈ (dbi.relations rn).tuples, (t' ra = t a)} := by
     ext t
     rw [RelationNamesToColumns.evaluateT_def]
@@ -315,9 +319,10 @@ theorem RelationNamesToColumns.evalT_def  (h : dbi.schema baseRn ≠ ∅) (h' : 
         . simp_all
         . exact h' rn h''.1
 
+variable [Nonempty ρ]  {dbs : ρ → Finset α}
 
-noncomputable def adom (dbs : DatabaseSchema) (rs : RelationSchema) [Fintype (adomRs dbs)] : RA.Query :=
-  RelationNamesToColumns dbs (adomRs dbs).toFinset.toList rs.ordering ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary RelationName))
+noncomputable def adom (dbs : ρ → Finset α) (rs : Finset α) [Fintype (adomRs dbs)] : RA.Query ρ α :=
+  RelationNamesToColumns dbs (adomRs dbs).toFinset.toList (RelationSchema.ordering rs) ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary ρ))
 
 theorem adom.schema_def [Fintype (adomRs dbs)] : (adom dbs rs).schema dbs = rs := by
   simp [adom, RelationNamesToColumns.schema_def]
@@ -343,13 +348,13 @@ theorem adom.isWellTyped_def [Fintype (adomRs dbs)] [ne : Nonempty (adomRs dbs)]
         simp_all only [Finset.mem_toList, Set.mem_toFinset, ne_eq]
         exact a
 
-theorem adom.evaluateT_def [Fintype (adomRs dbs)] : (adom dbs as).evaluateT dbi =
-  {t | t ∈ ((RelationNameToColumns dbs ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary RelationName)) as.ordering).evaluateT dbi)
-    ∨ (∃rn ∈ (adomRs dbs).toFinset.toList, t ∈ ((RelationNameToColumns dbs rn as.ordering).evaluateT dbi)) } := by
+theorem adom.evaluateT_def {as : Finset α} [Fintype (adomRs dbs)] : (adom dbs as).evaluateT dbi =
+  {t | t ∈ ((RelationNameToColumns dbs ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary ρ)) (RelationSchema.ordering as)).evaluateT dbi)
+    ∨ (∃rn ∈ (adomRs dbs).toFinset.toList, t ∈ ((RelationNameToColumns dbs rn (RelationSchema.ordering as)).evaluateT dbi)) } := by
       rw [adom, ← @RelationNamesToColumns.evaluateT_def]
 
 @[simp]
-theorem adom.complete_def [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =
+theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =
   {t | t.Dom = ↑as ∧ ∃a ∈ as, ∃v ∈ dbi.domain, t a = .some v} := by
     rw [adom, RelationNamesToColumns.evalT_def]
     . rw [DatabaseInstance.domain]

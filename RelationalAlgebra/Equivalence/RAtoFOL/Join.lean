@@ -1,7 +1,7 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 import RelationalAlgebra.FOL.RealizeProperties
 
-variable {dbi q₁ q₂} [struc : FOL.folStruc dbi]
+variable {dbi q₁ q₂} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁: ∀t, (ra_to_fol_query q₁ dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₁)
@@ -22,7 +22,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
       use t.restrict z'
       apply And.intro
       . apply ih₁
-        . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero]
+        . simp_all only [FOL.Query.RealizeMin]
           obtain ⟨left, right⟩ := h
           apply Exists.intro
           · rw [FOL.BoundedQuery.Realize.enlarge]
@@ -32,13 +32,12 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             . rfl
             . rfl
             . simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union]
-          · rfl
 
       . have z' : ↑(ra_to_fol_query q₂ dbi.schema).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
         use t.restrict z'
         apply And.intro
         . apply ih₂
-          . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero]
+          . simp_all only [FOL.Query.RealizeMin]
             obtain ⟨left, right⟩ := h
             apply Exists.intro
             · rw [FOL.BoundedQuery.Realize.enlarge]
@@ -48,7 +47,6 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
               . rfl
               . rfl
               . simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union]
-            · rfl
 
         . intro a
           simp only [PFun.mem_restrict, Finset.mem_coe, and_imp, not_and]
@@ -68,14 +66,13 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             apply Part.eq_none_iff.mpr
             intro v
             by_cases c1 : (a ∈ q₁.schema dbi.schema)
-            . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero,
-              ra_to_fol_query_schema, forall_exists_index, Set.subset_union_left,
-              Set.subset_union_right, forall_const, not_false_eq_true, implies_true]
+            . simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema, forall_exists_index,
+              Set.subset_union_left, Set.subset_union_right, forall_const, not_false_eq_true,
+              implies_true]
             . by_cases c2 : (a ∈ q₂.schema dbi.schema)
-              . simp_all only [FOL.Query.RealizeMin, Pi.default_def, Nat.default_eq_zero,
-                ra_to_fol_query_schema, forall_exists_index, Set.subset_union_left,
-                Set.subset_union_right, not_true_eq_false, implies_true, forall_const,
-                not_false_eq_true]
+              . simp_all only [FOL.Query.RealizeMin, ra_to_fol_query_schema, forall_exists_index,
+                Set.subset_union_left, Set.subset_union_right, not_true_eq_false, implies_true,
+                forall_const, not_false_eq_true]
               . by_contra hc
                 have z : ¬(a ∈ t.Dom) := by simp [h_dom, c1, c2]
                 apply z
@@ -111,8 +108,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
         simp_all only [FOL.BoundedQuery.Realize, Finset.coe_union, Set.subset_union_left]
         have z := (ih₁ w₁ hw₁)
         have ⟨h_sub, ht'⟩ : ∃h_sub : w₁.Dom ⊆ t.Dom, t.restrict h_sub = w₁ := by
-          simp_all only [Finset.coe_union, Pi.default_def, Nat.default_eq_zero, Finset.coe_inj,
-            Set.subset_union_left, exists_true_left]
+          simp_all only [Finset.coe_union, Finset.coe_inj, Set.subset_union_left, exists_true_left]
           ext a v; simp [*]
           simp_all only [Finset.coe_union]
           have := Set.ext_iff.mp (RA.Query.evaluate.validSchema q₁ left w₁ hw₁).symm a
@@ -141,7 +137,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
         simp_all only [FOL.BoundedQuery.Realize, Finset.coe_union]
         have z := (ih₂ w₂ hw₂)
         have ⟨h_sub, ht'⟩ : ∃h_sub : w₂.Dom ⊆ t.Dom, t.restrict h_sub = w₂ := by
-          simp_all only [Finset.coe_union, Pi.default_def, Nat.default_eq_zero, exists_true_left]
+          simp_all only [Finset.coe_union, exists_true_left]
           ext a v; simp [*]
           simp_all only [Finset.coe_union]
           have := Set.ext_iff.mp (RA.Query.evaluate.validSchema q₂ right w₂ hw₂).symm a
