@@ -237,6 +237,7 @@ theorem RelationNameToColumn.evalT_def {dbi : DatabaseInstance ρ α μ} (h : db
     . simp_all
     . simp_all
 
+-- Should not use (Query.empty rn) but ?{λ a => none}?
 
 noncomputable def RelationNameToColumns (dbs : ρ → Finset α) (rn : ρ) (as : List α) : RA.Query ρ α :=
   as.foldr (λ a sq => .j sq (RelationNameToColumn dbs rn a)) (.p ∅ (Query.empty rn))
@@ -352,6 +353,8 @@ theorem adom.evaluateT_def {as : Finset α} [Fintype (adomRs dbs)] : (adom dbs a
   {t | t ∈ ((RelationNameToColumns dbs ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary ρ)) (RelationSchema.ordering as)).evaluateT dbi)
     ∨ (∃rn ∈ (adomRs dbs).toFinset.toList, t ∈ ((RelationNameToColumns dbs rn (RelationSchema.ordering as)).evaluateT dbi)) } := by
       rw [adom, ← @RelationNamesToColumns.evaluateT_def]
+
+-- Explore possibilities of t.Dom = as ∧ t.ran = dbi.domain
 
 @[simp]
 theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =

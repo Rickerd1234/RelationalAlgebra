@@ -173,9 +173,9 @@ noncomputable def toRA
     match f with
     | .falsum => .d (adom ((Finset.image Sum.inl) ∘ dbs) rs) (adom ((Finset.image Sum.inl) ∘ dbs) rs)
     | .equal t₁ t₂ => .s (TermtoAtt t₁) (TermtoAtt t₂) (adom ((Finset.image Sum.inl) ∘ dbs) rs)
-    | .rel (.R dbs rn) ts => .p rs (.r (tsToRenameFunc dbs ts) (.R rn))
+    | .rel (.R dbs rn) ts => .p rs (.j (adom ((Finset.image Sum.inl) ∘ dbs) rs) (.r (tsToRenameFunc dbs ts) (.R rn)))
     | .imp f₁ f₂ => .d (adom ((Finset.image Sum.inl) ∘ dbs) rs) (.d (toRA rs f₁) (toRA rs f₂))
-    | .all f => allToRA dbs rs (toRA (rs.image (Sum.map id Fin.castSucc)) f)
+    | .all f => allToRA dbs rs (toRA (insert (Sum.inr (Fin.last n)) (rs.image (Sum.map id Fin.castSucc))) f)
 
 theorem toRA.freeVarFinset_def [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)]
   [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] {rs : Finset (String ⊕ Fin n)} :
