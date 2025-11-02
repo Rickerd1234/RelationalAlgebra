@@ -9,6 +9,13 @@ pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
+rev = "v4.24.0"
+
+[[require]]
+name = "cslib"
+git = "https://github.com/leanprover/cslib/"
+scope = "leanprover"
+rev = "v4.24.0"
 
 [[lean_lib]]
 name = "RelationalAlgebra"

@@ -107,7 +107,7 @@ def RelationSchema.fromIndex [LawfulBEq α] (i : Fin rs.card) : α := (ordering 
 -- Proof usefull properties for fromIndex
 @[simp]
 theorem RelationSchema.fromIndex_mem [LawfulBEq α] (i : Fin rs.card) : fromIndex i ∈ rs := by
-  apply (RelationSchema.ordering_mem (Finset.sort rs (fun x1 x2 ↦ x1 ≤ x2))[i] rs).mp
+  apply (RelationSchema.ordering_mem (Finset.sort (.≤.) rs)[i] rs).mp
   simp [RelationSchema.ordering]
 
 @[simp]
