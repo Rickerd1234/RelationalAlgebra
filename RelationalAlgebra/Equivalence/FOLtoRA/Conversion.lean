@@ -4,6 +4,8 @@ import RelationalAlgebra.FOL.Schema
 import RelationalAlgebra.FOL.Evaluate
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 import RelationalAlgebra.FOL.RealizeProperties
+import Mathlib.Data.Finset.Fin
+import Cslib.Foundations.Data.HasFresh
 
 open RM FOL FirstOrder Language
 
@@ -16,6 +18,62 @@ def toPrenex (q : FOL.BoundedQuery dbs n) : fol.BoundedFormula String n :=
 @[simp]
 theorem toPrenex.freeVarFinset_def {q : FOL.Query dbs} : (toPrenex q).freeVarFinset = q.toFormula.freeVarFinset := by
   simp
+
+@[simp]
+def BoundedFormula.depth : fol.BoundedFormula Attribute n → ℕ
+  | .falsum => 0
+  | .rel _ _ => 0
+  | .equal _ _ => 0
+  | .imp f₁ f₂ => max (depth f₁) (depth f₂)
+  | .all f' => 1 + depth f'
+
+def castLERS  [DecidableEq Attribute] (rs : Finset (Attribute ⊕ Fin n)) (h : n ≤ m) : Finset (Attribute ⊕ Fin m) :=
+  Finset.image (Sum.map id (Fin.castLE h)) rs
+
+@[simp]
+def BoundedFormula.varFinset [DecidableEq Attribute] : (f : fol.BoundedFormula Attribute n) → Finset (Attribute ⊕ (Fin (n + BoundedFormula.depth f)))
+  | .falsum => ∅
+  | .rel R ts => Finset.univ.biUnion λ i => (ts i).varFinset
+  | .equal t₁ t₂ => t₁.varFinset ∪ t₂.varFinset
+  | .imp f₁ f₂ => castLERS (varFinset f₁) (by simp) ∪ castLERS (varFinset f₂) (by simp)
+  | .all f' => castLERS (varFinset f') (by simp only [depth]; grind only)
+
+-- def ex_dbs : String → Finset String
+--   | "R1" => {"a", "b", "c"}
+--   | "R2" => {"d", "e", "f"}
+--   | "R3" => {"a", "b", "d"}
+--   | _ => ∅
+
+-- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.falsum (α := String) (n := 0))
+-- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.rel (.R ex_dbs "R2") ([outVar "b", outVar "c", inVar 0].get) (α := String) (n := 1))
+-- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.equal (outVar "a") (inVar 0) (n := 1))
+-- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.imp (.equal (outVar "a") (inVar 0)) (.equal (outVar "b") (inVar 1)) (n := 2))
+-- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.all (.equal (outVar "a") (inVar 0)) (n := 0))
+-- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.all (.imp (.all (.equal (outVar "a") (inVar 1))) (.all (.equal (outVar "b") (inVar 1)))) (n := 0))
+
+@[simp]
+def toDot (n : ℕ) : String := n.fold (λ _ _ p ↦ p ++ ".") ""
+
+@[simp]
+theorem toDot.length (n : ℕ) : (toDot n).length = n := by
+  induction n with
+  | zero => simp
+  | succ n ih =>  rw [toDot, Nat.fold_succ, String.length_append, ← toDot, ih, Nat.add_left_cancel_iff]; rfl
+
+@[simp]
+theorem toDot.length' (n m : ℕ) : (toDot n).length = m ↔ m = n := by
+  induction m with
+  | zero => rw [toDot.length (n := n)]; grind
+  | succ n ih =>  rw [toDot.length]; grind
+
+theorem toDot.inj : (toDot).Injective := by
+  intro a₁ a₂ h
+  let h' := toDot.length a₁
+  rw [h, toDot.length' a₂ a₁] at h'
+  exact h'
+
+@[simp]
+def emb : ℕ ↪ String := ⟨toDot, toDot.inj⟩
 
 @[simp]
 def BoundedFormula.safeR (f : fol.Relations l) (dbs : String → Finset String) : Prop :=
@@ -53,151 +111,123 @@ theorem BoundedQuery.safeDBS (q : FOL.BoundedQuery dbs n) : BoundedFormula.safeD
 theorem BoundedQuery.safeDBS_toPrenex (q : FOL.BoundedQuery dbs n) : BoundedFormula.safeDBS q.toFormula.toPrenex dbs := by
   simp_all only [BoundedFormula.safeDBS_ToPrenex, safeDBS]
 
-noncomputable def TermtoAtt : fol.Term (String ⊕ Fin n) → String ⊕ Fin n
-  | var v => v
-  | _ => Sum.inl (Classical.arbitrary String)
+noncomputable def TermtoAtt (f : (Fin n → String)) : fol.Term (String ⊕ Fin n) → String
+  | var (Sum.inl s) => s
+  | var (Sum.inr i) => f i
+  | _ => Classical.arbitrary String
 
 section toRA
 
+def FRanS (f : Fin n → String) : Set String := {a | ∃i, f i = a}
+
+instance FRanSFin {f : Fin n → String} : Fintype (FRanS f) := by
+  apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image f)
+  . simp [FRanS]
+
+def FRan (f : Fin n → String) : Finset String := (FRanS f).toFinset
+
+def FRan.default := FRan Fin.elim0
+
+@[simp]
+theorem FRan.default_eq_empty : FRan.default = ∅ := by simp [default, FRan, FRanS]
+
+noncomputable def liftF (f' : Fin n → String) (brs : Finset String) : Fin (n + 1) → String :=
+  Fin.snoc f' ((RelationSchema.ordering brs).getD n (Classical.arbitrary String))
+
+@[simp]
+theorem FRan.liftF_sub {f : Fin n → String} : FRan f ⊆ FRan (liftF f brs) := by
+  simp [FRan, FRanS, liftF]
+  intro i
+  use i.castLE (Nat.le_add_right n 1)
+  simp_all [Fin.snoc]
+  rfl
+
+@[simp]
+theorem FRan.liftF_union {f : Fin n → String} : FRan f ∪ FRan (liftF f brs) = FRan (liftF f brs) := Finset.union_eq_right.mpr liftF_sub
+
+@[simp]
+theorem FRan.liftF_sub_brs {f : Fin n → String} (h : n < brs.card) (h' : FRan f ⊆ brs) : FRan (liftF f brs) ⊆ brs := by
+  simp [FRan, FRanS, liftF] at h' ⊢
+  intro i h
+  obtain ⟨w, h⟩ := h
+  subst h
+  by_cases hc : w = Fin.last n
+  . subst hc
+    simp
+    rw [← RelationSchema.ordering_mem, @List.getD_getElem?]
+    simp [h]
+  . have : ↑w < n := Fin.lt_last_iff_ne_last.mpr hc
+    simp [Fin.snoc, this]
+    simp [Set.subset_def] at h'
+    simp [h']
+
+@[simp]
+theorem FRan.liftF_union_brs {f : Fin n → String} (h : n < brs.card) (h' : FRan f ⊆ brs) : (brs ∪ FRan (liftF f brs)) = brs := Finset.union_eq_left.mpr (liftF_sub_brs h h')
+
 variable (dbs : String → Finset String) [Fintype (adomRs dbs)]
 
-noncomputable def tsToRenameFunc (ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)) (a : String ⊕ Fin n) : String ⊕ Fin n :=
-  a.elim (λ s => dite (s ∈ dbs rn) (λ h => TermtoAtt (ts (RelationSchema.index h))) (λ _ => a)) (λ _ => a)
+noncomputable def tsToRenameFunc (f : Fin n → String) (ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)) (a : String) : String :=
+  dite (a ∈ dbs rn) (λ h => TermtoAtt f (ts (RelationSchema.index h))) (λ _ => a)
 
-def filterLast : (String ⊕ Fin (n + 1)) → Prop := (Sum.elim (λ _ => True) (λ v => v ≠ Fin.last n))
+theorem tsToRenameFunc.injective {ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)} (h : (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (FRan f) = ∅) :
+  Function.Injective (tsToRenameFunc dbs f ts) := by
+    simp [Function.Injective, tsToRenameFunc, TermtoAtt]
+    sorry
 
-@[simp]
-theorem filterLast.inl_def : filterLast (n := n) (Sum.inl a) = True := rfl
 
-@[simp]
-theorem filterLast.inr_def_ne_last {v : Fin (n + 1)} (h : v ≠ Fin.last n) : filterLast (Sum.inr v) = True := by
-  simp [filterLast, h]
+theorem tsToRenameFunc.surjective {ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)} (h : (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (FRan f) = ∅) :
+  Function.Surjective (tsToRenameFunc dbs f ts) := by
+    simp [Function.Surjective, tsToRenameFunc]
+    intro b
+    use b
+    sorry
 
-@[simp]
-theorem filterLast.inr_def_eq_last {v : Fin (n + 1)} (h : v = Fin.last n) : filterLast (Sum.inr v) = False := by
-  simp [filterLast, h]
+theorem tsToRenameFunc.bijective {ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)} (h : (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (FRan f) = ∅) :
+  Function.Bijective (tsToRenameFunc dbs f ts) :=
+    ⟨tsToRenameFunc.injective dbs h, tsToRenameFunc.surjective dbs h⟩
 
-instance DecidableFilterLast :
-  DecidablePred (α := String ⊕ Fin (n + 1)) filterLast := by
-  intro a
-  cases a with
-  | inl val =>
-    simp_all only [filterLast, ne_eq, Sum.elim_inl]
-    exact instDecidableTrue
-  | inr val_1 =>
-    simp_all only [filterLast, ne_eq, Sum.elim_inr]
-    exact instDecidableNot
+noncomputable def allToRA (q' : RA.Query String String) (f : Fin n → String) (rs : Finset String) : RA.Query String String :=
+  (adom dbs rs).d (.p rs q')
 
-@[simp]
-theorem filterLast.mem_inl_def {rs : Finset (String ⊕ Fin (n + 1))} : (Sum.inl x) ∈ rs.filter filterLast ↔ (Sum.inl x) ∈ rs := by simp
-
-@[simp]
-theorem filterLast.mem_inr_def {rs : Finset (String ⊕ Fin (n + 1))} : (Sum.inr v) ∈ rs.filter filterLast ↔ v ≠ Fin.last n ∧ Sum.inr v ∈ rs := by
-  rw [@Finset.mem_filter, ne_eq]
-  by_cases h : v = Fin.last n
-  . simp_all only [inr_def_eq_last, and_false, not_true_eq_false, false_and]
-  . simp_all only [filterLast.inr_def_ne_last h, and_true, not_false_eq_true, true_and]
-
-noncomputable def castSum {n} : (String ⊕ Fin (n + 1)) → (String ⊕ Fin n) :=
-  Sum.elim (Sum.inl) (λ v => dite (v = Fin.last n) (λ _ => Sum.inl (Classical.arbitrary String)) (Sum.inr ∘ v.castPred))
-
-@[simp]
-theorem castFilterLast.inl_def : castSum (n := n) (Sum.inl a) = Sum.inl a := rfl
-
-@[simp]
-theorem castFilterLast.inr_def_ne_last {v : Fin (n + 1)} (h : v ≠ Fin.last n) : castSum (Sum.inr v) = (Sum.inr (v.castPred h)) := by
-  simp [castSum, h]
-
-@[simp]
-theorem castFilterLast.inr_def_eq_last {v : Fin (n + 1)} (h : v = Fin.last n) : castSum (Sum.inr v) = Sum.inl (Classical.arbitrary String) := by
-  simp [castSum, h]
-
-noncomputable def forgetLast (rs : Finset (String ⊕ Fin (n + 1))) : Finset (String ⊕ Fin n) :=
-  (rs.filter filterLast).image castSum
-
-@[simp]
-theorem forgetLast.ext_iff_inl : Sum.inl x ∈ forgetLast rs ↔ Sum.inl x ∈ rs := by
-  simp_all [forgetLast]
-  intro x_1 a_1 a_2 a_3
-  rename_i n
-  by_cases x_1 = Fin.last n
-  . simp_all
-  . simp_all
-
-@[simp]
-theorem forgetLast.ext_iff_inr {rs : Finset (String ⊕ Fin (n + 1))} : Sum.inr x ∈ forgetLast rs ↔ Sum.inr x.castSucc ∈ rs ∧ x.castSucc ≠ Fin.last n := by
-  simp_all [forgetLast]
-  by_cases hc : x.castSucc = Fin.last n
-  . simp_all
-  . apply Iff.intro
-    . intro h
-      obtain ⟨w, h⟩ := h
-      obtain ⟨left, right⟩ := h
-      obtain ⟨left, right_1⟩ := left
-      rw [castFilterLast.inr_def_ne_last right_1] at right
-      simp [← Sum.inr_injective right, left]
-    . simp_all
-      intro a
-      use x.castSucc
-      simp_all only [ne_eq, Fin.castSucc_ne_last, not_false_eq_true, filterLast.inr_def_ne_last, and_self,
-        castFilterLast.inr_def_ne_last, Fin.castPred_castSucc]
-
-noncomputable def castQ : RA.Query String (String ⊕ Fin (n + 1)) → RA.Query String (String ⊕ Fin n)
-  | .R rn => .R rn
-  | .s a b q => .s (castSum a) (castSum b) (castQ q)
-  | .p rs q => .p (rs.image castSum) (castQ q)
-  | .j q₁ q₂ => .j (castQ q₁) (castQ q₂)
-  | .r f q => .r (λ a => (f (a.map id Fin.castSucc)).elim (Sum.inl) (castSum ∘ Sum.inr)) (castQ q)
-  | .d q nq => .d (castQ q) (castQ nq)
-  | .u q₁ q₂ => .u (castQ q₁) (castQ q₂)
-
-noncomputable def allToRA
-  [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))]
-    (rs : Finset (String ⊕ Fin n)) (q' : RA.Query String (String ⊕ Fin (n + 1))) : RA.Query String (String ⊕ Fin n) :=
-      (adom ((Finset.image Sum.inl) ∘ dbs) rs).d (castQ (.p (rs.image (Sum.map id Fin.castSucc)) q'))
-
-theorem allToRA.freeVarFinset_def [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] {rs : Finset (String ⊕ Fin n)} :
-    (allToRA dbs rs φ).schema ((Finset.image Sum.inl) ∘ dbs) = rs := by
-  induction φ with
+theorem allToRA.schema_def : (allToRA dbs q f rs).schema dbs = rs := by
+  induction q with
   | R =>
     simp [allToRA]
     exact adom.schema_def
   | _ => expose_names; exact a_ih
 
-noncomputable def toRA
-  [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))]
-  (rs : Finset (String ⊕ Fin n)) (f : fol.BoundedFormula String n) : RA.Query String (String ⊕ Fin n) :=
-    match f with
-    | .falsum => .d (adom ((Finset.image Sum.inl) ∘ dbs) rs) (adom ((Finset.image Sum.inl) ∘ dbs) rs)
-    | .equal t₁ t₂ => .s (TermtoAtt t₁) (TermtoAtt t₂) (adom ((Finset.image Sum.inl) ∘ dbs) rs)
-    | .rel (.R dbs rn) ts => .p rs (.j (adom ((Finset.image Sum.inl) ∘ dbs) rs) (.r (tsToRenameFunc dbs ts) (.R rn)))
-    | .imp f₁ f₂ => .d (adom ((Finset.image Sum.inl) ∘ dbs) rs) (.d (toRA rs f₁) (toRA rs f₂))
-    | .all f => allToRA dbs rs (toRA (insert (Sum.inr (Fin.last n)) (rs.image (Sum.map id Fin.castSucc))) f)
+theorem allToRA.isWellTyped_def (h : q.isWellTyped dbs) (f : Fin n → String) (h' : q.schema dbs = rs) [Nonempty ↑(adomRs dbs)] :
+  (allToRA dbs q f rs).isWellTyped dbs := by
+    simp [allToRA]
+    simp_all only [nonempty_subtype, subset_refl, and_self, adom.isWellTyped_def, adom.schema_def]
 
-theorem toRA.freeVarFinset_def [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] {rs : Finset (String ⊕ Fin n)} :
-    (toRA dbs rs φ).schema ((Finset.image Sum.inl) ∘ dbs) = rs := by
+noncomputable def toRA
+  (f : fol.BoundedFormula String n) (f' : Fin n → String) (rs brs : Finset String) : RA.Query String String :=
+    match f with
+    | .falsum => .d (adom dbs rs) (adom dbs rs)
+    | .equal t₁ t₂ => .s (TermtoAtt f' t₁) (TermtoAtt f' t₂) (adom dbs rs)
+    | .rel (.R dbs' rn) ts => .p rs (.j (adom dbs rs) (.r (tsToRenameFunc dbs' f' ts) (.R rn)))
+    | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ f' rs brs) (toRA f₂ f' rs brs))
+    | .all sf => allToRA dbs (toRA sf (liftF f' brs) (rs ∪ FRan (liftF f' brs)) brs) f' rs
+
+theorem toRA.schema_def :
+    (toRA dbs φ f rs brs).schema dbs = rs := by
   induction φ with
   | rel R ts =>
     cases R
     next n dbs rn =>
       simp [toRA]
   | all =>
-    simp [toRA];
-    exact allToRA.freeVarFinset_def dbs
+    simp [toRA]
+    apply allToRA.schema_def dbs
   | _ => simp [toRA, adom.schema_def]
 
 end toRA
 
 theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula String n}
-  (hq : q.IsAtomic) (h : BoundedFormula.safeDBS q dbs) (h' : q.freeVarFinset.image Sum.inl ⊆ rs)
-  [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] [∀n, Nonempty (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))]
+  (hq : q.IsAtomic) (h : BoundedFormula.safeDBS q dbs) (f : Fin n → String) (h' : (q.freeVarFinset ∪ FRan f) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
-    (toRA dbs rs q).isWellTyped ((Finset.image Sum.inl) ∘ dbs) := by
+    (toRA dbs q f rs brs).isWellTyped dbs := by
       induction hq with
       | equal t₁ t₂ =>
         simp [Term.bdEqual, toRA, adom.isWellTyped_def]
@@ -206,87 +236,178 @@ theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula String n}
         subst hk₁ hk₂
         split_ands
         all_goals(
-          simp [adom.schema_def, TermtoAtt]; simp [Term.bdEqual] at h'
+          simp [Term.bdEqual] at h' h''
+          simp [adom.schema_def, TermtoAtt]
+          rename_i inst_1
+          simp_all only [nonempty_subtype]
+          obtain ⟨w, h_1⟩ := inst_1
+          cases k₁ with
+          | inl val =>
+            cases k₂ with
+            | inl
+              val_1 =>
+              simp_all only [Term.varFinsetLeft, Finset.union_singleton, Finset.singleton_union, Finset.union_insert]
+              grind
+            | inr
+              val_2 =>
+              simp_all only [Term.varFinsetLeft, Finset.union_empty, Finset.empty_union, Finset.singleton_union]
+              simp_all [FRan, FRanS, Finset.insert_subset_iff]
+              try simp_all [Set.subset_def]
+          | inr val_1 =>
+            cases k₂ with
+            | inl
+              val =>
+              simp_all only [Term.varFinsetLeft, Finset.union_singleton, insert_empty_eq, Finset.singleton_union,
+                Finset.union_insert, Finset.empty_union]
+              simp_all [FRan, FRanS, Finset.insert_subset_iff]
+              try simp_all [Set.subset_def]
+            | inr
+              val_2 =>
+              simp_all only [Term.varFinsetLeft, Finset.union_idempotent, Finset.empty_inter, Finset.empty_union]
+              simp [FRan, FRanS] at *
+              try simp_all [Set.subset_def]
         )
-        . cases k₁ with
-          | inl s => aesop
-          | inr i => exact False.elim (Fin.elim0 i)
-        . cases k₂ with
-          | inl s => aesop
-          | inr i => exact False.elim (Fin.elim0 i)
       | rel R ts =>
         cases R with
         | R dbs rn =>
-          simp [Relations.boundedFormula, toRA] at h h' ⊢
+          simp [Relations.boundedFormula, toRA] at h h' h'' ⊢
           subst h
           apply And.intro
-          . sorry
+          . apply And.intro
+            . exact adom.isWellTyped_def
+            . exact tsToRenameFunc.bijective dbs (by grind)
           . rw [Finset.subset_iff]
             rename_i inst_7
             intro x a
-            simp_all only [nonempty_subtype, Finset.mem_image, exists_exists_and_eq_and]
-            obtain ⟨w, h⟩ := inst_7
-            cases x with
-            | inl s =>
-              have : ∀a, ¬(tsToRenameFunc dbs ts (Sum.inl a) = Sum.inl s) := by sorry
-              simp_rw [this]
-              sorry
-            | inr i => exact False.elim (Fin.elim0 i)
+            simp_all [nonempty_subtype, Finset.mem_image, adom.schema_def]
 
-theorem toRA.isWellTyped_def_IsQF {q : fol.BoundedFormula String n}
-  (hq : q.IsQF) (h : BoundedFormula.safeDBS q dbs) (h' : q.freeVarFinset.image Sum.inl ⊆ rs)
-  [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)] [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] [∀n, Nonempty (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))]:
-    (toRA dbs rs q).isWellTyped ((Finset.image Sum.inl) ∘ dbs) := by
+theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] {q : fol.BoundedFormula String n}
+  (hq : q.IsQF) (h : BoundedFormula.safeDBS q dbs) (f : Fin n → String) (h' : (q.freeVarFinset ∪ FRan f) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs) :
+    (toRA dbs q f rs brs).isWellTyped dbs := by
       induction hq with
       | falsum => simp_all [toRA, adom.isWellTyped_def, adom.schema_def]
-      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at h h'
+      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at h f h' h'' h'''
       | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
         rename_i q₁ q₂
         rw [toRA]
-        simp [Finset.image_union q₁.freeVarFinset q₂.freeVarFinset] at h'
-        have : q₁.freeVarFinset.image Sum.inl ⊆ rs := Finset.union_subset_left h'
-        have : q₂.freeVarFinset.image Sum.inl ⊆ rs := Finset.union_subset_right h'
-        simp_all [adom.isWellTyped_def, adom.schema_def, toRA.freeVarFinset_def]
+        simp only [RA.Query.isWellTyped, RA.Query.schema]
+        simp at h'
+        have : q₁.freeVarFinset ∪ FRan f ⊆ rs := by grind
+        have : q₂.freeVarFinset ∪ FRan f ⊆ rs := Finset.union_subset_right h'
+        have : q₁.freeVarFinset ∩ brs = ∅ := by simp at h''; grind
+        have : q₂.freeVarFinset ∩ brs = ∅ := by simp at h''; grind
+        simp_all [adom.isWellTyped_def, adom.schema_def, toRA.schema_def]
 
 theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula String n}
-  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) (h' : q.freeVarFinset.image Sum.inl ⊆ rs)
-  [∀n, DecidableRel (α := String ⊕ Fin n) (.≤.)] [∀n, IsTrans (String ⊕ Fin n) (.≤.)] [∀n, IsAntisymm (String ⊕ Fin n) (.≤.)] [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)]
-  [∀n, IsTotal (String ⊕ Fin n) (.≤.)] [∀n, Fintype (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] [∀n, Nonempty (adomRs (α := String ⊕ Fin n) ((Finset.image Sum.inl) ∘ dbs))] :
-    (toRA dbs rs q).isWellTyped ((Finset.image Sum.inl) ∘ dbs) := by
+  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) (h' : (q.freeVarFinset ∪ brs) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs) (h'''' : brs.card > n + BoundedFormula.depth q)
+  [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+    (toRA dbs q f (rs ∪ FRan f) brs).isWellTyped dbs := by
       induction hq with
-      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf h h'
+      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf h f (by grind) h'' h'''
       | all =>
-        simp [toRA, toRA.freeVarFinset_def]
-        simp_all
+        simp at h ⊢
+        simp [toRA]
+        rename_i inst_1 n_1 φ h_1 h_ih
+        . apply allToRA.isWellTyped_def dbs ?_ f ?_
+          . refine h_ih (f := (liftF f brs)) ?_ ?_ ?_ ?_ ?_
+            . simp_all
+            . simp_all
+            . simp_all
+            . exact FRan.liftF_sub_brs (by grind) h'''
+            . simp at h''''; grind
+          . simp_all [schema_def dbs]
+            ext a
+            simp
+            have := FRan.liftF_sub_brs (f := f) (by grind) h'''
+            apply Iff.intro
+            . grind
+            . grind
+
       | ex =>
         simp at h ⊢
-        simp [toRA, adom.isWellTyped_def, toRA.freeVarFinset_def, adom.schema_def]
-        simp_all
+        simp [toRA]
+        rename_i inst_1 n_1 φ h_1 h_ih
+        simp only [adom.isWellTyped_def, true_and, *]
+        apply And.intro
+        · apply And.intro
+          · apply allToRA.isWellTyped_def
+            . simp_all only [gt_iff_lt,
+              BoundedFormula.depth, zero_le,
+              sup_of_le_left, RA.Query.isWellTyped, adom.isWellTyped_def, adom.schema_def, and_self,
+              schema_def, RA.Query.schema, and_true, true_and]
+              . apply h_ih
+                . grind
+                . simp_all
+                . simp_all
+                . exact FRan.liftF_sub_brs (by grind) h'''
+                . grind
+            . simp_all [adom.schema_def]
+              ext a
+              simp
+              have := FRan.liftF_sub_brs (f := f) (by grind) h'''
+              apply Iff.intro
+              . grind
+              . grind
+          · rfl
+        · rfl
 
 theorem toRA.evalT_def_IsPrenex [folStruc dbi (μ := μ)] {q : fol.BoundedFormula String n}
   (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbi.schema) [Fintype (adomRs dbi.schema)] :
-    (toRA dbi.schema q.freeVarFinset q).evaluateT dbi =
+    (toRA dbi.schema q f (q.freeVarFinset ∪ brs) brs).evaluateT dbi =
       {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' q.freeVarFinset} := by
         induction hq with
         | _ => sorry --unfold toRA; aesop; all_goals (try simp_all [Set.diff, BoundedFormula.Realize]); all_goals sorry;
 
 
+@[simp]
+def freshStringsS (n : ℕ) : Set String := {a | ∃i ∈ (Finset.range n), toString i = a}
+
+instance freshStringsSFin : Fintype (freshStringsS n) := by
+  apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image (toString ∘ Fin.val))
+  . simp
+    intro s
+    apply Iff.intro
+    . intro ⟨a, ha⟩
+      use a
+      simp [ha]
+    . intro ⟨a, ha, ha'⟩
+      use ⟨a, ha⟩
+
+@[simp]
+def freshStrings (n : ℕ) : Finset String := (freshStringsS n).toFinset
+
+theorem freshString.card_def : (freshStrings n).card = n := by
+  simp;
+  rw [Fintype.card];
+  induction n;
+  . simp_all only [Finset.range_zero, Finset.card_univ, Finset.notMem_empty, false_and, exists_const]
+    rfl
+  . simp_all only [Finset.card_univ, Finset.mem_range]
+    HasFresh
+
+@[simp]
+def getBRS (f : fol.BoundedFormula String n) :=
+  (freshStrings (n + BoundedFormula.depth f)) \ f.freeVarFinset
+
+
+
 -- Complete conversion
 @[simp]
 noncomputable def fol_to_ra_query (q : FOL.Query dbs) [Fintype (adomRs dbs)] : RA.Query String String :=
-  toRA dbs q.schema (toPrenex q)
+  toRA dbs (toPrenex q) (Fin.elim0) q.schema (getBRS q)
 
 @[simp]
 theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
-  rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, toRA.freeVarFinset_def]
+  rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, toRA.schema_def]
 
 theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
   (fol_to_ra_query q).isWellTyped dbs := by
-    rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex]
-    refine toRA.isWellTyped_def_IsPrenex ?_ (BoundedQuery.safeDBS_toPrenex q) ?_
+    have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan.default = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp
+    rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, ← this]
+    refine toRA.isWellTyped_def_IsPrenex ?_ (BoundedQuery.safeDBS_toPrenex q) ?_ ?_
     . simp [BoundedFormula.toPrenex_isPrenex]
-    . simp
+    . simp [FRan, FRanS]
+    . simp [FRan, FRanS]
 
 theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.schema)] [Nonempty μ] (q : FOL.Query dbi.schema) :
   RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q := by
