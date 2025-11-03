@@ -202,18 +202,18 @@ theorem relToRA.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (Stri
     . simp
   · simp [relSelects.schema_def]
 
-noncomputable def allToRA (q' : RA.Query String String) (f : Fin n → String) (rs : Finset String) : RA.Query String String :=
-  (adom dbs rs).d (.p rs q')
+noncomputable def allToRA (q' : RA.Query String String) (rs : Finset String) : RA.Query String String :=
+  (adom dbs rs).d (.p rs ((adom dbs (q'.schema dbs)).d q'))
 
-theorem allToRA.schema_def : (allToRA dbs q f rs).schema dbs = rs := by
+theorem allToRA.schema_def : (allToRA dbs q rs).schema dbs = rs := by
   induction q with
   | R =>
     simp [allToRA]
     exact adom.schema_def
   | _ => expose_names; exact a_ih
 
-theorem allToRA.isWellTyped_def (h : q.isWellTyped dbs) (f : Fin n → String) (h' : rs ⊆ q.schema dbs) [Nonempty ↑(adomRs dbs)] :
-  (allToRA dbs q f rs).isWellTyped dbs := by
+theorem allToRA.isWellTyped_def (h : q.isWellTyped dbs) (h' : rs ⊆ q.schema dbs) [Nonempty ↑(adomRs dbs)] :
+  (allToRA dbs q rs).isWellTyped dbs := by
     simp [allToRA]
     simp_all only [nonempty_subtype, and_self, adom.isWellTyped_def, adom.schema_def]
 
@@ -224,7 +224,7 @@ noncomputable def toRA
     | .equal t₁ t₂ => .s (TermtoAtt f' t₁) (TermtoAtt f' t₂) (adom dbs rs)
     | .rel (.R rn) ts => relToRA dbs rn ts f' rs
     | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ f' rs brs) (toRA f₂ f' rs brs))
-    | .all sf => allToRA dbs (toRA sf (liftF f' brs) (rs ∪ FRan (liftF f' brs)) brs) f' rs
+    | .all sf => allToRA dbs (toRA sf (liftF f' brs) (rs ∪ FRan (liftF f' brs)) brs) rs
 
 theorem toRA.schema_def :
     (toRA dbs φ f rs brs).schema dbs = rs := by
@@ -310,38 +310,34 @@ theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
     (toRA dbs q f (rs ∪ FRan f) brs).isWellTyped dbs := by
       induction hq with
-      | of_isQF h_qf =>
-        apply isWellTyped_def_IsQF h_qf f (by grind)
+      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf f (by grind)
       | all =>
         simp [toRA]
         simp at h''''
         rename_i inst_1 n_1 φ h_1 h_ih
-        . apply allToRA.isWellTyped_def dbs ?_ f ?_
-          . apply h_ih (f := (liftF f brs))
-            . simp_all
-            . simp_all
-            . exact FRan.liftF_sub_brs (by grind) h'''
-            . grind
-          . simp_all [schema_def dbs]
-            exact Finset.union_subset_union_right FRan.liftF_sub
+
+        have wt := h_ih (f := (liftF f brs)) h' h'' (FRan.liftF_sub_brs (by grind) h''') (by grind)
+        have sch : rs ∪ FRan f ⊆ (toRA dbs φ (liftF f brs) (rs ∪ FRan (liftF f brs)) brs).schema dbs := by
+          simp_all [schema_def dbs]
+          exact Finset.union_subset_union_right FRan.liftF_sub
+
+        simp_all [allToRA.isWellTyped_def]
 
       | ex =>
         simp [toRA]
         rename_i inst_1 n_1 φ h_1 h_ih
+        simp at h' h'' h''''
+
+        have wt := h_ih (f := (liftF f brs)) h' h'' (FRan.liftF_sub_brs (by grind) h''') (by grind)
+        have sch : rs ∪ FRan f ⊆ (toRA dbs φ (liftF f brs) (rs ∪ FRan (liftF f brs)) brs).schema dbs := by
+          simp_all [schema_def dbs]
+          exact Finset.union_subset_union_right FRan.liftF_sub
+
         simp only [adom.isWellTyped_def, true_and, *]
         apply And.intro
         · apply And.intro
-          · apply allToRA.isWellTyped_def
-            . simp_all only [depth, zero_le, sup_of_le_left, RA.Query.isWellTyped,
-              adom.isWellTyped_def, adom.schema_def, and_self, schema_def, RA.Query.schema,
-              and_true, true_and]
-              . apply h_ih
-                . simp_all
-                . simp_all
-                . exact FRan.liftF_sub_brs (by grind) h'''
-                . grind
-            . simp_all [adom.schema_def]
-              exact Finset.union_subset_union_right FRan.liftF_sub
+          . simp_all [allToRA.isWellTyped_def, schema_def, RA.Query.isWellTyped, adom.isWellTyped_def,
+              adom.schema_def, and_self, RA.Query.schema]
           · rfl
         · rfl
 
