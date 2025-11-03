@@ -236,3 +236,39 @@ theorem freeVarFinset_toPrenex (φ : (fol dbs).BoundedFormula String n) :
       freeVarFinset, h1, h2]
   | all _ h =>
     rw [freeVarFinset, toPrenex, freeVarFinset, h]
+
+@[simp]
+def depth : BoundedFormula L Attribute n → ℕ
+  | .falsum => 0
+  | .rel _ _ => 0
+  | .equal _ _ => 0
+  | .imp f₁ f₂ => max (depth f₁) (depth f₂)
+  | .all f' => 1 + depth f'
+
+@[simp]
+theorem depth.imp_def_left (f₁ f₂ : BoundedFormula L Attribute n) :
+  ∃m, n + depth (.imp f₁ f₂) = n + m + depth f₁ := by
+    simp
+    have := max_cases (depth f₁) (depth f₂)
+    simp_all only [sup_eq_left, and_self, sup_eq_right]
+    cases this with
+    | inl h => simp_all only [sup_of_le_left, Nat.add_right_cancel_iff, Nat.left_eq_add, exists_eq]
+    | inr h_1 =>
+      simp_all only [sup_of_le_right]
+      obtain ⟨left, right⟩ := h_1
+      use (depth f₂ - depth f₁)
+      grind
+
+theorem depth.imp_comm (f₁ f₂ : BoundedFormula L Attribute n) :
+  depth (.imp f₁ f₂) = depth (.imp f₂ f₁) := by simp [max_comm]
+
+@[simp]
+theorem depth.imp_def_right (f₁ f₂ : BoundedFormula L Attribute n) :
+  ∃m, n + depth (.imp f₁ f₂) = n + m + depth f₂ := by
+    rw [depth.imp_comm]
+    exact imp_def_left f₂ f₁
+
+@[simp]
+theorem depth.all_def (f : BoundedFormula L Attribute (n + 1)) :
+  n + depth (.all f) = n + 1 + depth f := by
+    simp; grind
