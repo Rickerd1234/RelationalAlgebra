@@ -91,42 +91,42 @@ open FirstOrder
 
 
 /-- The type of Relations in FOL -/
-inductive relations : ℕ → Type
-  | R : (dbs : String → Finset String) → (rn : String) → relations (dbs rn).card
+inductive relations (dbs : String → Finset String) : ℕ → Type
+  | R : (rn : String) → relations dbs (dbs rn).card
 
 /-- The language of fol contains the relations -/
-def Language.fol : Language :=
+def Language.fol (dbs : String → Finset String) : Language :=
   { Functions := fun _ => Empty
-    Relations := relations }
+    Relations := relations dbs }
   deriving Language.IsRelational
 
 @[simp]
-def fol.Rel (dbs: String → Finset String) (rn: String) : Language.fol.Relations (dbs rn).card :=
-  relations.R dbs rn
+def fol.Rel {dbs: String → Finset String} (rn: String) : (Language.fol dbs).Relations (dbs rn).card :=
+  relations.R rn
 
 
 open Language
 
-class folStruc (dbi : DatabaseInstance String String μ) extends fol.Structure μ where
+class folStruc (dbi : DatabaseInstance String String μ) extends (fol dbi.schema).Structure μ where
   RelMap_R :      -- Add proof to RelMap for each Relation in the Language
       (rn : String)          →                      -- Every relation (and every arity)
       (va : Fin (dbi.schema rn).card → μ) →             -- Every value assignment (for this arity)
 
-        RelMap (.R dbi.schema rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
+        RelMap (.R rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
         (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
           ArityToTuple va ∈ (dbi.relations rn).tuples
         )
 
 @[simp]
-theorem folStruc_apply_RelMap (dbi : DatabaseInstance String String μ) [folStruc dbi] {rn va} :
-  Structure.RelMap (fol.Rel dbi.schema rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
+theorem folStruc_apply_RelMap (dbi : DatabaseInstance String String μ) [folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
+  Structure.RelMap (fol.Rel rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
     := (folStruc.RelMap_R rn va)
 
 @[simp]
-theorem fol_empty_fun (_f : fol.Functions n) : False := by
+theorem fol_empty_fun (_f : (fol dbs).Functions n) : False := by
   exact Aesop.BuiltinRules.empty_false _f
 
-theorem Term.cases (t : fol.Term (α ⊕ (Fin n))) : ∃k, t = var k := by
+theorem Term.cases (t : (fol dbs).Term (α ⊕ (Fin n))) : ∃k, t = var k := by
   cases t with | var k => use k | func _f _ => exact False.elim (fol_empty_fun _f)
 
 end folStruc

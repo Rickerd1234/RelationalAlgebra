@@ -10,17 +10,17 @@ namespace FOL
 variable {μ : Type} {dbi : DatabaseInstance String String μ}
 
 -- Formal realization definition
-def BoundedQuery.Realize (dbi : DatabaseInstance String String μ) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbs n): (String → μ) → (Fin n → μ) → Prop :=
+def BoundedQuery.Realize (dbi : DatabaseInstance String String μ) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbi.schema n): (String → μ) → (Fin n → μ) → Prop :=
   q.toFormula.Realize
 
 @[simp]
-theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbs n) {t: String → μ}
+theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbi.schema n) {t: String → μ}
   : (exs q).Realize dbi t (default : Fin 0 → μ) ↔ ∃iv : Fin n → μ, q.Realize dbi t iv := by
     simp_all only [Realize, toFormula_exs, Formula.boundedFormula_realize_eq_realize]
     exact BoundedFormula.realize_exs
 
 @[simp]
-theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery dbs n}  {g : String → String ⊕ (Fin m)} {t : String → μ}
+theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {φ : BoundedQuery dbi.schema n}  {g : String → String ⊕ (Fin m)} {t : String → μ}
   {xs : Fin (m + n) → μ} :
   (φ.relabel g).Realize dbi t xs ↔
     (φ.toFormula.relabel g).Realize t xs := by

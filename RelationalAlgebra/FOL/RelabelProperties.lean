@@ -7,7 +7,7 @@ namespace FOL
 
 @[simp]
 theorem relabel.Injective_def {k n : ℕ} {g : (α ⊕ Fin k) → (α ⊕ Fin n)} (h : g.Injective) :
-  Function.Injective (Term.relabel g : fol.Term (α ⊕ Fin k) → fol.Term (α ⊕ Fin n)) := by
+  Function.Injective (Term.relabel g : (fol dbs).Term (α ⊕ Fin k) → (fol dbs).Term (α ⊕ Fin n)) := by
     simp_all [Function.Injective]
     intros t₁ t₂ h'
     have ⟨t₁, ht₁⟩ := Term.cases t₁

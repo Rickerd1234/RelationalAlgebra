@@ -91,7 +91,7 @@ theorem projectQuery.not_sub_schema (folQ : FOL.Query dbs) (rs : Finset String) 
   rw [z]
 
 @[simp]
-theorem projectQuery.Realize_empty_def [FOL.folStruc dbi] (folQ : FOL.Query dbs) (rs : Finset String) (h : folQ.schema \ rs = ∅) (h' : rs ⊆ folQ.schema)
+theorem projectQuery.Realize_empty_def [FOL.folStruc dbi] (folQ : FOL.Query dbi.schema) (rs : Finset String) (h : folQ.schema \ rs = ∅) (h' : rs ⊆ folQ.schema)
   : (projectQuery folQ rs).Realize dbi t xs = folQ.Realize dbi t xs := by
     have : rs = folQ.schema := by aesop
     simp_all

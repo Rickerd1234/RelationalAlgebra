@@ -23,7 +23,7 @@ theorem fol.Term.relabelAux_sumInl {n k} (g : String → String ⊕ (Fin n)) {i 
       simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq]
 
 @[simp]
-theorem fol.Term.relabelAux_castLE {g : String → String ⊕ Fin k} {t : fol.Term (String ⊕ Fin n)} :
+theorem fol.Term.relabelAux_castLE {g : String → String ⊕ Fin k} {t : (fol dbs).Term (String ⊕ Fin n)} :
   (Term.relabel (Sum.map id (Fin.castLE (Nat.le_add_right (k + n) 1)) ∘ BoundedFormula.relabelAux g n) t) =
     (Term.relabel (BoundedFormula.relabelAux g (n + 1) ∘ Sum.map id (Fin.castLE (Nat.le_add_right n 1))) t) := by
       have ⟨t, ht⟩ := Term.cases t
@@ -42,7 +42,7 @@ theorem fol.Term.relabelAux_castLE {g : String → String ⊕ Fin k} {t : fol.Te
         rfl
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : fol.Term (String ⊕ Fin k)} :
+theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : (fol dbs).Term (String ⊕ Fin k)} :
   (Term.relabel (Sum.map id f) t).varFinsetLeft = t.varFinsetLeft := by
     ext a
     unfold varFinsetLeft
@@ -70,7 +70,7 @@ theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : fol.T
         exact False.elim (fol_empty_fun _f)
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : String → String ⊕ (Fin n)) (t : fol.Term (String ⊕ Fin k)) :
+theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : String → String ⊕ (Fin n)) (t : (fol dbs).Term (String ⊕ Fin k)) :
   (Term.relabel (BoundedFormula.relabelAux g _) t).varFinsetLeft = t.varFinsetLeft.pimage (λ a => (g a).getLeft?) := by
     simp [Finset.pimage]
     ext a
@@ -146,7 +146,7 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : String → String �
           exact False.elim (fol_empty_fun _f)
 
 @[simp]
-theorem BoundedFormula.relabel_freeVarFinset {n k} (g : String → String ⊕ (Fin n)) (φ : fol.BoundedFormula String k) :
+theorem BoundedFormula.relabel_freeVarFinset {n k} (g : String → String ⊕ (Fin n)) (φ : (fol dbs).BoundedFormula String k) :
   (φ.relabel g).freeVarFinset = (φ.freeVarFinset.pimage (λ a => (g a).getLeft?)) := by
     simp_all only [Finset.pimage]
     induction φ
@@ -164,7 +164,7 @@ theorem BoundedFormula.relabel_freeVarFinset {n k} (g : String → String ⊕ (F
 open BoundedFormula
 
 @[simp]
-theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : fol.BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
+theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : (fol dbs).BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
   (φ.castLE h').freeVarFinset = φ.freeVarFinset := by
     induction φ with
     | all f ih =>
@@ -174,7 +174,7 @@ theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : fol.BoundedFormula Strin
     | _ => simp_all
 
 @[simp]
-theorem liftAt_freeVarFinset {n n'} (φ : fol.BoundedFormula String n) (hmn : m + n' ≤ n + 1) :
+theorem liftAt_freeVarFinset {n n'} (φ : (fol dbs).BoundedFormula String n) (hmn : m + n' ≤ n + 1) :
   (φ.liftAt n' m).freeVarFinset = φ.freeVarFinset := by
     rw [BoundedFormula.liftAt]
     induction φ with
@@ -184,7 +184,7 @@ theorem liftAt_freeVarFinset {n n'} (φ : fol.BoundedFormula String n) (hmn : m 
       simp only [mapTermRel, freeVarFinset, castLE_freeVarFinset ?_ h, ih (hmn.trans k.succ.le_succ)]
     | _ => simp_all [mapTermRel, Term.liftAt]
 
-theorem freeVarFinset_toPrenexImpRight {φ ψ : fol.BoundedFormula String n} (hφ : IsQF φ) (hψ : IsPrenex ψ) :
+theorem freeVarFinset_toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula String n} (hφ : IsQF φ) (hψ : IsPrenex ψ) :
     (φ.toPrenexImpRight ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by
   induction hψ with
   | of_isQF hψ => rw [hψ.toPrenexImpRight]
@@ -201,7 +201,7 @@ theorem freeVarFinset_toPrenexImpRight {φ ψ : fol.BoundedFormula String n} (h�
     simp only [freeVarFinset, le_refl, liftAt_freeVarFinset]
     exact IsQF.liftAt hφ
 
-theorem freeVarFinset_toPrenexImp {φ ψ : fol.BoundedFormula String n} (hφ : IsPrenex φ) (hψ : IsPrenex ψ) :
+theorem freeVarFinset_toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} (hφ : IsPrenex φ) (hψ : IsPrenex ψ) :
     (φ.toPrenexImp ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by
   revert ψ
   induction hφ with
@@ -225,7 +225,7 @@ theorem freeVarFinset_toPrenexImp {φ ψ : fol.BoundedFormula String n} (hφ : I
     exact this
 
 @[simp]
-theorem freeVarFinset_toPrenex (φ : fol.BoundedFormula String n) :
+theorem freeVarFinset_toPrenex (φ : (fol dbs).BoundedFormula String n) :
     φ.toPrenex.freeVarFinset = φ.freeVarFinset := by
   induction φ with
   | falsum => exact rfl

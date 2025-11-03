@@ -5,7 +5,7 @@ open FOL FirstOrder Language Term RM
 namespace FOL
 
 /-- Maps bounded formulas along a map of terms and a map of relations. -/
-def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, fol.Term (String ⊕ (Fin n)) → fol.Term (String ⊕ (Fin (g n))))
+def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, (fol dbs).Term (String ⊕ (Fin n)) → (fol dbs).Term (String ⊕ (Fin (g n))))
     (h : ∀ n, BoundedQuery dbs (g (n + 1)) → BoundedQuery dbs (g n + 1)) :
     ∀ {n}, BoundedQuery dbs n → BoundedQuery dbs (g n)
   | _n, .R rn vMap      => .R rn (λ i => ft _ (vMap i))
@@ -57,7 +57,7 @@ theorem castLE_comp_castLE {k m n} (km : k ≤ m) (mn : m ≤ n) :
   funext (castLE_castLE km mn)
 
 @[simp]
-theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, fol.Term (String ⊕ (Fin n)) → fol.Term (String ⊕ (Fin (g n))))
+theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, (fol dbs).Term (String ⊕ (Fin n)) → (fol dbs).Term (String ⊕ (Fin (g n))))
     (h : ∀n, g (n + 1) ≤ g n + 1) (φ : BoundedQuery dbs m) :
   (φ.mapTermRel ft (λ n => castLE (h n))).toFormula = φ.toFormula.mapTermRel ft (λ _ => id) (λ n => BoundedFormula.castLE (h n)) := by
     induction φ
@@ -80,7 +80,7 @@ theorem BoundedQuery.relabel.R_def (g : String → String ⊕ (Fin n)) :
     rfl
 
 @[simp]
-theorem BoundedQuery.relabel.tEq_def (g : String → String ⊕ (Fin n)) {k} (t₁ t₂ : fol.Term (String ⊕ (Fin k))) :
+theorem BoundedQuery.relabel.tEq_def (g : String → String ⊕ (Fin n)) {k} (t₁ t₂ : (fol dbs).Term (String ⊕ (Fin k))) :
   (tEq t₁ t₂ : BoundedQuery dbs k).relabel g = tEq (t₁.relabel (BoundedFormula.relabelAux g _)) (t₂.relabel (BoundedFormula.relabelAux g _)) := by
     rfl
 

@@ -12,7 +12,7 @@ open RM FOL FirstOrder Language
 variable {μ : Type}
 
 @[simp]
-def toPrenex (q : FOL.BoundedQuery dbs n) : fol.BoundedFormula String n :=
+def toPrenex (q : FOL.BoundedQuery dbs n) : (fol dbs).BoundedFormula String n :=
   q.toFormula.toPrenex
 
 @[simp]
@@ -20,18 +20,46 @@ theorem toPrenex.freeVarFinset_def {q : FOL.Query dbs} : (toPrenex q).freeVarFin
   simp
 
 @[simp]
-def BoundedFormula.depth : fol.BoundedFormula Attribute n → ℕ
+def BoundedFormula.depth : (fol dbs).BoundedFormula Attribute n → ℕ
   | .falsum => 0
   | .rel _ _ => 0
   | .equal _ _ => 0
   | .imp f₁ f₂ => max (depth f₁) (depth f₂)
   | .all f' => 1 + depth f'
 
+@[simp]
+theorem BoundedFormula.depth.imp_def_left (f₁ f₂ : (fol dbs).BoundedFormula Attribute n) :
+  ∃m, n + BoundedFormula.depth (.imp f₁ f₂) = n + m + BoundedFormula.depth f₁ := by
+    simp
+    have := max_cases (depth f₁) (depth f₂)
+    simp_all only [sup_eq_left, and_self, sup_eq_right]
+    cases this with
+    | inl h => simp_all only [sup_of_le_left, Nat.add_right_cancel_iff, Nat.left_eq_add, exists_eq]
+    | inr h_1 =>
+      simp_all only [sup_of_le_right]
+      obtain ⟨left, right⟩ := h_1
+      use (depth f₂ - depth f₁)
+      grind
+
+theorem BoundedFormula.depth.imp_comm (f₁ f₂ : (fol dbs).BoundedFormula Attribute n) :
+  BoundedFormula.depth (.imp f₁ f₂) = BoundedFormula.depth (.imp f₂ f₁) := by simp [max_comm]
+
+@[simp]
+theorem BoundedFormula.depth.imp_def_right (f₁ f₂ : (fol dbs).BoundedFormula Attribute n) :
+  ∃m, n + BoundedFormula.depth (.imp f₁ f₂) = n + m + BoundedFormula.depth f₂ := by
+    rw [depth.imp_comm]
+    exact imp_def_left f₂ f₁
+
+@[simp]
+theorem BoundedFormula.depth.all_def (f : (fol dbs).BoundedFormula Attribute (n + 1)) :
+  n + BoundedFormula.depth (.all f) = n + 1 + BoundedFormula.depth f := by
+    simp; grind
+
 def castLERS  [DecidableEq Attribute] (rs : Finset (Attribute ⊕ Fin n)) (h : n ≤ m) : Finset (Attribute ⊕ Fin m) :=
   Finset.image (Sum.map id (Fin.castLE h)) rs
 
 @[simp]
-def BoundedFormula.varFinset [DecidableEq Attribute] : (f : fol.BoundedFormula Attribute n) → Finset (Attribute ⊕ (Fin (n + BoundedFormula.depth f)))
+def BoundedFormula.varFinset [DecidableEq Attribute] : (f : (fol dbs).BoundedFormula Attribute n) → Finset (Attribute ⊕ (Fin (n + BoundedFormula.depth f)))
   | .falsum => ∅
   | .rel R ts => Finset.univ.biUnion λ i => (ts i).varFinset
   | .equal t₁ t₂ => t₁.varFinset ∪ t₂.varFinset
@@ -75,43 +103,7 @@ theorem toDot.inj : (toDot).Injective := by
 @[simp]
 def emb : ℕ ↪ String := ⟨toDot, toDot.inj⟩
 
-@[simp]
-def BoundedFormula.safeR (f : fol.Relations l) (dbs : String → Finset String) : Prop :=
-  match f with
-  | FOL.relations.R dbs' rn => dbs = dbs'
-
-@[simp]
-def BoundedFormula.safeDBS (f : fol.BoundedFormula Attribute n) (dbs : String → Finset String) : Prop :=
-  match f with
-  | .falsum => True
-  | .rel R _ => safeR R dbs
-  | .equal _ _ => True
-  | .imp f₁ f₂ => safeDBS f₁ dbs ∧ safeDBS f₂ dbs
-  | .all f' => safeDBS f' dbs
-
-@[simp]
-theorem BoundedFormula.safeDBS_ToPrenex (q : fol.BoundedFormula Attribute n) : BoundedFormula.safeDBS q.toPrenex dbs ↔ BoundedFormula.safeDBS q dbs := by
-  induction q with
-  | falsum =>
-    simp_all only [safeDBS, BoundedFormula.toPrenex]
-  | equal =>
-    simp_all only [safeDBS, BoundedFormula.toPrenex, Term.bdEqual]
-  | imp =>
-    simp_all only [safeDBS]
-    simp [BoundedFormula.toPrenex]
-    sorry
-  | _ => aesop
-
-@[simp]
-theorem BoundedQuery.safeDBS (q : FOL.BoundedQuery dbs n) : BoundedFormula.safeDBS q.toFormula dbs := by
-  induction q with
-  | _ => aesop
-
-@[simp]
-theorem BoundedQuery.safeDBS_toPrenex (q : FOL.BoundedQuery dbs n) : BoundedFormula.safeDBS q.toFormula.toPrenex dbs := by
-  simp_all only [BoundedFormula.safeDBS_ToPrenex, safeDBS]
-
-noncomputable def TermtoAtt (f : (Fin n → String)) : fol.Term (String ⊕ Fin n) → String
+noncomputable def TermtoAtt (f : (Fin n → String)) : (fol dbs).Term (String ⊕ Fin n) → String
   | var (Sum.inl s) => s
   | var (Sum.inr i) => f i
   | _ => Classical.arbitrary String
@@ -130,6 +122,9 @@ def FRan.default := FRan Fin.elim0
 
 @[simp]
 theorem FRan.default_eq_empty : FRan.default = ∅ := by simp [default, FRan, FRanS]
+
+@[simp]
+theorem FRan.mem_def : f i ∈ FRan f := by simp [FRan, FRanS]
 
 noncomputable def liftF (f' : Fin n → String) (brs : Finset String) : Fin (n + 1) → String :=
   Fin.snoc f' ((RelationSchema.ordering brs).getD n (Classical.arbitrary String))
@@ -164,27 +159,83 @@ theorem FRan.liftF_sub_brs {f : Fin n → String} (h : n < brs.card) (h' : FRan 
 @[simp]
 theorem FRan.liftF_union_brs {f : Fin n → String} (h : n < brs.card) (h' : FRan f ⊆ brs) : (brs ∪ FRan (liftF f brs)) = brs := Finset.union_eq_left.mpr (liftF_sub_brs h h')
 
+noncomputable def relSelect (ra : String) (sq : RA.Query String String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (f : Fin n → String) : RA.Query String String :=
+  .s ra (dite (ra ∈ dbs rn) (λ h => TermtoAtt f (ts (RelationSchema.index h))) (λ _ => ra)) sq
+
+theorem relSelect.schema_def : (relSelect ra q ts f).schema dbs = q.schema dbs := rfl
+
+theorem relSelect.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : RA.Query.isWellTyped dbs q) (h' : ra ∈ q.schema dbs)
+  (h'' : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan f ⊆ q.schema dbs) :
+    RA.Query.isWellTyped dbs (relSelect ra q ts f) := by
+      simp [relSelect]
+      simp_all only [true_and]
+      split
+      next h_1 =>
+        have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index h_1))
+        simp [hk]
+        cases k
+        . simp [TermtoAtt];
+          rw [Finset.union_subset_iff, Finset.subset_iff] at h''
+          obtain ⟨left, right⟩ := h''
+          apply left
+          simp_rw [Finset.mem_biUnion, Finset.mem_univ, true_and]
+          use RelationSchema.index h_1
+          simp [hk]
+        . simp [TermtoAtt]; apply h''; simp
+      next h_1 => simp_all only
+
 variable (dbs : String → Finset String) [Fintype (adomRs dbs)]
 
-noncomputable def tsToRenameFunc (f : Fin n → String) (ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)) (a : String) : String :=
-  dite (a ∈ dbs rn) (λ h => TermtoAtt f (ts (RelationSchema.index h))) (λ _ => a)
+noncomputable def relSelects (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (f : Fin n → String) (rs : Finset String) : RA.Query String String :=
+  ras.foldr (λ ra sq => relSelect ra sq ts f) ((adom dbs rs).j (.R rn))
 
-theorem tsToRenameFunc.injective {ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)} (h : (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (FRan f) = ∅) :
-  Function.Injective (tsToRenameFunc dbs f ts) := by
-    simp [Function.Injective, tsToRenameFunc, TermtoAtt]
-    sorry
+theorem relSelects.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+  (relSelects dbs ras ts f rs).schema dbs = rs ∪ dbs rn := by
+    simp [relSelects]
+    induction ras with
+    | nil => simp [adom.schema_def]
+    | cons hd tl ih =>
+      simp_all only [List.foldr_cons]
+      exact ih
 
+theorem relSelects.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} [Nonempty ↑(adomRs dbs)]
+  (h : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ dbs rn ∪ FRan f ⊆ rs) (h': ras.toFinset ⊆ dbs rn) :
+    RA.Query.isWellTyped dbs (relSelects dbs ras ts f rs) := by
+      simp [relSelects]
+      induction ras with
+      | nil => simp; apply adom.isWellTyped_def
+      | cons hd tl ih =>
+        simp
+        apply relSelect.isWellTyped_def
+        . apply ih
+          simp_rw [Finset.subset_iff, List.mem_toFinset, List.mem_cons] at h' ⊢
+          intro a h
+          exact h' (Or.inr h)
+        . rw [← relSelects, relSelects.schema_def, Finset.mem_union]
+          simp_rw [Finset.subset_iff, List.mem_toFinset, List.mem_cons] at h'
+          apply Or.inl (h ?_)
+          rw [Finset.mem_union]
+          simp_all
+        . rw [← relSelects, relSelects.schema_def, Finset.subset_iff]
+          intro a h'
+          rw [Finset.mem_union]
+          apply Or.inl
+          apply h
+          grind
 
-theorem tsToRenameFunc.surjective {ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)} (h : (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (FRan f) = ∅) :
-  Function.Surjective (tsToRenameFunc dbs f ts) := by
-    simp [Function.Surjective, tsToRenameFunc]
-    intro b
-    use b
-    sorry
+noncomputable def relToRA (rn : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n))
+  (f : Fin n → String) (rs : Finset String) : RA.Query String String :=
+    .p (rs) (relSelects dbs (RelationSchema.ordering (dbs rn)) ts f (rs ∪ dbs rn))
 
-theorem tsToRenameFunc.bijective {ts : Fin (Finset.card (dbs rn)) → fol.Term (String ⊕ Fin n)} (h : (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (FRan f) = ∅) :
-  Function.Bijective (tsToRenameFunc dbs f ts) :=
-    ⟨tsToRenameFunc.injective dbs h, tsToRenameFunc.surjective dbs h⟩
+theorem relToRA.schema_def : (relToRA dbs rn ts f rs).schema dbs = rs := rfl
+
+theorem relToRA.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} [Nonempty ↑(adomRs dbs)] (h : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan f ⊆ rs) : RA.Query.isWellTyped dbs (relToRA dbs rn ts f rs) := by
+  simp [relToRA]
+  apply And.intro
+  · apply relSelects.isWellTyped_def dbs (rn := rn)
+    . grind
+    . simp
+  · simp [relSelects.schema_def]
 
 noncomputable def allToRA (q' : RA.Query String String) (f : Fin n → String) (rs : Finset String) : RA.Query String String :=
   (adom dbs rs).d (.p rs q')
@@ -202,11 +253,11 @@ theorem allToRA.isWellTyped_def (h : q.isWellTyped dbs) (f : Fin n → String) (
     simp_all only [nonempty_subtype, subset_refl, and_self, adom.isWellTyped_def, adom.schema_def]
 
 noncomputable def toRA
-  (f : fol.BoundedFormula String n) (f' : Fin n → String) (rs brs : Finset String) : RA.Query String String :=
+  (f : (fol dbs).BoundedFormula String n) (f' : Fin n → String) (rs brs : Finset String) : RA.Query String String :=
     match f with
     | .falsum => .d (adom dbs rs) (adom dbs rs)
     | .equal t₁ t₂ => .s (TermtoAtt f' t₁) (TermtoAtt f' t₂) (adom dbs rs)
-    | .rel (.R dbs' rn) ts => .p rs (.j (adom dbs rs) (.r (tsToRenameFunc dbs' f' ts) (.R rn)))
+    | .rel (.R rn) ts => relToRA dbs rn ts f' rs
     | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ f' rs brs) (toRA f₂ f' rs brs))
     | .all sf => allToRA dbs (toRA sf (liftF f' brs) (rs ∪ FRan (liftF f' brs)) brs) f' rs
 
@@ -215,8 +266,8 @@ theorem toRA.schema_def :
   induction φ with
   | rel R ts =>
     cases R
-    next n dbs rn =>
-      simp [toRA]
+    next n rn =>
+      simp [toRA, relToRA.schema_def]
   | all =>
     simp [toRA]
     apply allToRA.schema_def dbs
@@ -224,8 +275,8 @@ theorem toRA.schema_def :
 
 end toRA
 
-theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula String n}
-  (hq : q.IsAtomic) (h : BoundedFormula.safeDBS q dbs) (f : Fin n → String) (h' : (q.freeVarFinset ∪ FRan f) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs)
+theorem toRA.isWellTyped_def_IsAtomic {q : (fol dbs).BoundedFormula String n}
+  (hq : q.IsAtomic) (f : Fin n → String) (h' : (q.freeVarFinset ∪ FRan f) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
     (toRA dbs q f rs brs).isWellTyped dbs := by
       induction hq with
@@ -269,24 +320,17 @@ theorem toRA.isWellTyped_def_IsAtomic {q : fol.BoundedFormula String n}
         )
       | rel R ts =>
         cases R with
-        | R dbs rn =>
-          simp [Relations.boundedFormula, toRA] at h h' h'' ⊢
-          subst h
-          apply And.intro
-          . apply And.intro
-            . exact adom.isWellTyped_def
-            . exact tsToRenameFunc.bijective dbs (by grind)
-          . rw [Finset.subset_iff]
-            rename_i inst_7
-            intro x a
-            simp_all [nonempty_subtype, Finset.mem_image, adom.schema_def]
+        | R rn =>
+          simp [Relations.boundedFormula, toRA] at h' h'' ⊢
+          apply relToRA.isWellTyped_def
+          grind
 
-theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] {q : fol.BoundedFormula String n}
-  (hq : q.IsQF) (h : BoundedFormula.safeDBS q dbs) (f : Fin n → String) (h' : (q.freeVarFinset ∪ FRan f) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs) :
+theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] {q : (fol dbs).BoundedFormula String n}
+  (hq : q.IsQF) (f : Fin n → String) (h' : (q.freeVarFinset ∪ FRan f) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs) :
     (toRA dbs q f rs brs).isWellTyped dbs := by
       induction hq with
       | falsum => simp_all [toRA, adom.isWellTyped_def, adom.schema_def]
-      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at h f h' h'' h'''
+      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at f h' h'' h'''
       | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
         rename_i q₁ q₂
         rw [toRA]
@@ -298,19 +342,17 @@ theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)]
         have : q₂.freeVarFinset ∩ brs = ∅ := by simp at h''; grind
         simp_all [adom.isWellTyped_def, adom.schema_def, toRA.schema_def]
 
-theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula String n}
-  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbs) (h' : (q.freeVarFinset ∪ brs) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs) (h'''' : brs.card > n + BoundedFormula.depth q)
+theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
+  (hq : q.IsPrenex) (h' : (q.freeVarFinset ∪ brs) ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h''' : FRan f ⊆ brs) (h'''' : brs.card > n + BoundedFormula.depth q)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
     (toRA dbs q f (rs ∪ FRan f) brs).isWellTyped dbs := by
       induction hq with
-      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf h f (by grind) h'' h'''
+      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf f (by grind) h'' h'''
       | all =>
-        simp at h ⊢
         simp [toRA]
         rename_i inst_1 n_1 φ h_1 h_ih
         . apply allToRA.isWellTyped_def dbs ?_ f ?_
-          . refine h_ih (f := (liftF f brs)) ?_ ?_ ?_ ?_ ?_
-            . simp_all
+          . refine h_ih (f := (liftF f brs)) ?_ ?_ ?_ ?_
             . simp_all
             . simp_all
             . exact FRan.liftF_sub_brs (by grind) h'''
@@ -324,7 +366,6 @@ theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula String n}
             . grind
 
       | ex =>
-        simp at h ⊢
         simp [toRA]
         rename_i inst_1 n_1 φ h_1 h_ih
         simp only [adom.isWellTyped_def, true_and, *]
@@ -336,7 +377,6 @@ theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula String n}
               sup_of_le_left, RA.Query.isWellTyped, adom.isWellTyped_def, adom.schema_def, and_self,
               schema_def, RA.Query.schema, and_true, true_and]
               . apply h_ih
-                . grind
                 . simp_all
                 . simp_all
                 . exact FRan.liftF_sub_brs (by grind) h'''
@@ -351,8 +391,8 @@ theorem toRA.isWellTyped_def_IsPrenex {q : fol.BoundedFormula String n}
           · rfl
         · rfl
 
-theorem toRA.evalT_def_IsPrenex [folStruc dbi (μ := μ)] {q : fol.BoundedFormula String n}
-  (hq : q.IsPrenex) (h : BoundedFormula.safeDBS q dbi.schema) [Fintype (adomRs dbi.schema)] :
+theorem toRA.evalT_def_IsPrenex [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
+  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] :
     (toRA dbi.schema q f (q.freeVarFinset ∪ brs) brs).evaluateT dbi =
       {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' q.freeVarFinset} := by
         induction hq with
@@ -360,10 +400,10 @@ theorem toRA.evalT_def_IsPrenex [folStruc dbi (μ := μ)] {q : fol.BoundedFormul
 
 
 @[simp]
-def freshStringsS (n : ℕ) : Set String := {a | ∃i ∈ (Finset.range n), toString i = a}
+def freshStringsS (n : ℕ) : Set String := {a | ∃i ∈ (Finset.range n), emb i = a}
 
 instance freshStringsSFin : Fintype (freshStringsS n) := by
-  apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image (toString ∘ Fin.val))
+  apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image (emb ∘ Fin.val))
   . simp
     intro s
     apply Iff.intro
@@ -376,25 +416,46 @@ instance freshStringsSFin : Fintype (freshStringsS n) := by
 @[simp]
 def freshStrings (n : ℕ) : Finset String := (freshStringsS n).toFinset
 
+theorem freshStringsS.range_def : Fintype.card (freshStringsS n) = (Finset.range n).card := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Finset.card_range] at *;
+    nth_rewrite 3 [← ih]
+    rw [@Fintype.card_ofFinset]
+    rw [@Fintype.card_ofFinset]
+    rw [@Finset.card_image_iff.mpr]
+    . rw [@Finset.card_image_iff.mpr]
+      . simp
+      . exact Set.injOn_of_injective (Function.Injective.comp (Function.Embedding.injective emb) Fin.val_injective)
+    . exact Set.injOn_of_injective (Function.Injective.comp (Function.Embedding.injective emb) Fin.val_injective)
+
 theorem freshString.card_def : (freshStrings n).card = n := by
-  simp;
-  rw [Fintype.card];
-  induction n;
-  . simp_all only [Finset.range_zero, Finset.card_univ, Finset.notMem_empty, false_and, exists_const]
-    rfl
-  . simp_all only [Finset.card_univ, Finset.mem_range]
-    HasFresh
+  rw [freshStrings, Set.toFinset_card, freshStringsS.range_def, Finset.card_range]
 
 @[simp]
-def getBRS (f : fol.BoundedFormula String n) :=
-  (freshStrings (n + BoundedFormula.depth f)) \ f.freeVarFinset
+def getBRS (f : (fol dbs).BoundedFormula String n) :=
+  (freshStrings (n + BoundedFormula.depth f + f.freeVarFinset.card)) \ f.freeVarFinset
 
+theorem getBRS.empty_inter : getBRS f ∩ f.freeVarFinset = ∅ := by simp
 
+@[simp]
+theorem getBRS.card_def {f : (fol dbs).BoundedFormula String n} : (getBRS f).card = n + BoundedFormula.depth f := by
+  rw [getBRS, Finset.card_sdiff, freshString.card_def]
+  rw [Nat.add_sub_assoc, Nat.add_assoc, Nat.add_left_cancel_iff]
+  . sorry
+  . rw [Finset.card_inter]
+    rw [Finset.card_union]
+    sorry
+
+theorem getBRS.card_gt_def : (getBRS q).card > n + BoundedFormula.depth f := by
+  induction q with
+  | _ => sorry
 
 -- Complete conversion
 @[simp]
 noncomputable def fol_to_ra_query (q : FOL.Query dbs) [Fintype (adomRs dbs)] : RA.Query String String :=
-  toRA dbs (toPrenex q) (Fin.elim0) q.schema (getBRS q)
+  toRA dbs (toPrenex q) (Fin.elim0) q.schema (getBRS q.toFormula)
 
 @[simp]
 theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
@@ -404,10 +465,13 @@ theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs
   (fol_to_ra_query q).isWellTyped dbs := by
     have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan.default = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp
     rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, ← this]
-    refine toRA.isWellTyped_def_IsPrenex ?_ (BoundedQuery.safeDBS_toPrenex q) ?_ ?_
+    refine toRA.isWellTyped_def_IsPrenex ?_ ?_ ?_ ?_ ?_
     . simp [BoundedFormula.toPrenex_isPrenex]
-    . simp [FRan, FRanS]
-    . simp [FRan, FRanS]
+    . simp [FRan, FRanS]; sorry
+    . simp
+    . rw [← FRan.default, FRan.default_eq_empty]
+      simp only [Finset.empty_subset]
+    . sorry
 
 theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.schema)] [Nonempty μ] (q : FOL.Query dbi.schema) :
   RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q := by
@@ -416,8 +480,7 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
     rw [Set.mem_setOf_eq, FOL.Query.RealizeMin.ex_def dbi q t, FOL.BoundedQuery.Realize]
     rw [fol_to_ra_query, BoundedQuery.schema, toPrenex]
     have hq := BoundedFormula.toPrenex_isPrenex (BoundedQuery.toFormula q)
-    have h_safe := BoundedQuery.safeDBS_toPrenex q
-    rw [← freeVarFinset_toPrenex, toRA.evalT_def_IsPrenex hq h_safe]
+    rw [← freeVarFinset_toPrenex]
     rw [Set.mem_setOf_eq]
     simp only [BoundedFormula.realize_toPrenex]
     simp_all only [BoundedFormula.safeDBS_ToPrenex, BoundedQuery.safeDBS, freeVarFinset_toPrenex,
