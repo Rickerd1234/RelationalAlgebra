@@ -4,9 +4,9 @@ import RelationalAlgebra.FOL.RealizeProperties
 variable {dbi q₁ q₂} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁: ∀t, (ra_to_fol_query q₁ dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₁)
-  (ih₂: ∀t, (ra_to_fol_query q₂ dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
-    ∀t, (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
+  (ih₁: ∀t, (ra_to_fol_query dbi.schema q₁).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₁)
+  (ih₂: ∀t, (ra_to_fol_query dbi.schema q₂).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
+    ∀t, (ra_to_fol_query dbi.schema (.j q₁ q₂)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
       intro t
       simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.Query.RealizeMin,
         FOL.BoundedQuery.schema.and_def, Finset.coe_union, RA.Query.evaluateT, joinT,
@@ -18,7 +18,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
       have h_dom : t.Dom = ↑(q₁.schema dbi.schema) ∪ ↑(q₂.schema dbi.schema) := by
         rw [← ra_to_fol_query_schema h.1, ← ra_to_fol_query_schema h.2]; simp_all
 
-      have z' : ↑(ra_to_fol_query q₁ dbi.schema).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
+      have z' : ↑(ra_to_fol_query dbi.schema q₁).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
       use t.restrict z'
       apply And.intro
       . apply ih₁
@@ -33,7 +33,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
             . rfl
             . simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union]
 
-      . have z' : ↑(ra_to_fol_query q₂ dbi.schema).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
+      . have z' : ↑(ra_to_fol_query dbi.schema q₂).schema ⊆ t.Dom := by simp_all [ra_to_fol_query_schema]
         use t.restrict z'
         apply And.intro
         . apply ih₂
@@ -80,9 +80,9 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
                 use v
 
 theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query q₁ dbi.schema).RealizeMin dbi t)
-  (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query q₂ dbi.schema).RealizeMin dbi t) :
-    ∀t, t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) → (ra_to_fol_query (.j q₁ q₂) dbi.schema).RealizeMin dbi t := by
+  (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query dbi.schema q₁).RealizeMin dbi t)
+  (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query dbi.schema q₂).RealizeMin dbi t) :
+    ∀t, t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) → (ra_to_fol_query dbi.schema (.j q₁ q₂)).RealizeMin dbi t := by
       intro t h_RA_eval
       have t_Dom : t.Dom = q₁.schema dbi.schema ∪ q₂.schema dbi.schema := by
         exact RA.Query.evaluate.validSchema (.j q₁ q₂) h t h_RA_eval
@@ -163,9 +163,9 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
         . simp [t_Dom, ra_to_fol_query_schema left, ra_to_fol_query_schema right]
 
 theorem ra_to_fol_evalT.j_def_eq (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
-  (ih₁ : (ra_to_fol_query q₁ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q₁)
-  (ih₂ : (ra_to_fol_query q₂ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q₂) :
-    (ra_to_fol_query (.j q₁ q₂) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.j q₁ q₂) := by
+  (ih₁ : (ra_to_fol_query dbi.schema q₁).evaluateT dbi = RA.Query.evaluateT dbi q₁)
+  (ih₂ : (ra_to_fol_query dbi.schema q₂).evaluateT dbi = RA.Query.evaluateT dbi q₂) :
+    (ra_to_fol_query dbi.schema (.j q₁ q₂)).evaluateT dbi = RA.Query.evaluateT dbi (.j q₁ q₂) := by
       ext t
       apply Iff.intro
       . exact ra_to_fol_evalT.j_def.mp h

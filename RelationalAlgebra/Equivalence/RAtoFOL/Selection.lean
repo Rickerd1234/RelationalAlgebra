@@ -3,8 +3,8 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi a b p q} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q))
-  (ih: ∀t, (ra_to_fol_query q dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
-    ∀t, (ra_to_fol_query (.s a b q) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
+  (ih: ∀t, (ra_to_fol_query dbi.schema q).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
+    ∀t, (ra_to_fol_query dbi.schema (.s a b q)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
       intro t
       simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.outVar.def, FOL.Query.RealizeMin.ex_def,
         FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula,
@@ -28,8 +28,8 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q)
         simp_all [Part.ext_iff, Part.mem_eq]
 
 theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q))
-  (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query q dbi.schema).RealizeMin dbi t) :
-    ∀t, t ∈ RA.Query.evaluateT dbi (.s a b q) → (ra_to_fol_query (.s a b q) dbi.schema).RealizeMin dbi t := by
+  (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query dbi.schema q).RealizeMin dbi t) :
+    ∀t, t ∈ RA.Query.evaluateT dbi (.s a b q) → (ra_to_fol_query dbi.schema (.s a b q)).RealizeMin dbi t := by
       intro t h_RA_eval
       have h_1 := RA.Query.evaluate.validSchema (.s a b q) h t h_RA_eval
       apply Exists.intro
@@ -49,8 +49,8 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q
         exact FOL.TupleToFun.tuple_eq_ext h_RA_eval.2
 
 theorem ra_to_fol_evalT.s_def_eq (h : RA.Query.isWellTyped dbi.schema (.s a b q))
-  (ih: (ra_to_fol_query q dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi q) :
-    (ra_to_fol_query (.s a b q) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.s a b q) := by
+  (ih: (ra_to_fol_query dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
+    (ra_to_fol_query dbi.schema (.s a b q)).evaluateT dbi = RA.Query.evaluateT dbi (.s a b q) := by
       ext t
       apply Iff.intro
       . exact ra_to_fol_evalT.s_def.mp h

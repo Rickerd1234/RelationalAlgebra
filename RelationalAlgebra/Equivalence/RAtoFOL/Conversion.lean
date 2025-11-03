@@ -3,18 +3,17 @@ import RelationalAlgebra.FOL.RelabelProperties
 
 open RM
 
-noncomputable def ra_to_fol_query (raQ : RA.Query String String) (dbs : String → Finset String) : FOL.Query dbs :=
-  match raQ with
+def ra_to_fol_query (dbs : String → Finset String) : RA.Query String String → FOL.Query dbs
   | .R rn => .R rn (FOL.outVar ∘ RelationSchema.fromIndex)
-  | .s a b sq => .and (ra_to_fol_query sq dbs) (.tEq (FOL.outVar a) (FOL.outVar b))
-  | .p rs sq => projectQuery (ra_to_fol_query sq dbs) rs
-  | .j sq1 sq2 => .and (ra_to_fol_query sq1 dbs) (ra_to_fol_query sq2 dbs)
-  | .r f sq => (ra_to_fol_query sq dbs).relabel (Sum.inl ∘ f)
-  | .u sq₁ sq₂ => .or (ra_to_fol_query sq₁ dbs) (ra_to_fol_query sq₂ dbs)
-  | .d sq nq => .and (ra_to_fol_query sq dbs) (.not (ra_to_fol_query nq dbs))
+  | .s a b sq => .and (ra_to_fol_query dbs sq) (.tEq (FOL.outVar a) (FOL.outVar b))
+  | .p rs sq => projectQuery (ra_to_fol_query dbs sq) rs
+  | .j sq1 sq2 => .and (ra_to_fol_query dbs sq1) (ra_to_fol_query dbs sq2)
+  | .r f sq => (ra_to_fol_query dbs sq).relabel (Sum.inl ∘ f)
+  | .u sq₁ sq₂ => .or (ra_to_fol_query dbs sq₁) (ra_to_fol_query dbs sq₂)
+  | .d sq nq => .and (ra_to_fol_query dbs sq) (.not (ra_to_fol_query dbs nq))
 
-theorem ra_to_fol_query_schema.def (raQ : RA.Query String String) (dbs : String → Finset String) (h : raQ.isWellTyped dbs) :
-  (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
+theorem ra_to_fol_query_schema.def (dbs : String → Finset String) (raQ : RA.Query String String) (h : raQ.isWellTyped dbs) :
+  (ra_to_fol_query dbs raQ).schema = raQ.schema dbs := by
     induction raQ with
     | R rn =>
       ext a
@@ -31,7 +30,7 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query String String) (dbs : String 
     | p rs sq sq_ih =>
       ext a
       obtain ⟨left, right⟩ := h
-      rw [ra_to_fol_query, RA.Query.schema, projectQuery.schema_def (ra_to_fol_query sq dbs) rs ?_]
+      rw [ra_to_fol_query, RA.Query.schema, projectQuery.schema_def (ra_to_fol_query dbs sq) rs ?_]
       simp_all only [forall_const]
 
     | r f sq ih => simp_all [ra_to_fol_query, FOL.BoundedQuery.relabel_schema]
@@ -41,5 +40,5 @@ theorem ra_to_fol_query_schema.def (raQ : RA.Query String String) (dbs : String 
     | _ => simp_all [ra_to_fol_query]
 
 theorem ra_to_fol_query_schema (h : raQ.isWellTyped dbs) :
-  (ra_to_fol_query raQ dbs).schema = raQ.schema dbs := by
-    refine ra_to_fol_query_schema.def raQ dbs h
+  (ra_to_fol_query dbs raQ).schema = raQ.schema dbs := by
+    refine ra_to_fol_query_schema.def dbs raQ h

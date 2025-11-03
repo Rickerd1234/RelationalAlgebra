@@ -3,9 +3,9 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi q₁ q₂} [FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.u_def_eq (h : RA.Query.isWellTyped dbi.schema (.u q₁ q₂))
-  (ih₁ : FOL.Query.evaluateT dbi (ra_to_fol_query q₁ dbi.schema) = RA.Query.evaluateT dbi q₁)
-  (ih₂ : FOL.Query.evaluateT dbi (ra_to_fol_query q₂ dbi.schema) = RA.Query.evaluateT dbi q₂) :
-    FOL.Query.evaluateT dbi (ra_to_fol_query (q₁.u q₂) dbi.schema) = RA.Query.evaluateT dbi (q₁.u q₂) := by
+  (ih₁ : FOL.Query.evaluateT dbi (ra_to_fol_query dbi.schema q₁) = RA.Query.evaluateT dbi q₁)
+  (ih₂ : FOL.Query.evaluateT dbi (ra_to_fol_query dbi.schema q₂) = RA.Query.evaluateT dbi q₂) :
+    FOL.Query.evaluateT dbi (ra_to_fol_query dbi.schema (q₁.u q₂)) = RA.Query.evaluateT dbi (q₁.u q₂) := by
       simp_all [ra_to_fol_query]
       simp [FOL.Query.evaluateT, FOL.Query.RealizeMin.and_def, FOL.BoundedQuery.Realize, ← ih₁, ← ih₂]
       simp_all [ra_to_fol_query_schema]

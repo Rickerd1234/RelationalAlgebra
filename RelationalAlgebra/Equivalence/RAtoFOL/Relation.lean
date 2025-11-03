@@ -3,7 +3,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {dbi rn} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.R_def.mp :
-    ∀t, (ra_to_fol_query (.R rn) dbi.schema).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
+    ∀t, (ra_to_fol_query dbi.schema (.R rn)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
       intro t
       simp_all only [FOL.Query.RealizeMin, FOL.BoundedQuery.Realize, ra_to_fol_query,
         FOL.BoundedQuery.toFormula.eq_1, FOL.fol.Rel,
@@ -18,7 +18,7 @@ theorem ra_to_fol_evalT.R_def.mp :
       apply (FOL.ArityToTuple.def_fromIndex h).symm
 
 theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
-  ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query (.R rn) dbi.schema).RealizeMin dbi t := by
+  ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query dbi.schema (.R rn)).RealizeMin dbi t := by
     intro t h_RA_eval
     apply Exists.intro (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval, ra_to_fol_query_schema])
 
@@ -33,7 +33,7 @@ theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) 
     . exact h_RA_eval
 
 theorem ra_to_fol_evalT.R_def_eq (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
-    (ra_to_fol_query (.R rn) dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi (.R rn) := by
+    (ra_to_fol_query dbi.schema (.R rn)).evaluateT dbi = RA.Query.evaluateT dbi (.R rn) := by
       ext t
       apply Iff.intro
       . exact ra_to_fol_evalT.R_def.mp t

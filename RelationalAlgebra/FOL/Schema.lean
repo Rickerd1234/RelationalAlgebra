@@ -1,4 +1,5 @@
 import RelationalAlgebra.FOL.Query
+import RelationalAlgebra.FOL.ModelTheoryExtensions
 
 open FOL FirstOrder Language RM Term
 
@@ -12,6 +13,30 @@ theorem BoundedFormula.exs.freeVarFinset {k} (φ : (fol dbs).BoundedFormula Stri
     . simp [BoundedFormula.exs]
     . simp [BoundedFormula.exs]
       simp_all only [BoundedFormula.freeVarFinset, Finset.union_empty]
+
+def castLERS  [DecidableEq Attribute] (rs : Finset (Attribute ⊕ Fin n)) (h : n ≤ m) : Finset (Attribute ⊕ Fin m) :=
+  Finset.image (Sum.map id (Fin.castLE h)) rs
+
+@[simp]
+def BoundedFormula.varFinset [DecidableEq Attribute] : (f : (fol dbs).BoundedFormula Attribute n) → Finset (Attribute ⊕ (Fin (n + depth f)))
+  | .falsum => ∅
+  | .rel R ts => Finset.univ.biUnion λ i => (ts i).varFinset
+  | .equal t₁ t₂ => t₁.varFinset ∪ t₂.varFinset
+  | .imp f₁ f₂ => castLERS (varFinset f₁) (by simp) ∪ castLERS (varFinset f₂) (by simp)
+  | .all f' => castLERS (varFinset f') (by simp only [depth]; grind only)
+
+-- def ex_dbs : String → Finset String
+--   | "R1" => {"a", "b", "c"}
+--   | "R2" => {"d", "e", "f"}
+--   | "R3" => {"a", "b", "d"}
+--   | _ => ∅
+
+-- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.falsum (α := String) (n := 0) (L := fol ex_dbs))
+-- #simp [BoundedFormula.varFinset, ex_dbs] BoundedFormula.varFinset (.rel (.R "R2") ([outVar "b", outVar "c", inVar 0].get) (α := String) (n := 1) (L := fol ex_dbs))
+-- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.equal (outVar "a") (inVar 0) (n := 1) (L := fol ex_dbs))
+-- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.imp (.equal (outVar "a") (inVar 0)) (.equal (outVar "b") (inVar 1)) (n := 2) (L := fol ex_dbs))
+-- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.all (.equal (outVar "a") (inVar 0)) (n := 0) (L := fol ex_dbs))
+-- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.all (.imp (.all (.equal (outVar "a") (inVar 1))) (.all (.equal (outVar "b") (inVar 1)))) (n := 0) (L := fol ex_dbs))
 
 -- schema of query
 def BoundedQuery.schema {n : ℕ} (q : BoundedQuery dbs n) : Finset String :=

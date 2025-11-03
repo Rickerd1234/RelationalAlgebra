@@ -14,7 +14,7 @@ section RAtoFOL
 variable {dbi : DatabaseInstance _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] (raQ : RA.Query String String) (h : RA.Query.isWellTyped dbi.schema raQ)
 
 theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
-  (ra_to_fol_query raQ dbi.schema).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
+  (ra_to_fol_query dbi.schema raQ).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
     induction raQ with
     | R rn => exact ra_to_fol_evalT.R_def_eq h
     | s a b sq ih => exact ra_to_fol_evalT.s_def_eq h (ih h.1)
@@ -25,14 +25,14 @@ theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
     | d q nq ih nih => exact ra_to_fol_evalT.d_def_eq h (ih h.1) (nih h.2.1)
 
 theorem ra_to_fol_eval :
-  (ra_to_fol_query raQ dbi.schema).evaluate dbi = raQ.evaluate dbi h := by
+  (ra_to_fol_query dbi.schema raQ).evaluate dbi = raQ.evaluate dbi h := by
     simp [RA.Query.evaluate, FOL.Query.evaluate]
     simp_all [ra_to_fol_query_schema]
     exact ra_to_fol_evalT raQ h
 
 theorem ra_to_fol :
   ∃folQ : FOL.Query dbi.schema, folQ.evaluate dbi = raQ.evaluate dbi h := by
-    use ra_to_fol_query raQ dbi.schema
+    use ra_to_fol_query dbi.schema raQ
     exact ra_to_fol_eval raQ h
 
 end RAtoFOL
@@ -43,7 +43,7 @@ variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomR
 
 theorem fol_to_ra_eval :
   (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluate dbi := by
-    simp [RA.Query.evaluate, FOL.Query.evaluate]
+    simp only [RA.Query.evaluate, FOL.Query.evaluate, RelationInstance.mk.injEq]
     apply And.intro
     · exact fol_to_ra_query.schema_def folQ
     · exact fol_to_ra_query.evalT folQ
