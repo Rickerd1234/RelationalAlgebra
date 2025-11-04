@@ -241,12 +241,148 @@ theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
           · rfl
         · rfl
 
-theorem toRA.evalT_def_IsPrenex [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] :
+theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
+  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) :
+    (toRA dbi.schema q f rs brs).evaluateT dbi =
+      {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' rs} := by
+      induction hq with
+      | equal t₁ t₂ =>
+        simp [Term.bdEqual, toRA, BoundedFormula.Realize]
+        simp [Term.bdEqual] at h
+        ext t
+        rename_i inst_1 inst_2 inst_3
+        simp_all only [nonempty_subtype, Set.mem_setOf_eq]
+        obtain ⟨w, h_1⟩ := inst_1
+        apply Iff.intro
+        · intro a
+          obtain ⟨left, right⟩ := a
+          obtain ⟨left, right_1⟩ := left
+          obtain ⟨w_1, h_2⟩ := right_1
+          obtain ⟨left_1, right_1⟩ := h_2
+          obtain ⟨w_2, h_2⟩ := right_1
+          obtain ⟨left_2, right_1⟩ := h_2
+          sorry
+        · intro a
+          obtain ⟨w_1, h_2⟩ := a
+          obtain ⟨left, right⟩ := h_2
+          obtain ⟨w_2, h_2⟩ := left
+          subst right
+          apply And.intro
+          · apply And.intro
+            · rfl
+            · sorry
+          · have ⟨k₁, hk₁⟩ := Term.cases t₁
+            have ⟨k₂, hk₂⟩ := Term.cases t₂
+            subst hk₁ hk₂
+            simp_all only [Term.realize_var]
+            cases k₁ with
+            | inl val =>
+              cases k₂ with
+              | inl
+                val_1 =>
+                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Sum.elim_inl, TermtoAtt]
+                rw [Finset.insert_subset_iff, Finset.insert_subset_iff] at h
+                ext v
+                simp [h.1, h.2, PFun.mem_res, h_2]
+              | inr
+                val_2 =>
+                simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union, Sum.elim_inl,
+                  Sum.elim_inr, TermtoAtt]
+                rw [Finset.insert_subset_iff] at h
+                ext v
+                simp [h.1, PFun.mem_res, h_2]
+                apply Iff.intro
+                . intro a
+                  subst a
+                  obtain ⟨left, right⟩ := h
+                  apply And.intro
+                  · exact right FRan.mem_def
+                  · rw [← h_2]
+                    congr
+                    sorry
+                . intro a
+                  obtain ⟨left, right⟩ := h
+                  obtain ⟨left_1, right_1⟩ := a
+                  subst right_1
+                  sorry
+            | inr val_1 =>
+              cases k₂ with
+              | inl
+                val =>
+                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Finset.empty_union,
+                  Sum.elim_inr, Sum.elim_inl]
+                sorry
+              | inr val_2 =>
+                simp_all only [Term.varFinsetLeft, Finset.empty_union, Sum.elim_inr]
+                sorry
+
+      | rel R ts =>
+        rename_i inst_1 inst_2 inst_3 l
+        simp_all only [BoundedFormula.realize_rel, exists_and_right]
+        obtain ⟨w, h_1⟩ := inst_1
+        cases R with
+        | R rn =>
+          sorry
+
+
+theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
+  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) :
+    (toRA dbi.schema q f rs brs).evaluateT dbi =
+      {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' rs} := by
+      induction hq with
+      | falsum => simp_all only [BoundedFormula.freeVarFinset, Finset.empty_union, toRA,
+          RA.Query.evaluateT.eq_7, diffT, Set.diff, and_not_self, Set.setOf_false,
+          BoundedFormula.Realize, false_and, exists_const]
+      | of_isAtomic h_at => exact evalT_def_IsAtomic h_at h
+      | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
+        rename_i q₁ q₂
+        rw [toRA]
+
+        rw [Finset.union_subset_iff, BoundedFormula.freeVarFinset, Finset.union_subset_iff] at h
+        have rsh₁ : q₁.freeVarFinset ∪ FRan f ⊆ rs := Finset.union_subset_iff.mpr ⟨h.1.1, h.2⟩
+        have rsh₂ : q₂.freeVarFinset ∪ FRan f ⊆ rs := Finset.union_subset_iff.mpr ⟨h.1.2, h.2⟩
+        rw [RA.Query.evaluateT, RA.Query.evaluateT, ih₁ rsh₁, ih₂ rsh₂]
+        rw [diffT, diffT]
+
+        simp_rw [BoundedFormula.realize_imp]
+
+        simp_all only [exists_and_right, forall_const, Set.diff, Set.mem_setOf_eq, not_exists,
+          not_and, forall_exists_index, not_forall, not_not, and_imp]
+        obtain ⟨left, right⟩ := h
+        obtain ⟨left, right_1⟩ := left
+        ext
+        rename_i x
+        simp_all only [exists_prop, exists_and_right, Set.mem_setOf_eq]
+        apply Iff.intro
+        · intro a
+          obtain ⟨left_1, right_2⟩ := a
+          sorry
+        · intro a
+          obtain ⟨w, h⟩ := a
+          obtain ⟨left_1, right_2⟩ := h
+          obtain ⟨w_1, h⟩ := left_1
+          subst right_2
+          apply And.intro
+          · sorry
+          · intro x x_1 h_1 a
+            use w
+            apply exists_and_right.mp
+            use w_1
+            simp [a]
+            apply h
+            sorry
+
+
+theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
+  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] :
     (toRA dbi.schema q f (q.freeVarFinset ∪ FRan f) brs).evaluateT dbi =
-      {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' q.freeVarFinset} := by
+      {t | ∃t' vs, BoundedFormula.Realize q t' vs ∧ t = PFun.res t' (q.freeVarFinset ∪ FRan f)} := by
         induction hq with
-        | of_isQF => sorry
+        | of_isQF h =>
+          rw [evalT_def_IsQF h]
+          . simp only [Finset.coe_union, exists_and_right]
+          . simp
+
         | all => sorry
         | ex => sorry
 
@@ -276,7 +412,7 @@ theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs
       rw [hk]
       grind only
 
-theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.schema)] [Nonempty μ] (q : FOL.Query dbi.schema) :
+theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] [Nonempty μ] (q : FOL.Query dbi.schema) :
   RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q := by
     rw [FOL.Query.evaluateT, Set.ext_iff]
     intro t
@@ -293,7 +429,8 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
       obtain ⟨w, h⟩ := a
       obtain ⟨left, right⟩ := h
       subst right
-      refine Exists.intro rfl ?_
+      simp_rw [FRan.default_eq_empty, Finset.coe_empty, Set.union_empty]
+      apply Exists.intro rfl ?_
       rw [← BoundedQuery.Realize] at left ⊢
       obtain ⟨vs, left⟩ := left
       have : vs = default := by ext v; exact False.elim (Fin.elim0 v)
@@ -307,7 +444,7 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
       apply And.intro ?_
       . ext a v
         rw [PFun.mem_res]
-        simp_all only [Finset.mem_coe, TupleToFun]
+        simp_all only [TupleToFun]
         simp_rw [Set.ext_iff, PFun.mem_dom t, ← Part.dom_iff_mem, Finset.mem_coe] at w
         apply Iff.intro
         · intro a_1
@@ -318,7 +455,7 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
         · intro a_1
           obtain ⟨left, right⟩ := a_1
           subst right
-          rw [← w a] at left
+          rw [FRan.default_eq_empty, Finset.coe_empty, Set.union_empty, Finset.mem_coe, ← w a] at left
           simp [Part.getOrElse, left, Part.get_mem]
       . use default
         rw [← BoundedQuery.Realize] at h ⊢
