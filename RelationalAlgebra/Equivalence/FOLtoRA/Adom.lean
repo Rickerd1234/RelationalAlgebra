@@ -274,8 +274,7 @@ theorem RelationNameToColumns.evaluateT_def {as : List α} : (RelationNameToColu
     induction as with
     | nil => simp [EmptyTupleFromRelation.evaluateT_def]
     | cons hd tl ih => simp_all only [Query.foldr_join_evalT, joinT, RelationNameToColumn.evaluateT_def,
-        List.headD_eq_head?_getD, Set.setOf_mem_eq, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or,
-        not_exists, and_imp, Query.evaluateT, List.foldr_cons, Query.evaluateT.eq_4]
+        List.headD_eq_head?_getD, Set.setOf_mem_eq, Query.evaluateT, List.foldr_cons, Query.evaluateT.eq_4]
 
 theorem RelationNameToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : dbi.schema rn ≠ ∅) : (RelationNameToColumns dbi.schema rn as).evaluateT dbi =
   {t | (∃t' ∈ (dbi.relations rn).tuples, t.Dom = as.toFinset.toSet) ∧ ∀a ∈ as, ∃ra ∈ (dbi.schema rn), ∃t' ∈ (dbi.relations rn).tuples, (t' ra = t a)} := by
@@ -286,8 +285,7 @@ theorem RelationNameToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : d
       rw [List.foldr_cons, Query.evaluateT, ih]
       ext t
       simp
-      simp_all only [ne_eq, Query.foldr_join_evalT, joinT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or,
-        not_exists, and_imp, List.coe_toFinset, exists_and_right]
+      simp_all only [ne_eq, Query.foldr_join_evalT, joinT, List.coe_toFinset, exists_and_right]
       apply Iff.intro
       · intro a
         obtain ⟨w, h_1⟩ := a
@@ -409,12 +407,12 @@ theorem RelationNameToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : d
                 rw [Part.eq_none_iff', right_1 a]
                 rw [Not, Set.mem_insert_iff, Set.mem_setOf_eq, ← Not, not_or]
                 apply And.intro
-                . simp [Set.subset_def, PFun.mem_dom] at a_2 dom_hd
+                . simp only [Set.subset_def, PFun.mem_dom, Set.mem_singleton_iff, forall_eq, not_and] at a_2 dom_hd
                   by_contra hc
                   have ⟨v, hv⟩ := dom_hd
                   subst hc
                   exact a_2 v rfl hv
-                . simp [Set.subset_def, PFun.mem_dom] at a_1 dom_tl
+                . simp only [Set.subset_def, PFun.mem_dom, List.coe_toFinset, Set.mem_setOf_eq, not_and] at a_1 dom_tl
                   by_contra hc
                   have ⟨v, hv⟩ := dom_tl a hc
                   exact a_1 v hc hv

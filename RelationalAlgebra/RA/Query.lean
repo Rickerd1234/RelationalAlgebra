@@ -89,12 +89,12 @@ theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isW
     simp_all only [evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq]
   | u sq1 sq2 ih =>
     intro _ ht
-    simp_all [isWellTyped, evaluateT, unionT, schema]
+    simp [isWellTyped, evaluateT, unionT, schema] at *
     cases ht
     all_goals simp_all only
   | d sq1 sq2 ih =>
     intro _ ht
-    simp_all [isWellTyped, evaluateT, diffT, schema]
+    simp [isWellTyped, evaluateT, diffT, schema] at *
     cases ht
     all_goals simp_all only
 

@@ -140,37 +140,46 @@ end rename
 section join
 
 @[simp]
+def joinSingleT (t t1 t2 : α →. μ) : Prop :=
+  (∀ a : α, (a ∈ t1.Dom → t a = t1 a) ∧ (a ∈ t2.Dom → t a = t2 a) ∧ (a ∉ t1.Dom ∪ t2.Dom → t a = Part.none))
+
+def joinDomSingleT {t t1 t2 : α →. μ} (h : joinSingleT t t1 t2) [DecidableEq α]:
+  PFun.Dom t = t1.Dom ∪ t2.Dom := by
+    rw [joinSingleT] at h
+    ext a
+    apply Iff.intro
+    · intro a_1
+      by_cases g : a ∈ t1.Dom ∪ t2.Dom
+      . simp_all only [Set.mem_union, not_or, and_imp, PFun.mem_dom]
+      . simp_all only [Set.mem_union, not_or, and_imp, PFun.mem_dom, or_self, not_false_eq_true,
+        Part.notMem_none, exists_false]
+    · intro a_1
+      simp_all only [Set.mem_union, not_or, and_imp, PFun.mem_dom]
+      cases a_1 with
+      | inl h =>
+        simp_all only [← PFun.mem_dom]
+      | inr h_1 =>
+        simp_all only [← PFun.mem_dom]
+
+@[simp]
 def joinT (inTuples1 inTuples2 : Set (α →. μ)) : Set (α →. μ) :=
   { t | ∃ t1 ∈ inTuples1, ∃ t2 ∈ inTuples2,
-    (∀ a : α, (a ∈ t1.Dom → t a = t1 a) ∧ (a ∈ t2.Dom → t a = t2 a) ∧ (a ∉ t1.Dom ∪ t2.Dom → t a = Part.none))
+    joinSingleT t t1 t2
   }
 
-def joinDom {t} (inst1 inst2 : RelationInstance α μ) (h : t ∈ joinT inst1.tuples inst2.tuples) [DecidableEq α]:
-  PFun.Dom t = inst1.schema ∪ inst2.schema := by
-    simp_all only [Set.mem_setOf_eq, joinT]
+def joinDomSet {t rs1 rs2} (tuples1 tuples2 : Set (α →. μ)) (h : t ∈ joinT tuples1 tuples2) (h1 : ∀t1 ∈ tuples1, t1.Dom = rs1) (h2 : ∀t2 ∈ tuples2, t2.Dom = rs2) [DecidableEq α]:
+  PFun.Dom t = rs1 ∪ rs2 := by
+    rw [joinT, Set.mem_setOf_eq] at h
     obtain ⟨w, h⟩ := h
     obtain ⟨left, right⟩ := h
     obtain ⟨w_1, h⟩ := right
     obtain ⟨left_1, right⟩ := h
-    ext a
-    simp_all only [PFun.mem_dom]
-    simp
-    rw [← Finset.mem_coe, ← inst1.validSchema w left, ← Finset.mem_coe, ← inst2.validSchema w_1 left_1]
-    simp_all only [PFun.mem_dom]
-    apply Iff.intro
-    · intro a_1
-      obtain ⟨w_2, h⟩ := a_1
-      by_cases g : a ∈ w.Dom ∪ w_1.Dom
-      simp_all only [forall_exists_index, Set.mem_union, PFun.mem_dom, not_or, not_exists, and_imp]
-      . simp_all only [not_false_eq_true, Part.notMem_none]
-    · intro a_1
-      by_cases g : a ∈ inst1.schema ∪ inst2.schema
-      . simp_all only [Finset.mem_union]
-        cases a_1
-        all_goals (cases g; all_goals simp_all only)
-      . simp [← Finset.mem_coe] at g
-        rw [← inst1.validSchema w left, ← inst2.validSchema w_1 left_1] at g
-        simp_all only [PFun.mem_dom, not_exists, or_self]
+    rw [joinDomSingleT right]
+    simp_all
+
+def joinDom {t} (inst1 inst2 : RelationInstance α μ) (h : t ∈ joinT inst1.tuples inst2.tuples) [DecidableEq α]:
+  PFun.Dom t = inst1.schema ∪ inst2.schema := by
+    rw [joinDomSet inst1.tuples inst2.tuples h inst1.validSchema inst2.validSchema, Finset.coe_union]
 
 def join (inst1 inst2 : RelationInstance α μ) [DecidableEq α] : RelationInstance α μ :=
     ⟨
@@ -182,7 +191,7 @@ def join (inst1 inst2 : RelationInstance α μ) [DecidableEq α] : RelationInsta
 @[simp]
 theorem joinT_comm (ts₁ ts₂ : Set (α →. μ)) : joinT ts₁ ts₂ = joinT ts₂ ts₁ := by
   ext t
-  simp_all only [joinT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists,
+  simp_all only [joinT, joinSingleT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists,
     and_imp, Set.mem_setOf_eq]
   apply Iff.intro
   all_goals (
@@ -201,8 +210,7 @@ theorem joinT_comm (ts₁ ts₂ : Set (α →. μ)) : joinT ts₁ ts₂ = joinT 
 @[simp]
 theorem joinT_empty (ts : Set (α →. μ)) :
   joinT ts {} = {} := by
-    simp_all only [joinT, Set.mem_empty_iff_false, PFun.mem_dom, forall_exists_index, Set.mem_union,
-      not_or, not_exists, and_imp, false_and, exists_const, and_false, Set.setOf_false]
+    simp_all only [joinT, Set.mem_empty_iff_false, false_and, exists_const, and_false, Set.setOf_false]
 
 @[simp]
 theorem empty_joinT (ts : Set (α →. μ)) :
@@ -210,7 +218,7 @@ theorem empty_joinT (ts : Set (α →. μ)) :
 
 @[simp]
 theorem joinT_self (ts : Set (α →. μ)) (h : ∀t ∈ ts, ∀t' ∈ ts, t.Dom = t'.Dom) : joinT ts ts = ts := by
-  simp only [joinT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp]
+  simp only [joinT, joinSingleT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp]
   ext t
   simp only [Set.mem_setOf_eq]
   apply Iff.intro
