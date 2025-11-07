@@ -236,44 +236,79 @@ theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
         · rfl
 
 theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) :
+  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) (hf : f.Injective) :
     (toRA dbi.schema q f rs brs).evaluateT dbi =
-      {t | ∃t', BoundedFormula.Realize q t' (t' ∘ f) ∧ t = PFun.res t' rs} := by
+      {t | ∃h : t.Dom = ↑rs, BoundedFormula.Realize q (TupleToFun h) ((TupleToFun h) ∘ f) ∧ t.ran ⊆ dbi.domain} := by
       induction hq with
       | equal t₁ t₂ =>
         simp [Term.bdEqual, toRA, BoundedFormula.Realize]
         simp [Term.bdEqual] at h
+
+        have rs_ne_empty : rs ≠ ∅ := by
+          have ⟨k₁, hk₁⟩ := Term.cases t₁
+          have ⟨k₂, hk₂⟩ := Term.cases t₂
+          subst hk₁ hk₂
+          cases k₁ with
+          | inl val =>
+            simp_all only [nonempty_subtype, Term.varFinsetLeft, Finset.singleton_union, ne_eq]
+            apply Aesop.BuiltinRules.not_intro
+            intro a
+            subst a
+            simp_all only [Finset.subset_empty, Finset.insert_ne_empty]
+          | inr val =>
+            simp_all only [nonempty_subtype, Term.varFinsetLeft, Finset.empty_union, ne_eq]
+            apply Aesop.BuiltinRules.not_intro
+            intro a
+            subst a
+            simp_all only [Finset.subset_empty, Finset.union_eq_empty]
+            obtain ⟨left, right⟩ := h
+            cases k₂ with
+            | inl val_1 => simp_all only [Term.varFinsetLeft, Finset.singleton_ne_empty]
+            | inr val_2 =>
+              simp_all only [Term.varFinsetLeft]
+              have : (FRan f).card = 0 := by exact Finset.card_eq_zero.mpr right
+              rw [FRan.card_def hf] at this
+              . subst this
+                exact Fin.elim0 val_2
+
         ext t
         rename_i inst_1 inst_2 inst_3
-        simp_all only [nonempty_subtype, Set.mem_setOf_eq]
-        obtain ⟨w, h_1⟩ := inst_1
+        simp_all only [Set.mem_setOf_eq]
         apply Iff.intro
         · intro a
           obtain ⟨left, right⟩ := a
-          obtain ⟨left, right_1⟩ := left
-          use TupleToFun left
+          have ⟨k₁, hk₁⟩ := Term.cases t₁
+          have ⟨k₂, hk₂⟩ := Term.cases t₂
+          subst hk₁ hk₂
+          simp_all only [Term.realize_var]
+
+          have : t.Dom = ↑rs := by
+            have := RA.Query.evaluate.validSchema (adom dbi.schema rs) adom.isWellTyped_def t left
+            simp [adom.schema_def] at this
+            exact this
+
           apply And.intro
-          . have ⟨k₁, hk₁⟩ := Term.cases t₁
-            have ⟨k₂, hk₂⟩ := Term.cases t₂
-            subst hk₁ hk₂
-            simp_all only [Term.realize_var]
+          . use this
             cases k₁ with
             | inl val =>
               cases k₂ with
               | inl
                 val_1 =>
-                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Sum.elim_inl, TupleToFun, TermtoAtt]
+                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert,
+                  TermtoAtt, Sum.elim_inl, TupleToFun, decidable_dom, eq_mpr_eq_cast]
                 congr
               | inr
                 val_2 =>
-                simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union, Sum.elim_inl, TupleToFun, Sum.elim_inr, TermtoAtt]
+                simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union,
+                  TermtoAtt, Sum.elim_inl, TupleToFun,
+                  decidable_dom, eq_mpr_eq_cast, Sum.elim_inr, Function.comp_apply]
                 congr
             | inr val_1 =>
               cases k₂ with
               | inl
                 val =>
                 simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Finset.empty_union,
-                 Sum.elim_inr, Sum.elim_inl, TupleToFun, TermtoAtt]
+                  Sum.elim_inr, Sum.elim_inl, TupleToFun, TermtoAtt]
                 unfold TupleToFun
                 simp
                 congr
@@ -283,28 +318,19 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
                 unfold TupleToFun
                 simp
                 congr
-          . ext a v
-            simp [PFun.res]
-            apply Iff.intro
-            · intro a_1
-              have h1 : (t a).Dom := by rw [Part.dom_iff_mem]; use v
-              have h2 : a ∈ rs := by rw [← Finset.mem_coe, ← left, PFun.mem_dom]; use v
-              simp [h1, h2, a_1, Part.getOrElse_of_dom, Part.eq_get_iff_mem]
-            · intro a_1
-              simp_all only
-              obtain ⟨left_1, right_2⟩ := a_1
-              subst right_2
-              have h1 : (t a).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, left, Finset.mem_coe]; exact left_1
-              simp [h1, Part.getOrElse_of_dom, Part.get_mem]
+          . rw [adom.complete_def rs_ne_empty] at left
+            simp at left
+            exact left.2
         · intro a
           obtain ⟨w_1, h_2⟩ := a
-          obtain ⟨left, right⟩ := h_2
-          subst right
+          obtain ⟨w_1, h_3⟩ := w_1
           apply And.intro
-          · apply And.intro
-            · rfl
+          · rw [adom.complete_def rs_ne_empty]
+            simp
+            apply And.intro
+            · use w_1
             · intro a h'
-              sorry
+              exact h_2 h'
           · have ⟨k₁, hk₁⟩ := Term.cases t₁
             have ⟨k₂, hk₂⟩ := Term.cases t₂
             subst hk₁ hk₂
@@ -314,32 +340,42 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
               cases k₂ with
               | inl
                 val_1 =>
-                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Sum.elim_inl, TermtoAtt]
+                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert,
+                  Sum.elim_inl, TupleToFun, TermtoAtt]
                 rw [Finset.insert_subset_iff, Finset.insert_subset_iff] at h
                 ext v
-                simp [h.1, h.2, PFun.mem_res, left]
+                have h₁ : (t val).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.2.1
+                have h₂ : (t val_1).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.1
+                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
+                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
+
               | inr
                 val_2 =>
                 simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union, Sum.elim_inl,
                   Sum.elim_inr, TermtoAtt]
                 rw [Finset.insert_subset_iff] at h
                 ext v
-                simp [h.1, PFun.mem_res, left]
-                intro h'
-                apply h.2
-                exact FRan.mem_def
+                have h₁ : (t val).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.1
+                have h₂ : (t (f val_2)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.2 FRan.mem_def
+                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
+                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
             | inr val_1 =>
               cases k₂ with
               | inl
                 val =>
                 simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Finset.empty_union,
-                  Sum.elim_inr, Sum.elim_inl]
-                simp [TermtoAtt, PFun.res]
-                aesop
+                  Sum.elim_inr, Sum.elim_inl, TermtoAtt]
+                rw [Finset.insert_subset_iff] at h
+                have h₁ : (t (f val_1)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.2 FRan.mem_def
+                have h₂ : (t val).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.1
+                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
+                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
               | inr val_2 =>
-                simp_all only [Term.varFinsetLeft, Finset.empty_union, Sum.elim_inr]
-                simp [TermtoAtt, PFun.res]
-                aesop
+                simp_all only [Term.varFinsetLeft, Finset.empty_union, Sum.elim_inr, TermtoAtt]
+                have h₁ : (t (f val_1)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h FRan.mem_def
+                have h₂ : (t (f val_2)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h FRan.mem_def
+                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
+                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
 
       | rel R ts =>
         rename_i inst_1 inst_2 inst_3 l
@@ -353,13 +389,14 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
 
 
 theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) :
+  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) (hf : f.Injective) (h_rs_ne : rs ≠ ∅) :
     (toRA dbi.schema q f rs brs).evaluateT dbi =
-      {t | ∃t', BoundedFormula.Realize q t' (t' ∘ f) ∧ t = PFun.res t' rs} := by
+      {t | ∃h : t.Dom = ↑rs, BoundedFormula.Realize q (TupleToFun h) ((TupleToFun h) ∘ f) ∧ t.ran ⊆ dbi.domain} := by
       induction hq with
       | falsum => simp only [toRA, RA.Query.evaluateT.eq_7, diffT, Set.diff, and_not_self,
-        Set.setOf_false, BoundedFormula.Realize, false_and, exists_const]
-      | of_isAtomic h_at => simp [evalT_def_IsAtomic, *]
+        Set.setOf_false, BoundedFormula.Realize, false_and, exists_false]
+      | of_isAtomic h_at => exact toRA.evalT_def_IsAtomic h_at h hf
+
       | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
         rename_i q₁ q₂
         rw [toRA]
@@ -373,50 +410,41 @@ theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol db
         simp_rw [BoundedFormula.realize_imp]
 
         simp_all only [forall_const, Set.diff, Set.mem_setOf_eq, not_exists,
-          not_and, forall_exists_index, not_forall, not_not, and_imp]
+          not_and, forall_exists_index, not_forall, not_not]
         obtain ⟨left, right⟩ := h
         obtain ⟨left, right_1⟩ := left
         ext t
-        rename_i x
-        simp_all only [exists_prop, Set.mem_setOf_eq]
+        simp_all only [Finset.coe_inj, Set.mem_setOf_eq,
+          TupleToFun.tuple_eq_self, exists_const]
         apply Iff.intro
         · intro a
           obtain ⟨left_1, right_2⟩ := a
-          have : t.Dom = rs := by sorry
-          use TupleToFun this
-          simp_all only [nonempty_subtype, adom.complete_def, Set.mem_setOf_eq, true_and]
-          obtain ⟨w, h⟩ := x
-          apply And.intro
-          · intro a
-            sorry
-          · ext a v
-            sorry
+          simp_all only [exists_and_right, exists_prop, and_true, and_imp]
+          have t_dom : t.Dom = ↑rs := by
+            have := RA.Query.evaluate.validSchema (adom dbi.schema rs) adom.isWellTyped_def t left_1
+            simp [adom.schema_def] at this
+            exact this
+          have t_ran : t.ran ⊆ dbi.domain := by
+            rw [adom.complete_def h_rs_ne] at left_1
+            simp at left_1
+            exact left_1.2
+          apply And.intro ?_ t_ran
+          use t_dom
+          exact λ hq₁ => right_2 t_dom hq₁ t_ran
         · intro a
           obtain ⟨w, h⟩ := a
-          obtain ⟨left_1, right_2⟩ := h
-          subst right_2
           apply And.intro
-          · sorry
-          · intro x h_1 h_2
-            use w
-            simp_all only [and_true]
-            apply left_1
-            apply (BoundedFormula.Realize.equiv ?_ ?_).mp h_1
-            . intro i
-              have := Part.ext_iff.mp (funext_iff.mp h_2 (f i))
-              simp [PFun.mem_res, right FRan.mem_def] at this
-              simp [this]
-            . intro a h
-              have := Part.ext_iff.mp (funext_iff.mp h_2 a)
-              simp [PFun.mem_res, left h] at this
-              simp [this]
+          · rw [adom.complete_def h_rs_ne]
+            . simp_all
+          · intro x h_1
+            simp_all only [exists_and_right, forall_const, and_true, exists_const]
 
 theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] :
+  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (hf : f.Injective) (h_rs_ne : q.freeVarFinset ∪ FRan f ≠ ∅) :
     (toRA dbi.schema q f (q.freeVarFinset ∪ FRan f) brs).evaluateT dbi =
-      {t | ∃t', BoundedFormula.Realize q t' (t' ∘ f) ∧ t = PFun.res t' (q.freeVarFinset ∪ FRan f)} := by
+      {t | ∃h : t.Dom = ↑(q.freeVarFinset ∪ FRan f), BoundedFormula.Realize q (TupleToFun h) ((TupleToFun h) ∘ f) ∧ t.ran ⊆ dbi.domain} := by
         induction hq with
-        | of_isQF h => simp [evalT_def_IsQF h]
+        | of_isQF h => exact evalT_def_IsQF h (by rfl) hf h_rs_ne
         | all hφ ih => sorry
         | ex hφ ih => sorry
 
@@ -461,40 +489,6 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
 
     have : ∀t' : String → μ, (t' ∘ Fin.elim0) = (default : Fin 0 → μ) := by intro t'; ext v; exact False.elim (Fin.elim0 v)
     simp_rw [this]
-
-    apply Iff.intro
-    · intro a
-      obtain ⟨w, h⟩ := a
-      obtain ⟨left, right⟩ := h
-      subst right
-      simp_rw [FRan.default_eq_empty, Finset.coe_empty, Set.union_empty]
-      apply Exists.intro rfl ?_
-      rw [← BoundedQuery.Realize] at left ⊢
-      apply (BoundedQuery.Realize.restrict ?_ ?_).mp left
-      . simp [freeVarFinset_toPrenex]
-      . simp [freeVarFinset_toPrenex, BoundedQuery.schema]
-
-    · intro a
-      obtain ⟨w, h⟩ := a
-      use TupleToFun w
-      apply And.intro ?_
-      . ext a v
-        rw [PFun.mem_res]
-        simp_all only [TupleToFun]
-        simp_rw [Set.ext_iff, PFun.mem_dom t, ← Part.dom_iff_mem, Finset.mem_coe] at w
-        apply Iff.intro
-        · intro a_1
-          have ta_dom : (t a).Dom := (PFun.mem_dom t a).mpr (Exists.intro v a_1)
-          apply And.intro
-          · simp_all
-          · simp [Part.getOrElse, ta_dom, Part.get_eq_of_mem a_1 ta_dom]
-        · intro a_1
-          obtain ⟨left, right⟩ := a_1
-          subst right
-          rw [FRan.default_eq_empty, Finset.coe_empty, Set.union_empty, Finset.mem_coe, ← w a] at left
-          simp [Part.getOrElse, left, Part.get_mem]
-      . rw [← BoundedQuery.Realize] at h ⊢
-        have : ∀x x' t, x = x' → (q.Realize dbi x t → q.Realize dbi x' t) := by simp
-        apply (this (TupleToFun ?_) (TupleToFun w) (default) ?_) h
-        . simp [w]
-        . simp [w]
+    . simp; sorry
+    . simp [Function.Injective]
+    . simp; sorry

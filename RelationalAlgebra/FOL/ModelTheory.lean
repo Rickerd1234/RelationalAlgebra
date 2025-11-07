@@ -41,7 +41,7 @@ theorem TupleToFun.tuple_eq (h : t.Dom = rs) (h' : t'.Dom = rs') (h'' : t = t') 
     aesop
 
 @[simp]
-theorem TupleToFun.tule_eq_self (h : t.Dom = rs) (h' : t.Dom = rs') :
+theorem TupleToFun.tuple_eq_self (h : t.Dom = rs) (h' : t.Dom = rs') :
   TupleToFun h = TupleToFun h' := tuple_eq h h' rfl
 
 @[simp]
