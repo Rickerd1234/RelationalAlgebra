@@ -4,7 +4,62 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-variable {μ : Type} {dbi : DatabaseInstance String String μ} [Nonempty μ]
+variable {μ : Type} {dbi : DatabaseInstance String String μ}
+
+theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}
+  (hiv : ∀i, iv₁ i = iv₂ i) (ht : ∀a ∈ q.freeVarFinset, t₁ a = t₂ a) :
+    q.Realize t₁ iv₁ ↔ q.Realize t₂ iv₂ := by
+      induction q with
+      | rel R ts =>
+        cases R
+        next rn =>
+          simp at ht
+          rw [BoundedFormula.Realize, BoundedFormula.Realize]
+          rw [← fol.Rel, folStruc_apply_RelMap, folStruc_apply_RelMap]
+          have : (fun i ↦ realize (Sum.elim t₁ iv₁) (ts i)) = (fun i ↦ realize (Sum.elim t₂ iv₂) (ts i)) := by
+            ext i
+            have ⟨k, hk⟩ := Term.cases (ts i)
+            rw [hk]
+            simp
+            cases k with
+            | inl val =>
+              simp_all only [Sum.elim_inl]
+              rw [ht val i]
+              . simp [hk]
+            | inr val_1 => simp_all only [Sum.elim_inr]
+          rw [this]
+      | equal t₁ t₂ =>
+        simp_all [BoundedFormula.Realize]
+        have ⟨k₁, hk₁⟩ := Term.cases t₁
+        have ⟨k₂, hk₂⟩ := Term.cases t₂
+        subst hk₁ hk₂
+        simp_all only [realize_var]
+        cases k₁
+        all_goals (
+          cases k₂
+          all_goals (
+            simp_all only [varFinsetLeft, forall_eq_or_imp, Sum.elim_inl, or_false, forall_eq,
+              Sum.elim_inr, Finset.notMem_empty, Finset.mem_singleton, false_or]
+        ))
+      | all f f_ih =>
+        rename_i n'
+        simp at ht
+        simp only [BoundedFormula.Realize]
+        apply forall_congr'
+        intro v
+        apply (f_ih ?_ ht)
+        . intro i
+          congr
+          exact funext hiv
+      | _ => simp_all [BoundedFormula.Realize]
+
+theorem BoundedQuery.Realize.equiv [folStruc dbi] {q : BoundedQuery dbi.schema n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}
+  (hiv : ∀i, iv₁ i = iv₂ i) (ht : ∀a ∈ q.schema, t₁ a = t₂ a) :
+    q.Realize dbi t₁ iv₁ ↔ q.Realize dbi t₂ iv₂ := by
+      rw [Realize]
+      exact BoundedFormula.Realize.equiv hiv ht
+
+variable [Nonempty μ]
 
 @[simp]
 theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset String} {tup tup' : String →. μ} {q : BoundedQuery dbi.schema n}
