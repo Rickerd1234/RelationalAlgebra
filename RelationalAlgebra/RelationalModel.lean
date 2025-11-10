@@ -31,3 +31,7 @@ theorem RelationInstance.validSchema.ext {inst : RelationInstance α μ} (h : t 
 @[simp]
 theorem DatabaseInstance.validSchema.ext {dbi : DatabaseInstance ρ α μ} (rn : ρ) :
   a ∈ (dbi.relations rn).schema ↔ a ∈ dbi.schema rn := Finset.ext_iff.mp (dbi.validSchema rn) a
+
+-- All values in the database
+def DatabaseInstance.domain (dbi : DatabaseInstance ρ α μ) : Set μ :=
+    {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}

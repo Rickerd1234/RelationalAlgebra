@@ -55,7 +55,7 @@ theorem freshStringsS.range_def : Fintype.card (freshStringsS n) = (Finset.range
       . exact Set.injOn_of_injective (Function.Injective.comp (toDot.inj) Fin.val_injective)
     . exact Set.injOn_of_injective (Function.Injective.comp (toDot.inj) Fin.val_injective)
 
-theorem freshString.card_def : (freshStrings n).card = n := by
+theorem freshStrings.card_def : (freshStrings n).card = n := by
   rw [freshStrings, Set.toFinset_card, freshStringsS.range_def, Finset.card_range]
 
 
@@ -72,8 +72,8 @@ example (rs rs' : Finset String) : (rs ∩ rs').card ≤ rs.card := by
   exact Finset.card_le_card Finset.subset_union_right
 
 @[simp]
-theorem FreshAtts.card_def {f : (fol dbs).BoundedFormula String n} : ∃m, (FreshAtts f).card = n + 1 + m + depth f := by
-  rw [FreshAtts, Finset.card_sdiff, freshString.card_def]
+theorem FreshAtts.card_def (f : (fol dbs).BoundedFormula String n) : ∃m, (FreshAtts f).card = n + 1 + m + depth f := by
+  rw [FreshAtts, Finset.card_sdiff, freshStrings.card_def]
   rw [Nat.add_sub_assoc, Nat.add_assoc]
   . grind
   . rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]

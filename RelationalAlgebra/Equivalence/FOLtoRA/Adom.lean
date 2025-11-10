@@ -48,9 +48,6 @@ theorem RA.Query.foldr_union_evalT (xs : List β) (qb : β → RA.Query ρ α) (
 
 
 -- Database instance value domain
-def RM.DatabaseInstance.domain (dbi : DatabaseInstance ρ α μ) : Set μ :=
-    {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}
-
 def adomRs (dbs : ρ → Finset α) : Set ρ :=
   {rn | dbs rn ≠ ∅}
 

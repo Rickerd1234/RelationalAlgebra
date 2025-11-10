@@ -96,3 +96,49 @@ theorem FRan.liftF_sub_brs {f : Fin n → String} (h : n < brs.card) (h' : FRan 
 
 @[simp]
 theorem FRan.liftF_union_brs {f : Fin n → String} (h : n < brs.card) (h' : FRan f ⊆ brs) : (brs ∪ FRan (liftF f brs)) = brs := Finset.union_eq_left.mpr (liftF_sub_brs h h')
+
+noncomputable def FreeMap (n : ℕ) (brs : Finset String) : Fin n → String :=
+  match n with
+  | .zero => Fin.elim0
+  | .succ i => liftF (FreeMap i brs) brs
+
+theorem FRan.FreeMap_lift_union : FRan (FreeMap n brs) ∪ FRan (FreeMap (n + 1) brs) = FRan (FreeMap (n + 1) brs) := by
+  rw [FreeMap, liftF_union]
+
+theorem FreeMap.mem_def : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = Classical.arbitrary String := by
+  induction n with
+  | zero => exact Fin.elim0 i
+  | succ n' ih =>
+    simp [FreeMap, liftF]
+    induction i using Fin.lastCases with
+    | cast j => simp; apply ih
+    | last =>
+      simp_all only [Fin.snoc_last]
+      rw [@List.getD_getElem?]
+      split
+      next h =>
+        apply Or.inl
+        rw [← RelationSchema.ordering_mem]
+        grind
+      next h => simp
+
+theorem FreeMap.fromIndex_def (i : Fin n) (h : n ≤ brs.card) : FreeMap n brs i = RelationSchema.fromIndex (i.castLE h) := by
+  induction n with
+  | zero => exact Fin.elim0 i
+  | succ n' ih =>
+    simp [FreeMap, liftF]
+    induction i using Fin.lastCases with
+    | cast j => simp; apply ih;
+    | last =>
+      simp only [Fin.snoc_last, RelationSchema.fromIndex, Fin.cast_castLE, List.get_eq_getElem,
+        Fin.coe_castLE, Fin.val_last]
+      rw [@List.getD_getElem?]
+      simp only [RelationSchema.ordering_card]
+      grind only
+
+theorem FreeMap.inj_n (h : n ≤ brs.card) : (FreeMap n brs).Injective := by
+  simp [Function.Injective]
+  intro a₁ a₂ h'
+  rw [FreeMap.fromIndex_def _ h, FreeMap.fromIndex_def _ h] at h'
+  have := RelationSchema.fromIndex_inj.mp h'
+  simp_all

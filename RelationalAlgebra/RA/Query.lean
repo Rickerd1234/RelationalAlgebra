@@ -116,3 +116,68 @@ theorem Query.evaluateT.mem_restrict [DecidableEq α] {q : Query ρ α} (z : ↑
   (h : q.isWellTyped dbi.schema) (h' : t ∈ q.evaluateT dbi) :
     t.restrict z ∈ q.evaluateT dbi := by
       have z' := (q.evaluate dbi h).validSchema t h'; have z'' := PFun.restrict.def_eq z z'.symm; simp_all only
+
+theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : DatabaseInstance ρ α μ} {q : Query ρ α} (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → t.ran ⊆ dbi.domain
+  := by
+    induction q with
+    | R rn =>
+      intro t ht
+      simp_all [PFun.ran, DatabaseInstance.domain]
+      intro v a hv
+      use rn, a, t, ht
+      exact Part.eq_some_iff.mpr hv
+
+    | s a b sq => simp_all only [isWellTyped, evaluateT, selectionT, Set.mem_setOf_eq, implies_true]
+
+    | p rs sq ih =>
+      simp_all [projectionT]
+      intro t' t ht ha
+      have z' : PFun.ran t' ⊆ PFun.ran t := by
+        simp only [PFun.ran, Set.setOf_subset_setOf, forall_exists_index]
+        intro v a h_dom
+        by_cases hc : a ∈ rs
+        . simp_all only; exact Exists.intro a h_dom
+        . simp_all only [not_false_eq_true, Part.notMem_none]
+      exact Set.Subset.trans z' (ih t ht)
+
+    | j q₁ q₂ ih₁ ih₂ =>
+      simp_all only [isWellTyped, evaluateT, joinT, joinSingleT, PFun.mem_dom, forall_exists_index,
+        Set.mem_union, not_or, not_exists, and_imp, Set.mem_setOf_eq, forall_const]
+      intro t' t₁ ht₁ t₂ ht₂ ht'
+
+      have z' : PFun.ran t' ⊆ (PFun.ran t₁) ∪ (PFun.ran t₂) := by
+        simp only [PFun.ran, Set.setOf_subset_setOf, Set.union_def]
+        intro v ⟨a, ha⟩
+        by_cases hc₁ : a ∈ t₁.Dom
+        . simp_all; have ⟨y, hy⟩ := hc₁; rw [(ht' a).1 y hy] at ha; apply Or.inl (Exists.intro a ha)
+        . by_cases hc₂ : a ∈ t₂.Dom
+          . simp_all; have ⟨y, hy⟩ := hc₂; rw [(ht' a).2.1 y hy] at ha; apply Or.inr (Exists.intro a ha)
+          . simp_all only [PFun.mem_dom, not_exists, Set.mem_setOf_eq, not_false_eq_true, implies_true,
+              Part.notMem_none]
+
+      have : t₁.ran ∪ t₂.ran ⊆ dbi.domain := by simp_all only [Set.union_subset_iff, and_self]
+      exact fun ⦃a⦄ a_1 ↦ this (z' a_1)
+
+    | r f sq ih =>
+      simp_all only [isWellTyped, evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq,
+        forall_const]
+      intro t ht
+
+      have z := ih (t ∘ f) ht
+      have z' : (PFun.ran t) ⊆ PFun.ran (t ∘ f) := by
+        simp [PFun.ran]
+        intro v a ha
+        use (f.invFun a)
+        simp_all only [f_inv_id]
+
+      exact fun ⦃a⦄ a_1 ↦ z (z' a_1)
+
+    | u q₁ q₂ ih₁ ih₂ =>
+      simp_all only [isWellTyped, evaluateT, unionT, Set.mem_union, forall_const]
+      intro t ht
+      cases ht with
+      | inl ht₁ => exact ih₁ t ht₁
+      | inr ht₂ => exact ih₂ t ht₂
+
+    | d q nq ih nih =>
+      simp_all only [isWellTyped, evaluateT, diffT, Set.diff, Set.mem_setOf_eq, implies_true]
