@@ -504,7 +504,7 @@ theorem adom.evaluateT_def {as : Finset α} [Fintype (adomRs dbs)] : (adom dbs a
 
 -- Solve this, for some reason the binding of rn is not working properly
 @[simp]
-theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] (h_as : as ≠ ∅) : (adom dbi.schema as).evaluateT dbi =
+theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =
   {t | ∃h : t.Dom = ↑as, t.ran ⊆ dbi.domain} := by
     rw [adom, RelationNamesToColumns.evalT_def]
     . rw [DatabaseInstance.domain]
@@ -559,26 +559,34 @@ theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi
         simp_all only [and_true]
         obtain ⟨left, right⟩ := a
 
-        apply Or.inr
-        simp [← Finset.nonempty_iff_ne_empty, Finset.nonempty_def] at h_as
-        obtain ⟨a', ha'⟩ := h_as
-        have ⟨v, hv⟩ : ∃v, v ∈ t a' := by rw [← PFun.mem_dom, left, Finset.mem_coe]; exact ha'
-        have ⟨rn, ra, t', ht', ht''⟩ := right v a' hv
-        use rn
-        apply And.intro
-        . simp [adomRs, ← dbi.validSchema]
-          rw [← Finset.coe_eq_empty, ← (dbi.relations rn).validSchema t' ht']
-          rw [Set.eq_empty_iff_forall_notMem]
-          simp only [PFun.mem_dom, not_exists, not_forall, not_not]
-          use ra
-          use v
-          exact Part.eq_some_iff.mp ht''
-        . apply And.intro
-          · use t'
-          · intro a ha''
-            have ⟨v', hv'⟩ : ∃v, v ∈ t a := by rw [← PFun.mem_dom, left, Finset.mem_coe]; exact ha''
-            have := right v' a hv'
-            sorry
+        by_cases h_as : as = ∅
+        . apply Or.inr
+          subst h_as
+          simp_all only [Finset.coe_empty, Finset.notMem_empty, not_isEmpty_of_nonempty, IsEmpty.exists_iff, and_true,
+            implies_true]
+          use w
+          apply And.intro h
+          sorry
+        . apply Or.inr
+          simp [← Finset.nonempty_iff_ne_empty, Finset.nonempty_def] at h_as
+          obtain ⟨a', ha'⟩ := h_as
+          have ⟨v, hv⟩ : ∃v, v ∈ t a' := by rw [← PFun.mem_dom, left, Finset.mem_coe]; exact ha'
+          have ⟨rn, ra, t', ht', ht''⟩ := right v a' hv
+          use rn
+          apply And.intro
+          . simp [adomRs, ← dbi.validSchema]
+            rw [← Finset.coe_eq_empty, ← (dbi.relations rn).validSchema t' ht']
+            rw [Set.eq_empty_iff_forall_notMem]
+            simp only [PFun.mem_dom, not_exists, not_forall, not_not]
+            use ra
+            use v
+            exact Part.eq_some_iff.mp ht''
+          . apply And.intro
+            · use t'
+            · intro a ha''
+              have ⟨v', hv'⟩ : ∃v, v ∈ t a := by rw [← PFun.mem_dom, left, Finset.mem_coe]; exact ha''
+              have := right v' a hv'
+              sorry
 
     . simp_all [Option.getD]
       split

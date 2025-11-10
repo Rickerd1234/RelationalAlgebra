@@ -26,7 +26,7 @@ theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {�
     (φ.toFormula.relabel g).Realize t xs := by
       simp [Realize]
 
--- -- Realize a query, without any additional attributes in the 'tuple'
+-- Realize a query, without any additional attributes in the 'tuple'
 section RealizeMin
 variable (dbi) (φ : Query dbi.schema) [folStruc dbi] (t : String →. μ) [Nonempty μ]
 

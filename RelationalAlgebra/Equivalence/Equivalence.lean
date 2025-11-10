@@ -6,6 +6,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Rename
 import RelationalAlgebra.Equivalence.RAtoFOL.Union
 import RelationalAlgebra.Equivalence.RAtoFOL.Diff
 import RelationalAlgebra.Equivalence.FOLtoRA.Conversion
+import RelationalAlgebra.Equivalence.FOLtoRA.EvaluateAdom
 
 open RM
 
@@ -42,14 +43,14 @@ section FOLtoRA
 variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
 
 theorem fol_to_ra_eval :
-  (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluate dbi := by
-    simp only [RA.Query.evaluate, FOL.Query.evaluate, RelationInstance.mk.injEq]
+  (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluateAdom dbi := by
+    simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
     apply And.intro
     · exact fol_to_ra_query.schema_def folQ
     · exact fol_to_ra_query.evalT folQ
 
 theorem fol_to_ra :
-  ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluate dbi := by
+  ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
     use fol_to_ra_query folQ
     use fol_to_ra_query.isWellTyped_def folQ
     exact fol_to_ra_eval folQ

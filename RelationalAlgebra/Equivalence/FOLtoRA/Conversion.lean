@@ -241,7 +241,7 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
       {t | ∃h : t.Dom = ↑rs, BoundedFormula.Realize q (TupleToFun h) ((TupleToFun h) ∘ f) ∧ t.ran ⊆ dbi.domain} := by
       induction hq with
       | equal t₁ t₂ =>
-        simp [Term.bdEqual, toRA, BoundedFormula.Realize]
+        simp only [Term.bdEqual, toRA, RA.Query.evaluateT.eq_2, selectionT, BoundedFormula.Realize, exists_and_right]
         simp [Term.bdEqual] at h
 
         have rs_ne_empty : rs ≠ ∅ := by
@@ -318,19 +318,12 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
                 unfold TupleToFun
                 simp
                 congr
-          . rw [adom.complete_def rs_ne_empty] at left
-            simp at left
-            exact left.2
+          . simp_all
         · intro a
           obtain ⟨w_1, h_2⟩ := a
           obtain ⟨w_1, h_3⟩ := w_1
           apply And.intro
-          · rw [adom.complete_def rs_ne_empty]
-            simp
-            apply And.intro
-            · use w_1
-            · intro a h'
-              exact h_2 h'
+          · simp_all
           · have ⟨k₁, hk₁⟩ := Term.cases t₁
             have ⟨k₂, hk₂⟩ := Term.cases t₂
             subst hk₁ hk₂
@@ -389,7 +382,7 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
 
 
 theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) (hf : f.Injective) (h_rs_ne : rs ≠ ∅) :
+  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan f) ⊆ rs) (hf : f.Injective) :
     (toRA dbi.schema q f rs brs).evaluateT dbi =
       {t | ∃h : t.Dom = ↑rs, BoundedFormula.Realize q (TupleToFun h) ((TupleToFun h) ∘ f) ∧ t.ran ⊆ dbi.domain} := by
       induction hq with
@@ -425,7 +418,7 @@ theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol db
             simp [adom.schema_def] at this
             exact this
           have t_ran : t.ran ⊆ dbi.domain := by
-            rw [adom.complete_def h_rs_ne] at left_1
+            rw [adom.complete_def] at left_1
             simp at left_1
             exact left_1.2
           apply And.intro ?_ t_ran
@@ -434,17 +427,17 @@ theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol db
         · intro a
           obtain ⟨w, h⟩ := a
           apply And.intro
-          · rw [adom.complete_def h_rs_ne]
+          · rw [adom.complete_def]
             . simp_all
           · intro x h_1
             simp_all only [exists_and_right, forall_const, and_true, exists_const]
 
 theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (hf : f.Injective) (h_rs_ne : q.freeVarFinset ∪ FRan f ≠ ∅) :
+  (hq : q.IsPrenex) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (hf : f.Injective) :
     (toRA dbi.schema q f (q.freeVarFinset ∪ FRan f) brs).evaluateT dbi =
       {t | ∃h : t.Dom = ↑(q.freeVarFinset ∪ FRan f), BoundedFormula.Realize q (TupleToFun h) ((TupleToFun h) ∘ f) ∧ t.ran ⊆ dbi.domain} := by
         induction hq with
-        | of_isQF h => exact evalT_def_IsQF h (by rfl) hf h_rs_ne
+        | of_isQF h => exact evalT_def_IsQF h (by rfl) hf
         | all hφ ih => sorry
         | ex hφ ih => sorry
 
@@ -475,9 +468,10 @@ theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs
       grind only
 
 theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] [Nonempty μ] (q : FOL.Query dbi.schema) :
-  RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q := by
+  RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q ∩ {t | t.ran ⊆ dbi.domain} := by
     rw [FOL.Query.evaluateT, Set.ext_iff]
     intro t
+    rw [@Set.mem_inter_iff]
     rw [Set.mem_setOf_eq, FOL.Query.RealizeMin.ex_def dbi q t, FOL.BoundedQuery.Realize]
     rw [fol_to_ra_query, BoundedQuery.schema, toPrenex]
     have hq := BoundedFormula.toPrenex_isPrenex (BoundedQuery.toFormula q)
@@ -489,6 +483,5 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
 
     have : ∀t' : String → μ, (t' ∘ Fin.elim0) = (default : Fin 0 → μ) := by intro t'; ext v; exact False.elim (Fin.elim0 v)
     simp_rw [this]
-    . simp; sorry
+    . simp
     . simp [Function.Injective]
-    . simp; sorry
