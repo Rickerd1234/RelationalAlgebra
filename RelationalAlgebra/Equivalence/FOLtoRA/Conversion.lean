@@ -249,7 +249,7 @@ theorem allToRA.evalT_def [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi
       · intro a
         simp_all only [not_false_eq_true, and_self, implies_true]
       · intro a
-        simp_all only [and_self, not_false_eq_true, implies_true]
+        simp_all only [and_self, and_true, not_false_eq_true, implies_true]
 
 
 noncomputable def toRA
@@ -551,7 +551,7 @@ theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol db
           have t_ran : t.ran ⊆ dbi.domain := by
             rw [adom.complete_def] at left_1
             simp at left_1
-            exact left_1.2
+            exact left_1.2.2
           apply And.intro ?_ t_ran
           use t_dom
           exact λ hq₁ => right_2 t_dom hq₁ t_ran
