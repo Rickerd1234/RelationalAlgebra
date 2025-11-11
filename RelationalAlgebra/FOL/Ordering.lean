@@ -105,6 +105,9 @@ theorem RelationSchema.index_lt_card [LawfulBEq α] (h : att ∈ rs) : index h <
 def RelationSchema.fromIndex [LawfulBEq α] (i : Fin rs.card) : α := (ordering rs).get (i.cast (ordering_card rs).symm)
 
 -- Proof usefull properties for fromIndex
+theorem RelationSchema.fromIndex_eq_get [LawfulBEq α] (i : ℕ) (h : i < (ordering rs).length) : (RelationSchema.ordering rs)[i]'h = fromIndex ⟨i, by simp_all; apply h⟩  := by
+  simp [fromIndex]
+
 @[simp]
 theorem RelationSchema.fromIndex_mem [LawfulBEq α] (i : Fin rs.card) : fromIndex i ∈ rs := by
   apply (RelationSchema.ordering_mem (Finset.sort (.≤.) rs)[i] rs).mp

@@ -10,7 +10,7 @@ namespace FOL
 variable {μ : Type} {dbi : DatabaseInstance String String μ}
 
 -- Formal realization definition
-def BoundedQuery.Realize (dbi : DatabaseInstance String String μ) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbi.schema n): (String → μ) → (Fin n → μ) → Prop :=
+def BoundedQuery.Realize (dbi : DatabaseInstance String String μ) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbi.schema n) : (String → μ) → (Fin n → μ) → Prop :=
   q.toFormula.Realize
 
 @[simp]
