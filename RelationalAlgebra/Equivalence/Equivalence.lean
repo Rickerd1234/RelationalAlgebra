@@ -42,17 +42,17 @@ section FOLtoRA
 
 variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
 
-theorem fol_to_ra_eval :
+theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain):
   (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluateAdom dbi := by
     simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
     apply And.intro
     · exact fol_to_ra_query.schema_def folQ
-    · exact fol_to_ra_query.evalT folQ
+    · exact fol_to_ra_query.evalT folQ hμ
 
-theorem fol_to_ra :
+theorem fol_to_ra (hμ : ∀v, v ∈ dbi.domain):
   ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
     use fol_to_ra_query folQ
     use fol_to_ra_query.isWellTyped_def folQ
-    exact fol_to_ra_eval folQ
+    exact fol_to_ra_eval folQ hμ
 
 end FOLtoRA
