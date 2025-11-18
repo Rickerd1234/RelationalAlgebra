@@ -136,9 +136,46 @@ theorem FreeMap.fromIndex_def (i : Fin n) (h : n ≤ brs.card) : FreeMap n brs i
       simp only [RelationSchema.ordering_card]
       grind only
 
+theorem FRan.mem_FreeMap_lift_cases (h : n + 1 ≤ brs.card) : x ∈ FRan (FreeMap (n + 1) brs) ↔ (x ∈ FRan (FreeMap n brs) ∨ x = FreeMap (n + 1) brs (Fin.last n)) := by
+  apply Iff.intro
+  · intro a
+    simp [FRan, FreeMap, FRanS, liftF] at a
+    obtain ⟨i, hi⟩ := a
+    induction i using Fin.lastCases with
+    | cast j => apply Or.inl; subst hi; simp
+    | last =>
+      simp at hi
+      apply Or.inr
+      subst hi
+      rw [FreeMap.fromIndex_def _ h]
+      . rw [RelationSchema.fromIndex]
+        simp
+        rw [@List.getD_getElem?]
+        have : n < (RelationSchema.ordering brs).length := by simp; grind
+        simp only [this, ↓reduceDIte]
+  · intro a
+    cases a with
+    | inl h => exact FRan.liftF_sub h
+    | inr h_1 =>
+      subst h_1
+      simp_all only [mem_def]
+
 theorem FreeMap.inj_n (h : n ≤ brs.card) : (FreeMap n brs).Injective := by
   simp [Function.Injective]
   intro a₁ a₂ h'
   rw [FreeMap.fromIndex_def _ h, FreeMap.fromIndex_def _ h] at h'
   have := RelationSchema.fromIndex_inj.mp h'
   simp_all
+
+theorem FRan.notMem_FreeMap_lift (h : n + 1 ≤ brs.card) : FreeMap (n + 1) brs (Fin.last n) ∉ FRan (FreeMap n brs) := by
+  rw [FRan]
+  unfold FRanS
+  simp only [FreeMap, liftF, List.getD_eq_getElem?_getD, Fin.snoc_last, Set.mem_toFinset,
+    Set.mem_setOf_eq, not_exists, List.getD_getElem?, RelationSchema.ordering_card]
+  intro i
+  have : n < brs.card := by grind
+  simp only [this, ↓reduceDIte, ne_eq]
+  rw [@RelationSchema.fromIndex_eq_get, FreeMap.fromIndex_def _ (by grind), Fin.castLE]
+  by_contra hc
+  rw [RelationSchema.fromIndex_inj] at hc
+  grind
