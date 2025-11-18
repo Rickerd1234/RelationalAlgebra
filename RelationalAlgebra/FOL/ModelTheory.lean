@@ -57,6 +57,11 @@ theorem TupleToFun.tuple_eq_att_ext {h : t.Dom = rs} {h' : t'.Dom = rs'} (h'' : 
     by_cases (t a).Dom
     all_goals simp_all [Part.getOrElse]
 
+@[simp]
+theorem TupleToFun.tuple_eq_iff (h : t.Dom = rs) (ha : (t a).Dom) (hb : (t b).Dom) :
+  TupleToFun h a = TupleToFun h b ↔ t a = t b := by
+    simp_all [Part.getOrElse_of_dom, Part.eq_iff_of_dom]
+
 end TupleToFun
 
 

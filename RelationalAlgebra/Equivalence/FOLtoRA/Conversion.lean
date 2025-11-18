@@ -367,6 +367,51 @@ theorem toRA.falsum_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStru
           Set.mem_setOf_eq, not_and, RealizeDomSet, BoundedFormula.Realize, false_and, exists_false,
           iff_false, Classical.not_imp, not_not, imp_self]
 
+theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)} {t : String →. μ} {rs : Finset String}
+  (h : t.Dom = ↑rs) (h' : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs):
+    t (TermtoAtt (FreeMap n brs) t₁) = t (TermtoAtt (FreeMap n brs) t₂) ↔
+      (BoundedFormula.equal t₁ t₂).Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) := by
+        have ⟨k₁, hk₁⟩ := Term.cases t₁
+        have ⟨k₂, hk₂⟩ := Term.cases t₂
+        subst hk₁ hk₂
+
+        cases k₁
+        all_goals (
+          cases k₂
+          all_goals (
+            -- Rewrite ... ⊆ rs
+            simp only [Term.bdEqual, BoundedFormula.freeVarFinset, Term.varFinsetLeft, Finset.insert_union, ← h,
+              Finset.singleton_union, Finset.subset_iff, ← Finset.mem_coe, Finset.coe_insert, Set.mem_insert_iff,
+              forall_eq_or_imp, Finset.empty_union, PFun.mem_dom, ← Part.dom_iff_mem] at h'
+
+            -- Prepare for `TupleToFun.tuple_eq_iff`
+            apply Iff.symm
+            rw [TermtoAtt, TermtoAtt]
+            simp only [BoundedFormula.Realize, Term.realize_var, Sum.elim_inl, Sum.elim_inr, Function.comp]
+
+            -- Complete the proof
+            apply TupleToFun.tuple_eq_iff h
+            . simp_all only [Finset.mem_coe, FRan.mem_def]
+            . simp_all only [Finset.mem_coe, FRan.mem_def]
+          )
+        )
+
+theorem toRA.equal_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)}
+  (h : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs) :
+    (toRA dbi.schema (t₁ =' t₂) rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (t₁ =' t₂) rs brs t h} := by
+      simp_rw [Term.bdEqual, toRA, RA.Query.evaluateT, selectionT]
+      simp_rw [RealizeDomSet]
+
+      rw [adom.complete_def]
+      ext t
+      simp_rw [exists_prop, Set.mem_setOf_eq, exists_and_right]
+
+      apply Iff.intro
+      . intro ⟨⟨w_1, h_2⟩, right⟩
+        apply And.intro (Exists.intro w_1 ((term_equal_def w_1 h).mp right)) h_2
+      . intro ⟨⟨w_1, h_2⟩, right⟩
+        exact And.intro (And.intro w_1 right) ((term_equal_def w_1 h).mpr h_2)
+
 theorem toRA.imp_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)]
   (ih₁ : (toRA dbi.schema q₁ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₁ rs brs t h})
   (ih₂ : (toRA dbi.schema q₂ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₂ rs brs t h}) :
@@ -402,136 +447,7 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
     (toRA dbi.schema q rs brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet q rs brs t h} := by
       induction hq with
-      | equal t₁ t₂ =>
-        simp only [RealizeDomSet, Term.bdEqual, toRA, RA.Query.evaluateT.eq_2, selectionT, BoundedFormula.Realize, exists_and_right]
-        simp [Term.bdEqual] at h
-
-        have rs_ne_empty : rs ≠ ∅ := by
-          have ⟨k₁, hk₁⟩ := Term.cases t₁
-          have ⟨k₂, hk₂⟩ := Term.cases t₂
-          subst hk₁ hk₂
-          cases k₁ with
-          | inl val =>
-            simp_all only [nonempty_subtype, Term.varFinsetLeft, Finset.singleton_union, ne_eq]
-            apply Aesop.BuiltinRules.not_intro
-            intro a
-            subst a
-            simp_all only [Finset.subset_empty, Finset.insert_ne_empty]
-          | inr val =>
-            simp_all only [nonempty_subtype, Term.varFinsetLeft, Finset.empty_union, ne_eq]
-            apply Aesop.BuiltinRules.not_intro
-            intro a
-            subst a
-            simp_all only [Finset.subset_empty, Finset.union_eq_empty]
-            obtain ⟨left, right⟩ := h
-            cases k₂ with
-            | inl val_1 => simp_all only [Term.varFinsetLeft, Finset.singleton_ne_empty]
-            | inr val_2 =>
-              simp_all only [Term.varFinsetLeft]
-              have : (FRan (FreeMap n brs)).card = 0 := by exact Finset.card_eq_zero.mpr right
-              rw [FRan.card_def (FreeMap.inj_n h')] at this
-              . subst this
-                exact Fin.elim0 val_2
-
-        ext t
-        rename_i inst_1 inst_2 inst_3
-        simp_all only [Set.mem_setOf_eq]
-        apply Iff.intro
-        · intro a
-          obtain ⟨left, right⟩ := a
-          have ⟨k₁, hk₁⟩ := Term.cases t₁
-          have ⟨k₂, hk₂⟩ := Term.cases t₂
-          subst hk₁ hk₂
-          simp_all only [Term.realize_var]
-
-          have : t.Dom = ↑rs := by
-            have := RA.Query.evaluate.validSchema (adom dbi.schema rs) adom.isWellTyped_def t left
-            simp [adom.schema_def] at this
-            exact this
-
-          apply And.intro
-          . use this
-            cases k₁ with
-            | inl val =>
-              cases k₂ with
-              | inl
-                val_1 =>
-                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert,
-                  TermtoAtt, Sum.elim_inl, TupleToFun, decidable_dom, eq_mpr_eq_cast]
-                congr
-              | inr
-                val_2 =>
-                simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union,
-                  TermtoAtt, Sum.elim_inl, TupleToFun,
-                  decidable_dom, eq_mpr_eq_cast, Sum.elim_inr, Function.comp_apply]
-                congr
-            | inr val_1 =>
-              cases k₂ with
-              | inl
-                val =>
-                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Finset.empty_union,
-                  Sum.elim_inr, Sum.elim_inl, TupleToFun, TermtoAtt]
-                unfold TupleToFun
-                simp
-                congr
-              | inr
-                val_2 =>
-                simp_all only [Term.varFinsetLeft, Finset.empty_union, Sum.elim_inr, TermtoAtt]
-                unfold TupleToFun
-                simp
-                congr
-          . simp_all
-        · intro a
-          obtain ⟨w_1, h_2⟩ := a
-          obtain ⟨w_1, h_3⟩ := w_1
-          apply And.intro
-          · simp_all
-          · have ⟨k₁, hk₁⟩ := Term.cases t₁
-            have ⟨k₂, hk₂⟩ := Term.cases t₂
-            subst hk₁ hk₂
-            simp_all only [Term.realize_var]
-            cases k₁ with
-            | inl val =>
-              cases k₂ with
-              | inl
-                val_1 =>
-                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert,
-                  Sum.elim_inl, TupleToFun, TermtoAtt]
-                rw [Finset.insert_subset_iff, Finset.insert_subset_iff] at h
-                ext v
-                have h₁ : (t val).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.2.1
-                have h₂ : (t val_1).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.1
-                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
-                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
-
-              | inr
-                val_2 =>
-                simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union, Sum.elim_inl,
-                  Sum.elim_inr, TermtoAtt]
-                rw [Finset.insert_subset_iff] at h
-                ext v
-                have h₁ : (t val).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.1
-                have h₂ : (t ((FreeMap n brs) val_2)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.2 FRan.mem_def
-                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
-                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
-            | inr val_1 =>
-              cases k₂ with
-              | inl
-                val =>
-                simp_all only [Term.varFinsetLeft, Finset.singleton_union, Finset.union_insert, Finset.empty_union,
-                  Sum.elim_inr, Sum.elim_inl, TermtoAtt]
-                rw [Finset.insert_subset_iff] at h
-                have h₁ : (t ((FreeMap n brs) val_1)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.2 FRan.mem_def
-                have h₂ : (t val).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h.1
-                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
-                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
-              | inr val_2 =>
-                simp_all only [Term.varFinsetLeft, Finset.empty_union, Sum.elim_inr, TermtoAtt]
-                have h₁ : (t ((FreeMap n brs) val_1)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h FRan.mem_def
-                have h₂ : (t ((FreeMap n brs) val_2)).Dom := by rw [Part.dom_iff_mem, ← PFun.mem_dom, w_1, Finset.mem_coe]; exact h FRan.mem_def
-                simp [Part.getOrElse_of_dom, h₁, h₂] at h_3
-                rw [Part.eq_of_get_eq_get h₁ h₂ h_3]
-
+      | equal t₁ t₂ => exact equal_def h
       | rel R ts =>
         cases R with
         | R rn =>
