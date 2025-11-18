@@ -558,25 +558,23 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
 
 
 theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (h' : n ≤ brs.card) :
+  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) :
     (toRA dbi.schema q rs brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet q rs brs t h} := by
       induction hq with
       | equal t₁ t₂ => exact equal_def h
       | rel R ts =>
         cases R with
-        | R rn =>
-          nth_rewrite 1 [Relations.boundedFormula, toRA]
-          exact relToRA.evalT_def h
+        | R rn => exact relToRA.evalT_def h
 
 
 theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (h' : n ≤ brs.card):
+  (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) :
     (toRA dbi.schema q rs brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet q rs brs t h} := by
       induction hq with
       | falsum => exact falsum_def
-      | of_isAtomic h_at => exact toRA.evalT_def_IsAtomic h_at h h'
+      | of_isAtomic h_at => exact toRA.evalT_def_IsAtomic h_at h
 
       | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
         rw [Finset.union_subset_iff, BoundedFormula.freeVarFinset, Finset.union_subset_iff] at h
@@ -589,7 +587,7 @@ theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fo
     (toRA dbi.schema q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
         induction hq with
-        | of_isQF hqf => exact evalT_def_IsQF hqf (fun ⦃a⦄ a ↦ a) (by grind only)
+        | of_isQF hqf => exact evalT_def_IsQF hqf (fun ⦃a⦄ a ↦ a)
 
         | all hφ ih =>
           apply all_def ?_ (by grind)
