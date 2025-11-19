@@ -94,4 +94,18 @@ theorem rename_func_injective [DecidableEq α] (old new : α) : (renameFunc old 
 theorem rename_func_bijective [DecidableEq α] (old new : α) : (renameFunc old new).Bijective := by
   apply And.intro (rename_func_injective old new) (rename_func_surjective old new)
 
+theorem rename_func_invFun [Nonempty α] [DecidableEq α] (old new : α) : Function.invFun (renameFunc old new) = (renameFunc old new) := by
+  ext a
+  apply rename_func_injective old new
+  rw [Function.invFun_eq (f := renameFunc old new)]
+  . simp [renameFunc]
+    split_ifs
+    all_goals simp_all
+  . apply rename_func_surjective
+
+theorem rename_func_cancel_self  [DecidableEq α] {old new a : α} : renameFunc old new (renameFunc old new a) = a := by
+  simp [renameFunc]
+  split_ifs
+  all_goals simp_all
+
 end rename
