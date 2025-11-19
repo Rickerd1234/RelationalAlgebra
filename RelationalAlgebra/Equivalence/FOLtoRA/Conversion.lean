@@ -66,23 +66,26 @@ noncomputable def renamePairFunc (ra : String) (ts : Fin (dbs rn).card → (fol 
 noncomputable def renamePair (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   .r (renamePairFunc ra ts brs) (.R rn)
 
-theorem renamePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} : (renamePair ra ts brs).schema dbs = (dbs rn).image (renamePairFunc ra ts brs) := rfl
+theorem renamePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+  (renamePair ra ts brs).schema dbs = (dbs rn).image (renamePairFunc ra ts brs) := rfl
 
 theorem renamePair.isWellTyped_def :
     RA.Query.isWellTyped dbs (renamePair ra ts brs) := by
       simp [renamePair, renamePairFunc, rename_func_bijective]
 
 noncomputable def relJoins (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
-  ras.foldr (λ ra sq => .j (renamePair ra ts brs) sq) (.R rn)
+  ras.foldr (λ ra sq => .j (.p {ra, renamePairFunc ra ts brs ra} (.j (renamePair ra ts brs) (.R rn))) sq) (.p ∅ (.R rn))
 
-theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
-  (relJoins ras ts brs).schema dbs = (Finset.biUnion ras.toFinset (λ ra => (renamePair ra ts brs).schema dbs) ∪ dbs rn) := by
+theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ras.toFinset ⊆ dbs rn) :
+  (relJoins ras ts brs).schema dbs = (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra)) ∪ ras.toFinset := by
     simp [relJoins]
     induction ras with
     | nil => simp_all
     | cons hd tl ih =>
-      simp_all only [List.foldr_cons, RA.Query.schema.eq_4, List.toFinset_cons, Finset.biUnion_insert,
-        Finset.union_assoc]
+      have htl : tl.toFinset ⊆ dbs rn := by simp at h; grind
+      simp_all only [forall_const, List.toFinset_cons, List.foldr_cons, RA.Query.schema.eq_4,
+        RA.Query.schema, Finset.insert_union, Finset.singleton_union, Finset.image_insert,
+        Finset.union_insert]
 
 theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h: ras.toFinset ⊆ dbs rn) :
     RA.Query.isWellTyped dbs (relJoins ras ts brs) := by
@@ -90,43 +93,101 @@ theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (Str
       induction ras with
       | nil => simp
       | cons hd tl ih =>
-        simp only [List.foldr_cons, RA.Query.isWellTyped.eq_4, renamePair.isWellTyped_def, true_and]
-        apply ih
-        rw [List.toFinset_cons, Finset.insert_subset_iff] at h
-        exact h.2
+        simp only [List.foldr_cons, RA.Query.isWellTyped.eq_4, RA.Query.isWellTyped,
+          renamePair.isWellTyped_def, true_and, RA.Query.schema]
+        have hhd : hd ∈ dbs rn := by simp at h; grind
+        have htl : tl.toFinset ⊆ dbs rn := by simp at h; grind
+        apply And.intro ?_ (ih htl)
+        . simp_rw [renamePair.schema_def, Finset.subset_iff, Finset.mem_union]
+          simp_all only [forall_const, List.toFinset_cons, Finset.mem_insert, Finset.mem_singleton,
+            Finset.mem_image, forall_eq_or_imp, or_true, forall_eq, true_and]
+          apply Or.inl
+          use hd
+
+def rjRes {dbi : DatabaseInstance String String μ} {t : String →. μ} {ras : List String}
+  (h : t.Dom = ((dbi.schema rn).image (λ ra => renamePairFunc ra ts brs ra))) (h' : ras.toFinset ⊆ dbi.schema rn) : (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra)).toSet ⊆ t.Dom := by grind
 
 theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempty μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
-  (h : ras.toFinset ⊆ dbi.schema rn) :
+  (h' : ras.toFinset ⊆ dbi.schema rn) :
     RA.Query.evaluateT dbi (relJoins ras ts brs) =
-    {t | ∃h,
+    {t | ∃t' h,
       RealizeDomSet (μ := μ)
         (Relations.boundedFormula (relations.R rn) ts)
-        (dbi.schema rn ∪ (ras).toFinset.image (λ ra => renamePairFunc ra ts brs ra))
-        brs t h
-      ∧ (∀ra ∈ ras, t (renamePairFunc ra ts brs ra) = t ra)
+        ((dbi.schema rn).image (λ ra => renamePairFunc ra ts brs ra))
+        brs t' h
+      ∧ t'.restrict (rjRes h h') = t
     } := by
       induction ras with
       | nil =>
         ext t
         simp [Set.mem_setOf_eq]
+        simp [relJoins]
         apply Iff.intro
-        · intro h'
-          have h_schema := RA.Query.evaluate.validSchema (relJoins [] ts brs) (relJoins.isWellTyped_def h) t h'
-          simp [relJoins.schema_def] at h_schema
-          apply And.intro
-          · use h_schema
-            rw [← fol.Rel, folStruc_apply_RelMap]
-            simp [relJoins] at h'
-            convert h'
+        · intro ⟨⟨w, hw⟩, h'⟩
+          let w' : String →. μ := w ∘ λ ra => renamePairFunc ra ts brs ra
+          have hw_schema : w.Dom = ↑(dbi.schema rn) := by rw [← dbi.validSchema, ← ((dbi.relations rn).validSchema w hw)]
+          have hw'_schema : w'.Dom = (fun ra ↦ renamePairFunc ra ts brs ra) '' ↑(dbi.schema rn) := by
             sorry
-          · exact RA.Query.evaluateT.dbi_domain (relJoins.isWellTyped_def h) t h'
+
+          use w', hw'_schema
+
+          apply And.intro
+          · rw [← fol.Rel, folStruc_apply_RelMap]
+            apply And.intro
+            . convert hw
+              ext a v
+              simp
+              simp_all only [List.toFinset_nil, Finset.empty_subset, w']
+              apply Iff.intro
+              · intro a_1
+                split at a_1
+                next h =>
+                  have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index h))
+                  simp_all only [Term.realize_var, Part.mem_some_iff]
+                  subst a_1
+                  cases k with
+                  | inl val =>
+                    simp_all only [Sum.elim_inl, TupleToFun, Function.comp_apply]
+                    sorry
+                  | inr val_1 =>
+                    simp_all only [Sum.elim_inr, Function.comp_apply, TupleToFun]
+                    sorry
+                next h => simp_all only [Part.notMem_none, w']
+              · intro a_1
+                split
+                next h =>
+                  simp_all only [Part.mem_some_iff]
+                  have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index h))
+                  simp_all only [Term.realize_var]
+                  cases k with
+                  | inl val =>
+                    simp_all only [Sum.elim_inl, TupleToFun, Function.comp_apply]
+                    sorry
+                  | inr val_1 =>
+                    simp_all only [Sum.elim_inr, Function.comp_apply, TupleToFun]
+                    sorry
+                next h =>
+                  simp_all only [Part.notMem_none, w']
+                  apply h
+                  rw [← Finset.mem_coe, ← hw_schema, PFun.mem_dom]
+                  use v
+            . have w_ran : w.ran ⊆ dbi.domain := by simp [PFun.ran, DatabaseInstance.domain]; intro v a hv; use rn, a, w; simp_all [Part.eq_some_iff]
+              have w_ran' : w.ran = w'.ran := by simp [w', PFun.ran, Set.ext_iff]; intro v; apply Function.Surjective.exists; simp [Function.Surjective]; sorry
+              exact Eq.trans_subset (id (Eq.symm w_ran')) w_ran
+          · simp [PFun.ext_iff, h']
         · intro a
           obtain ⟨left, right⟩ := a
-          obtain ⟨w, h⟩ := left
-          simp [relJoins]
-          rw [← fol.Rel, folStruc_apply_RelMap] at h
-          convert h
-          sorry
+          obtain ⟨w, h⟩ := right
+          obtain ⟨left_1, right⟩ := h
+          obtain ⟨left_1, right_1⟩ := left_1
+          subst right
+          simp_all only [Finset.coe_empty]
+          apply And.intro
+          · simp_all only [List.toFinset_nil, Finset.empty_subset]
+            rw [← fol.Rel, folStruc_apply_RelMap] at left_1
+            exact Exists.intro _ left_1
+          · intro a
+            simp [Part.ext_iff]
       | cons hd tl ih => sorry
 
 variable (dbs : String → Finset String) [Fintype (adomRs dbs)]
@@ -151,103 +212,104 @@ theorem relToRA.evalT_def [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.sc
         PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp,
         Set.mem_setOf_eq, exists_and_right]
 
-      ext t
-      rw [relJoins.evalT_def (subset_of_eq (RelationSchema.ordering_eq_toFinset (dbi.schema rn)))]
-      simp_all only [Set.mem_setOf_eq]
-      simp_all only [RealizeDomSet, BoundedFormula.realize_rel, RelationSchema.ordering_mem, RelationSchema.ordering_eq_toFinset,
-        Finset.coe_union, Finset.coe_image, exists_and_right]
+      sorry
+      -- ext t
+      -- rw [relJoins.evalT_def (subset_of_eq (RelationSchema.ordering_eq_toFinset (dbi.schema rn)))]
+      -- simp_all only [Set.mem_setOf_eq]
+      -- simp_all only [RealizeDomSet, BoundedFormula.realize_rel, RelationSchema.ordering_mem, RelationSchema.ordering_eq_toFinset,
+      --   Finset.coe_union, Finset.coe_image, exists_and_right]
 
-      apply Iff.intro
-      · intro a
-        obtain ⟨w, h_1⟩ := a
-        obtain ⟨left, right⟩ := h_1
-        obtain ⟨w_1, h_1⟩ := left
-        obtain ⟨left, right_1⟩ := h_1
-        obtain ⟨left, right_2⟩ := left
-        obtain ⟨w_2, h_1⟩ := right_1
-        obtain ⟨w_3, h_2⟩ := left
-        obtain ⟨left, right_1⟩ := w_3
-        obtain ⟨left_1, right_2⟩ := h_1
-        apply And.intro
-        · apply Exists.intro
-          . rw [← fol.Rel, folStruc_apply_RelMap] at right_1
-            apply (congr_arg (λ x => x ∈ (dbi.relations rn).tuples) ?_).mp right_1
-            . intro left right_1
-              ext x
-              simp_all only [PFun.mem_dom, Finset.mem_coe]
-              apply Iff.intro
-              · intro a
-                obtain ⟨w_4, h_1⟩ := a
-                by_contra hc
-                rw [(right x).2 hc] at h_1
-                simp_all
-              · intro a
-                simp_all only
-                have w_2_Dom := RA.Query.evaluate.validSchema (adom dbi.schema rs) adom.isWellTyped_def w_2 left
-                rw [adom.schema_def] at w_2_Dom
-                rw [← Finset.mem_coe, ← w_2_Dom, PFun.mem_dom] at a
-                obtain ⟨v, hv⟩ := a
-                rw [(right_1 x).2.1 v hv]
-                use v
-            . funext x
-              simp_all only [ArityToTuple.def_dite]
-              by_cases hc : x ∈ dbi.schema rn
-              . simp_all only [↓reduceDIte, Part.some_inj]
-                have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index hc))
-                simp [hk]
-                cases k
-                next val =>
-                  have in_rs : val ∈ rs := by
-                    apply h
-                    simp_all only [Finset.mem_union, Finset.mem_biUnion, Finset.mem_univ, true_and]
-                    apply Or.inl
-                    use RelationSchema.index hc
-                    simp [hk]
-                  have ⟨v, in_w_1⟩ : ∃v, v ∈ w_1 val := by
-                    rw [← PFun.mem_dom, left]
-                    simp [renamePairFunc]
-                    apply Or.inr
-                    use RelationSchema.fromIndex (RelationSchema.index hc)
-                    simp [hc, renameFunc, hk, TermtoAtt]
-                  simp
-                  congr
-                  rw [(right val).1 in_rs]
-                  rw [(right_2 val).1 v in_w_1]
-                next val =>
-                  have in_rs : (FreeMap n brs val) ∈ rs := by
-                    apply h
-                    simp_all only [Finset.mem_union, Finset.mem_biUnion, Finset.mem_univ, true_and, FRan.mem_def, or_true]
-                  have ⟨v, in_w_1⟩ : ∃v, v ∈ w_1 (FreeMap n brs val) := by
-                    rw [← PFun.mem_dom, left]
-                    simp [renamePairFunc]
-                    apply Or.inr
-                    use RelationSchema.fromIndex (RelationSchema.index hc)
-                    simp [hc, renameFunc, hk, TermtoAtt]
-                  simp
-                  congr
-                  rw [(right (FreeMap n brs val)).1 in_rs]
-                  rw [(right_2 (FreeMap n brs val)).1 v in_w_1]
-              . simp_all only [↓reduceDIte]
-        · simp at left_1
-          have : t.ran ⊆ w_2.ran := by
-            simp [PFun.ran]
-            intro v x hv
-            have in_rs : x ∈ rs := by
-              by_contra hc
-              have := (right x).2 hc
-              simp_all
-            have ⟨v', in_w_2⟩ : ∃v, v ∈ w_2 x := by
-              rw [← PFun.mem_dom, left_1.1]
-              exact in_rs
-            use x
-            rw [← (right_2 x).2.1 v' in_w_2, ← (right x).1 in_rs]
-            exact hv
-          rw [@Set.subset_def]
-          apply λ a ha => left_1.2 (this ha)
-      · intro a
-        obtain ⟨left, right⟩ := a
-        obtain ⟨w, h_1⟩ := left
-        sorry
+      -- apply Iff.intro
+      -- · intro a
+      --   obtain ⟨w, h_1⟩ := a
+      --   obtain ⟨left, right⟩ := h_1
+      --   obtain ⟨w_1, h_1⟩ := left
+      --   obtain ⟨left, right_1⟩ := h_1
+      --   obtain ⟨left, right_2⟩ := left
+      --   obtain ⟨w_2, h_1⟩ := right_1
+      --   obtain ⟨w_3, h_2⟩ := left
+      --   obtain ⟨left, right_1⟩ := w_3
+      --   obtain ⟨left_1, right_2⟩ := h_1
+      --   apply And.intro
+      --   · apply Exists.intro
+      --     . rw [← fol.Rel, folStruc_apply_RelMap] at right_1
+      --       apply (congr_arg (λ x => x ∈ (dbi.relations rn).tuples) ?_).mp right_1
+      --       . intro left right_1
+      --         ext x
+      --         simp_all only [PFun.mem_dom, Finset.mem_coe]
+      --         apply Iff.intro
+      --         · intro a
+      --           obtain ⟨w_4, h_1⟩ := a
+      --           by_contra hc
+      --           rw [(right x).2 hc] at h_1
+      --           simp_all
+      --         · intro a
+      --           simp_all only
+      --           have w_2_Dom := RA.Query.evaluate.validSchema (adom dbi.schema rs) adom.isWellTyped_def w_2 left
+      --           rw [adom.schema_def] at w_2_Dom
+      --           rw [← Finset.mem_coe, ← w_2_Dom, PFun.mem_dom] at a
+      --           obtain ⟨v, hv⟩ := a
+      --           rw [(right_1 x).2.1 v hv]
+      --           use v
+      --       . funext x
+      --         simp_all only [ArityToTuple.def_dite]
+      --         by_cases hc : x ∈ dbi.schema rn
+      --         . simp_all only [↓reduceDIte, Part.some_inj]
+      --           have ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index hc))
+      --           simp [hk]
+      --           cases k
+      --           next val =>
+      --             have in_rs : val ∈ rs := by
+      --               apply h
+      --               simp_all only [Finset.mem_union, Finset.mem_biUnion, Finset.mem_univ, true_and]
+      --               apply Or.inl
+      --               use RelationSchema.index hc
+      --               simp [hk]
+      --             have ⟨v, in_w_1⟩ : ∃v, v ∈ w_1 val := by
+      --               rw [← PFun.mem_dom, left]
+      --               simp [renamePairFunc]
+      --               apply Or.inr
+      --               use x
+      --               simp [hc, renameFunc, hk, TermtoAtt]
+      --             simp
+      --             congr
+      --             rw [(right val).1 in_rs]
+      --             rw [(right_2 val).1 v in_w_1]
+      --           next val =>
+      --             have in_rs : (FreeMap n brs val) ∈ rs := by
+      --               apply h
+      --               simp_all only [Finset.mem_union, Finset.mem_biUnion, Finset.mem_univ, true_and, FRan.mem_def, or_true]
+      --             have ⟨v, in_w_1⟩ : ∃v, v ∈ w_1 (FreeMap n brs val) := by
+      --               rw [← PFun.mem_dom, left]
+      --               simp [renamePairFunc]
+      --               apply Or.inr
+      --               use x
+      --               simp [hc, renameFunc, hk, TermtoAtt]
+      --             simp
+      --             congr
+      --             rw [(right (FreeMap n brs val)).1 in_rs]
+      --             rw [(right_2 (FreeMap n brs val)).1 v in_w_1]
+      --         . simp_all only [↓reduceDIte]
+      --   · simp at left_1
+      --     have : t.ran ⊆ w_2.ran := by
+      --       simp [PFun.ran]
+      --       intro v x hv
+      --       have in_rs : x ∈ rs := by
+      --         by_contra hc
+      --         have := (right x).2 hc
+      --         simp_all
+      --       have ⟨v', in_w_2⟩ : ∃v, v ∈ w_2 x := by
+      --         rw [← PFun.mem_dom, left_1.1]
+      --         exact in_rs
+      --       use x
+      --       rw [← (right_2 x).2.1 v' in_w_2, ← (right x).1 in_rs]
+      --       exact hv
+      --     rw [@Set.subset_def]
+      --     apply λ a ha => left_1.2 (this ha)
+      -- · intro a
+      --   obtain ⟨left, right⟩ := a
+      --   obtain ⟨w, h_1⟩ := left
+      --   sorry
 
 noncomputable def toRA
   (f : (fol dbs).BoundedFormula String n) (rs brs : Finset String) : RA.Query String String :=
