@@ -363,7 +363,7 @@ theorem toRA.falsum_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStru
     (toRA dbi.schema (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs t h} := by
         ext t
-        simp [toRA, RA.Query.evaluateT.eq_7, diffT, Set.diff, adom.complete_def, exists_prop,
+        simp [toRA, RA.Query.evaluateT.eq_7, diffT, Set.diff, adom.complete_def,
           Set.mem_setOf_eq, not_and, RealizeDomSet, BoundedFormula.Realize, false_and, exists_false,
           iff_false, Classical.not_imp, not_not, imp_self]
 
@@ -404,7 +404,7 @@ theorem toRA.equal_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [Fintype 
 
       rw [adom.complete_def]
       ext t
-      simp_rw [exists_prop, Set.mem_setOf_eq, exists_and_right]
+      simp_rw [Set.mem_setOf_eq, exists_and_right]
 
       apply Iff.intro
       . intro ⟨⟨w_1, h_2⟩, right⟩
@@ -417,7 +417,7 @@ theorem toRA.imp_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
   (ih₂ : (toRA dbi.schema q₂ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₂ rs brs t h}) :
     (toRA dbi.schema (q₁.imp q₂) rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q₁.imp q₂) rs brs t h} := by
       ext t
-      simp only [toRA, RA.Query.evaluateT.eq_7, diffT, Set.diff, adom.complete_def, exists_prop,
+      simp only [toRA, RA.Query.evaluateT.eq_7, diffT, Set.diff, adom.complete_def,
         Set.mem_setOf_eq, RA.Query.evaluateT, not_and, not_not, RealizeDomSet,
         BoundedFormula.realize_imp, exists_and_right]
       simp_all only [nonempty_subtype, RealizeDomSet, Finset.coe_inj, exists_and_right,
