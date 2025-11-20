@@ -231,6 +231,8 @@ theorem RelationAttributesToColumn.evalT_def [DecidableEq α] {a : α} {dbi : Da
           simp [RelationAttributeToColumn.evalT_def (h_schema ra hra)]
           use t'
 
+section adom_ordering
+
 variable [DecidableEq α] [LE α] [DecidableRel (α := α) (.≤.)] [IsTrans α (.≤.)] [IsAntisymm α (.≤.)] [IsTotal α (.≤.)] [Nonempty α]
 
 noncomputable def RelationNameToColumn (dbs : ρ → Finset α) (rn : ρ) (a : α) : RA.Query ρ α :=
@@ -607,7 +609,7 @@ theorem adom.evaluateT_def {as : Finset α} [Fintype (adomRs dbi.schema)] : (ado
 
 
 @[simp]
-theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] :
+theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] :
   (adom dbi.schema as).evaluateT dbi = {t | (∃rn ∈ adomRs dbi.schema, ∃t', t' ∈ (dbi.relations rn).tuples) ∧ t.Dom = ↑as ∧ t.ran ⊆ dbi.domain} := by
     rw [adom, RelationNamesToColumns.evalT_def]
     . rw [DatabaseInstance.domain]
@@ -620,7 +622,6 @@ theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi
       · intro a
         simp_all only [true_and]
         intro a_1 x h
-        obtain ⟨w, h_1⟩ := ne
         obtain ⟨left, right⟩ := a
         obtain ⟨w_1, h_2⟩ := left
         obtain ⟨left, right⟩ := right
@@ -663,3 +664,21 @@ theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi
         simp_all [adomRs]
       next opt heq => simp_all [Set.ext_iff]
     . simp_all [adomRs]
+
+end adom_ordering
+
+theorem adom.exists_tuple_from_ran {dbi : DatabaseInstance ρ α μ} {t : α →. μ}
+  (h : t.Dom ≠ ∅) (h' : t.ran ⊆ dbi.domain) : ∃rn ∈ adomRs dbi.schema, ∃t', t' ∈ (dbi.relations rn).tuples := by
+    simp_rw [adomRs, Set.mem_setOf_eq, ← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]
+    simp_rw [← Set.nonempty_iff_ne_empty, Set.nonempty_def, PFun.mem_dom] at h
+    simp_rw [Set.subset_def, DatabaseInstance.domain, PFun.ran, Set.image, Set.mem_setOf_eq] at h'
+    obtain ⟨a, v, h⟩ := h
+    obtain ⟨rn, a', t', ht₁, ht₂⟩  := h' v (Exists.intro a h)
+    use rn
+    apply And.intro
+    . simp_rw [← dbi.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema t' ht₁]
+      use a'
+      rw [PFun.mem_dom]
+      use v
+      exact Part.eq_some_iff.mp ht₂
+    . use t'
