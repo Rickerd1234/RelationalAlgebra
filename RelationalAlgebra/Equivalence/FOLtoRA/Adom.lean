@@ -69,6 +69,48 @@ theorem EmptyTupleFromRelation.evaluateT_def [DecidableEq α] :
     simp
 
 
+def EmptyTupleFromRelations (rns : List ρ) (baseRn : ρ) : RA.Query ρ α :=
+  rns.foldr (λ rn sq => .u (EmptyTupleFromRelation rn) sq) (.d (EmptyTupleFromRelation baseRn) (EmptyTupleFromRelation baseRn))
+
+theorem EmptyTupleFromRelations.schema_def [DecidableEq α] :
+  (EmptyTupleFromRelations rns baseRn).schema dbs (α := α) = ∅ := by
+  simp [EmptyTupleFromRelations]
+  induction rns with
+  | nil => rfl
+  | cons hd tl ih => simp_all only [List.foldr_cons, Query.schema.eq_6, EmptyTupleFromRelation.schema_def]
+
+theorem EmptyTupleFromRelations.isWellTyped_def [DecidableEq α] :
+  (EmptyTupleFromRelations rns baseRn).isWellTyped dbs (α := α) := by
+    simp [EmptyTupleFromRelations]
+    induction rns with
+    | nil => simp [EmptyTupleFromRelation.isWellTyped_def]
+    | cons hd tl ih =>
+      rw [List.foldr_cons, Query.isWellTyped, EmptyTupleFromRelation.schema_def, ← EmptyTupleFromRelations]
+      rw [← EmptyTupleFromRelations] at ih
+      simp [EmptyTupleFromRelation.isWellTyped_def, ih, EmptyTupleFromRelations.schema_def]
+
+theorem EmptyTupleFromRelations.evaluateT_def [DecidableEq α] :
+  (EmptyTupleFromRelations rns baseRn).evaluateT dbi = {t : α →. μ | (∃ rn ∈ rns, ∃ x, x ∈ (dbi.relations rn).tuples) ∧ t.Dom = ∅} := by
+    simp [EmptyTupleFromRelations]
+    induction rns with
+    | nil =>
+      simp only [List.foldr_nil, Query.evaluateT.eq_7, diffT, Set.diff,
+        EmptyTupleFromRelation.evaluateT_def, exists_and_right, Set.mem_setOf_eq, and_not_self_iff]
+      ext t
+      simp_all
+    | cons hd tl ih =>
+      rw [List.foldr_cons, Query.evaluateT, ih, unionT, EmptyTupleFromRelation.evaluateT_def]
+      ext t
+      simp only [exists_and_right, Set.mem_union, Set.mem_setOf_eq, List.mem_cons, exists_eq_or_imp]
+      apply Iff.intro
+      · intro a
+        cases a with
+        | inl h => simp_all only [true_or, and_self]
+        | inr h_1 => simp_all only [true_and, or_true, and_self]
+      · intro a
+        simp_all only [and_true]
+
+
 def RelationAttributeToColumn [DecidableEq α] (rn : ρ) (ra a : α) : RA.Query ρ α :=
   .r (renameFunc ra a) (.p {ra} (.R rn))
 
@@ -340,195 +382,195 @@ theorem RelationNamesToColumn.evalT_def {dbi : DatabaseInstance ρ α μ} (h : d
 
 
 noncomputable def RelationNamesToColumns (dbs : ρ → Finset α) (rns : List ρ) (as : List α) (baseRn : ρ) : RA.Query ρ α :=
-  as.foldr (λ a sq => .j sq (RelationNamesToColumn dbs rns a baseRn)) (EmptyTupleFromRelation baseRn)
+  as.foldr (λ a sq => .j sq (RelationNamesToColumn dbs rns a baseRn)) (EmptyTupleFromRelations rns baseRn)
 
 theorem RelationNamesToColumns.schema_def {as : List α} : (RelationNamesToColumns dbs rns as baseRn).schema dbs = as.toFinset := by
   simp [RelationNamesToColumns]
   induction as with
-  | nil => simp [EmptyTupleFromRelation.schema_def]
+  | nil => simp [EmptyTupleFromRelations.schema_def]
   | cons hd tl ih => simp_all [RelationNamesToColumn.schema_def]
 
 theorem RelationNamesToColumns.isWellTyped_def {as : List α} (h : dbs baseRn ≠ ∅) (h' : ∀rn ∈ rns, dbs rn ≠ ∅) :
   (RelationNamesToColumns dbs rns as baseRn).isWellTyped dbs := by
     simp [RelationNamesToColumns]
     induction as with
-    | nil => simp [List.foldr_nil, EmptyTupleFromRelation.isWellTyped_def]
+    | nil => simp [List.foldr_nil, EmptyTupleFromRelations.isWellTyped_def]
     | cons hd tl ih =>
       simp_all only [List.foldr_cons, Query.isWellTyped.eq_4, true_and, RelationNamesToColumn.isWellTyped_def h h']
 
-theorem RelationNamesToColumns.evaluateT_def {as : List α} : (RelationNamesToColumns dbs rns as baseRn).evaluateT dbi =
-  (as.foldr (λ a s => joinT s ((RelationNamesToColumn dbs rns a baseRn).evaluateT dbi))) {t | ∃x ∈ (dbi.relations baseRn).tuples, t.Dom = ∅} := by
-    simp only [RelationNamesToColumns]
-    induction as with
-    | nil => simp [EmptyTupleFromRelation.evaluateT_def]
-    | cons hd tl ih => simp_all only [Query.foldr_join_evalT, joinT, RelationNamesToColumn.evaluateT_def, Query.evaluateT, List.foldr_cons, Query.evaluateT.eq_4]
+theorem RelationNamesToColumns.evaluateT_def {dbi : DatabaseInstance ρ α μ} {as : List α} :
+    (RelationNamesToColumns dbs rns as baseRn).evaluateT dbi =
+      (as.foldr (λ a s => joinT s ((RelationNamesToColumn dbs rns a baseRn).evaluateT dbi))) {t | (∃rn ∈ rns, ∃x, x ∈ (dbi.relations rn).tuples) ∧ t.Dom = ∅} := by
+        simp only [RelationNamesToColumns]
+        induction as with
+        | nil => simp [EmptyTupleFromRelations.evaluateT_def]
+        | cons hd tl ih => simp_all only [Query.foldr_join_evalT, joinT, RelationNamesToColumn.evaluateT_def, Query.evaluateT, List.foldr_cons, Query.evaluateT.eq_4]
 
-theorem RelationNamesToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : baseRn ∈ rns) (h' : ∀rn ∈ rns, dbi.schema rn ≠ ∅) : (RelationNamesToColumns dbi.schema rns as baseRn).evaluateT dbi =
-  {t | (∃t' ∈ (dbi.relations baseRn).tuples, t.Dom = as.toFinset.toSet) ∧ ∀a ∈ as, ∃rn ∈ rns, ∃ra ∈ (dbi.schema rn), ∃t' ∈ (dbi.relations rn).tuples, (t' ra = t a)} := by
-    simp only [RelationNamesToColumns]
-    induction as with
-    | nil => simp [EmptyTupleFromRelation.evaluateT_def]
-    | cons hd tl ih =>
-      rw [List.foldr_cons, Query.evaluateT, ih]
-      ext t
-      simp
-      simp_all only [ne_eq, Query.foldr_join_evalT, joinT, List.coe_toFinset, exists_and_right]
-      apply Iff.intro
-      · intro a
-        obtain ⟨w, h_1⟩ := a
-        obtain ⟨left, right⟩ := h_1
-        obtain ⟨left, right_1⟩ := left
-        obtain ⟨w_1, h_1⟩ := right
-        obtain ⟨left, right⟩ := left
-        obtain ⟨left_1, right_2⟩ := h_1
-        obtain ⟨w_2, h_1⟩ := left
-        apply And.intro
-        · apply And.intro
+theorem RelationNamesToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : baseRn ∈ rns) (h' : ∀rn ∈ rns, dbi.schema rn ≠ ∅) :
+  (RelationNamesToColumns dbi.schema rns as baseRn).evaluateT dbi =
+    {t | (∃rn ∈ rns, ∃t', t' ∈ (dbi.relations rn).tuples) ∧ t.Dom = as.toFinset.toSet ∧ ∀a ∈ as, ∃rn ∈ rns, ∃ra ∈ (dbi.schema rn), ∃t' ∈ (dbi.relations rn).tuples, (t' ra = t a)} := by
+      simp only [RelationNamesToColumns]
+      induction as with
+      | nil => simp [EmptyTupleFromRelations.evaluateT_def]
+      | cons hd tl ih =>
+        rw [List.foldr_cons, Query.evaluateT, ih]
+        ext t
+        simp
+        simp_all only [ne_eq, Query.foldr_join_evalT, joinT, List.coe_toFinset]
+        apply Iff.intro
+        · intro a
+          -- sorry
+          simp_all only [joinSingleT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp]
+          obtain ⟨w, h_1⟩ := a
+          obtain ⟨left, right⟩ := h_1
+          obtain ⟨left, right_1⟩ := left
+          obtain ⟨w_1, h_1⟩ := right
+          obtain ⟨w_2, h_2⟩ := left
+          obtain ⟨left, right⟩ := right_1
+          obtain ⟨left_1, right_1⟩ := h_1
+          obtain ⟨left_2, right_2⟩ := h_2
+          obtain ⟨w_3, h_1⟩ := right_2
+          apply And.intro
           · use w_2
-          · have := RA.Query.evaluate.validSchema (RelationNamesToColumn dbi.schema rns hd baseRn) (RelationNamesToColumn.isWellTyped_def (h' baseRn h) h') w_1 left_1
-            rw [RelationNamesToColumn.schema_def] at this
-            ext a
-            rw [Set.mem_insert_iff]
-            by_cases h1 : a ∈ w.Dom
-            . have h1' := h1
-              rw [right] at h1'
-              simp [h1']
-              simp at h1
-              obtain ⟨v, hv⟩ := h1
-              rw [(right_2 a).1 v hv]
-              exact Exists.intro v hv
-            . by_cases h2 : a ∈ w_1.Dom
-              . have h2' := h2
-                simp [this] at h2'
-                simp [h2']
-                subst h2'
-                simp at h2
-                obtain ⟨v, hv⟩ := h2
-                rw [(right_2 a).2.1 v hv]
-                exact Exists.intro v hv
+            apply And.intro left_2
+            use w_3
+          · apply And.intro
+            · have := RA.Query.evaluate.validSchema (RelationNamesToColumn dbi.schema rns hd baseRn) (RelationNamesToColumn.isWellTyped_def (h' baseRn h) h') w_1 left_1
+              rw [RelationNamesToColumn.schema_def] at this
+              ext a
+              rw [Set.mem_insert_iff]
+              by_cases h1 : a ∈ w.Dom
               . have h1' := h1
-                rw [right] at h1'
-                have h2' := h2
-                simp [this] at h2'
-                simp [h1', h2']
-                simp [PFun.mem_dom] at h1 h2
-                simp only [(right_2 a).2.2 h1 h2, Part.notMem_none, not_false_eq_true, implies_true]
-        · apply And.intro
-          · rw [RelationNamesToColumn.evalT_def (h' baseRn h) h'] at left_1
-            . simp at left_1
-              cases left_1
-              next h1 =>
-                have ⟨ht_dom', ra, hra, t', ht', ht''⟩ := h1
-                use baseRn
-                apply And.intro h
-                use ra
-                apply And.intro hra
+                rw [left] at h1'
+                simp [h1']
+                simp at h1
+                obtain ⟨v, hv⟩ := h1
+                rw [(right_1 a).1 v hv]
+                exact Exists.intro v hv
+              . by_cases h2 : a ∈ w_1.Dom
+                . have h2' := h2
+                  simp [this] at h2'
+                  simp [h2']
+                  subst h2'
+                  simp at h2
+                  obtain ⟨v, hv⟩ := h2
+                  rw [(right_1 a).2.1 v hv]
+                  exact Exists.intro v hv
+                . have h1' := h1
+                  rw [left] at h1'
+                  have h2' := h2
+                  simp [this] at h2'
+                  simp [h1', h2']
+                  simp [PFun.mem_dom] at h1 h2
+                  simp only [(right_1 a).2.2 h1 h2, Part.notMem_none, not_false_eq_true, implies_true]
+            · apply And.intro
+              rw [RelationNamesToColumn.evalT_def (h' baseRn h) h'] at left_1
+              . simp at left_1
+                cases left_1
+                next h1 =>
+                  have ⟨ht_dom', ra, hra, t', ht', ht''⟩ := h1
+                  use baseRn
+                  apply And.intro h
+                  use ra
+                  apply And.intro hra
+                  use t'
+                  apply And.intro ht'
+                  have ⟨v, hv⟩ : ∃y, y ∈ w_1 hd := by simp [← PFun.mem_dom, ht_dom']
+                  rw [ht'', (right_1 hd).2.1 v hv]
+                next h1 =>
+                  have ⟨rn, hrn, ht_dom', ra, hra, t', ht', ht''⟩ := h1
+                  use rn
+                  apply And.intro hrn
+                  use ra
+                  apply And.intro hra
+                  use t'
+                  apply And.intro ht'
+                  have ⟨v, hv⟩ : ∃y, y ∈ w_1 hd := by simp [← PFun.mem_dom, ht_dom']
+                  rw [ht'', (right_1 hd).2.1 v hv]
+              · intro a a_1
+                have ⟨a', ha', t', ht', ht''⟩ := right a a_1
+                use a'
+                apply And.intro ha'
                 use t'
                 apply And.intro ht'
-                have ⟨v, hv⟩ : ∃y, y ∈ w_1 hd := by simp [← PFun.mem_dom, ht_dom']
-                rw [ht'', (right_2 hd).2.1 v hv]
-              next h1 =>
-                have ⟨rn, hrn, ht_dom', ra, hra, t', ht', ht''⟩ := h1
+                have ⟨v, hv⟩ : ∃y, y ∈ w a := by simp [← PFun.mem_dom, left, a_1]
+                rw [(right_1 a).1 v hv]
+                exact ht''
+        · intro ⟨⟨rn, hrn, t', ht'⟩, tDom, ⟨rn', hrn', ra, hra, t'', ht'', ht'''⟩, h''⟩
+          have dom_tl : ↑tl.toFinset ⊆ t.Dom := by simp [tDom]
+          use t.restrict dom_tl
+          apply And.intro
+          . apply And.intro
+            . use rn, hrn, t'
+            . apply And.intro
+              . ext a
+                simp_all only [PFun.mem_dom, List.coe_toFinset, PFun.mem_restrict, Set.mem_setOf_eq, exists_and_left,
+                  and_iff_left_iff_imp]
+                intro a_1
+                simp_all only [List.coe_toFinset, Set.subset_insert]
+                have ⟨rn, hrn, ra, hra, t', ht', ht''⟩ := h'' a a_1
+                rw [← Part.dom_iff_mem, ← ht'', Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema t' ht', dbi.validSchema]
+                exact hra
+              · intro a a_1
+                have ⟨rn, hrn, ra, hra, t', ht', ht''⟩ := h'' a a_1
                 use rn
                 apply And.intro hrn
                 use ra
-                apply And.intro hra
+                simp_all only [true_and]
                 use t'
-                apply And.intro ht'
-                have ⟨v, hv⟩ : ∃y, y ∈ w_1 hd := by simp [← PFun.mem_dom, ht_dom']
-                rw [ht'', (right_2 hd).2.1 v hv]
-          · intro a a_1
-            have ⟨a', ha', t', ht', ht''⟩ := right_1 a a_1
-            use a'
-            apply And.intro ha'
-            use t'
-            apply And.intro ht'
-            have ⟨v, hv⟩ : ∃y, y ∈ w a := by simp [← PFun.mem_dom, right, a_1]
-            rw [(right_2 a).1 v hv]
-            exact ht''
-      · intro a
-        simp_all only [true_and]
-        obtain ⟨left, right⟩ := a
-        obtain ⟨left, right_1⟩ := left
-        obtain ⟨left_1, right⟩ := right
-        obtain ⟨w, h_1⟩ := left
-        obtain ⟨w_1, h_2⟩ := left_1
-        obtain ⟨left, right_2⟩ := h_2
-        obtain ⟨w_2, h_2⟩ := right_2
-        obtain ⟨left_1, right_2⟩ := h_2
-        obtain ⟨t', ht', ht''⟩ := right_2
-        have dom_tl : ↑tl.toFinset ⊆ t.Dom := by simp [right_1]
-        use t.restrict dom_tl
-        apply And.intro
-        . apply And.intro
-          · ext a
-            simp_all only [PFun.mem_dom, List.coe_toFinset, PFun.mem_restrict, Set.mem_setOf_eq, exists_and_left,
-              and_iff_left_iff_imp]
-            intro a_1
-            simp_all only [List.coe_toFinset, Set.subset_insert]
-            have ⟨rn, hrn, ra, hra, t', ht', ht''⟩ := right a a_1
-            rw [← Part.dom_iff_mem, ← ht'', Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema t' ht', dbi.validSchema]
-            exact hra
-          · intro a a_1
-            have ⟨rn, hrn, ra, hra, t', ht', ht''⟩ := right a a_1
-            use rn
-            apply And.intro hrn
-            use ra
-            simp_all only [true_and]
-            use t'
-            simp_all only [List.coe_toFinset, true_and]
-            ext a_2 : 1
-            simp_all only [PFun.mem_restrict, Set.mem_setOf_eq, true_and]
-        . have dom_hd : ↑{hd} ⊆ t.Dom := by simp [right_1]
-          use t.restrict dom_hd
-          apply And.intro
-          · rw [RelationNamesToColumn.evalT_def (h' baseRn h) h']
-            . simp_all only [List.coe_toFinset, Set.subset_insert, Set.mem_setOf_eq]
-              use w_1
-              apply And.intro (Or.inr left)
-              apply And.intro
-              . ext a
-                simp [PFun.dom_eq]
-                intro ha
-                subst ha
-                simp [← PFun.mem_dom]
-                exact dom_hd rfl
-              . use w_2
-                apply And.intro left_1
-                use t'
-                apply And.intro ht'
-                ext v
-                simp only [PFun.mem_restrict, Set.mem_singleton_iff, true_and, ht'']
-          · intro a
+                simp_all only [List.coe_toFinset, true_and]
+                ext a_2 : 1
+                simp_all only [PFun.mem_restrict, Set.mem_setOf_eq, true_and]
+          . have dom_hd : ↑{hd} ⊆ t.Dom := by simp [tDom]
+            use t.restrict dom_hd
             apply And.intro
-            · intro x h_2
-              simp_all only [Set.singleton_subset_iff, Set.mem_insert_iff, Set.mem_setOf_eq, true_or,
-                List.coe_toFinset, PFun.mem_restrict]
-              obtain ⟨left_2, right_3⟩ := h_2
-              ext a_1 : 1
-              simp_all only [PFun.mem_restrict, Set.mem_setOf_eq, true_and]
-            · apply And.intro
-              · intro x h_2
-                simp_all only [List.coe_toFinset, Set.subset_insert, PFun.mem_restrict, Set.mem_singleton_iff]
-                obtain ⟨left_2, right_3⟩ := h_2
-                subst left_2
-                ext a_1 : 1
-                simp_all only [PFun.mem_restrict, Set.mem_singleton_iff, true_and]
-              · intro a_1 a_2
-                simp_rw [Set.ext_iff, PFun.mem_dom, ← Part.dom_iff_mem] at right_1
-                simp_rw [PFun.mem_restrict] at a_1 a_2
-                rw [Part.eq_none_iff', right_1 a]
-                rw [Not, Set.mem_insert_iff, Set.mem_setOf_eq, ← Not, not_or]
+            . rw [RelationNamesToColumn.evalT_def (h' baseRn h) h']
+              . simp_all only [List.coe_toFinset, Set.subset_insert, Set.mem_setOf_eq]
+                use rn'
+                apply And.intro (Or.inr hrn')
                 apply And.intro
-                . simp only [Set.subset_def, PFun.mem_dom, Set.mem_singleton_iff, forall_eq, not_and] at a_2 dom_hd
-                  by_contra hc
-                  have ⟨v, hv⟩ := dom_hd
-                  subst hc
-                  exact a_2 v rfl hv
-                . simp only [Set.subset_def, PFun.mem_dom, List.coe_toFinset, Set.mem_setOf_eq, not_and] at a_1 dom_tl
-                  by_contra hc
-                  have ⟨v, hv⟩ := dom_tl a hc
-                  exact a_1 v hc hv
+                . ext a
+                  simp [PFun.dom_eq]
+                  intro ha
+                  subst ha
+                  simp [← PFun.mem_dom]
+                  exact dom_hd rfl
+                . use ra
+                  apply And.intro hra
+                  use t''
+                  apply And.intro ht''
+                  ext v
+                  simp only [PFun.mem_restrict, Set.mem_singleton_iff, true_and, ht''']
+            . intro a
+              apply And.intro
+              · intro x h_2
+                simp_all only [Set.singleton_subset_iff, Set.mem_insert_iff, Set.mem_setOf_eq, true_or,
+                  List.coe_toFinset, PFun.mem_restrict]
+                obtain ⟨left_2, right_3⟩ := h_2
+                ext a_1 : 1
+                simp_all only [PFun.mem_restrict, Set.mem_setOf_eq, true_and]
+              · apply And.intro
+                · intro x h_2
+                  simp_all only [List.coe_toFinset, Set.subset_insert, PFun.mem_restrict, Set.mem_singleton_iff]
+                  obtain ⟨left_2, right_3⟩ := h_2
+                  subst left_2
+                  ext a_1 : 1
+                  simp_all only [PFun.mem_restrict, Set.mem_singleton_iff, true_and]
+                · intro a_1 a_2
+                  simp_rw [Set.ext_iff, PFun.mem_dom, ← Part.dom_iff_mem] at tDom
+                  simp_rw [PFun.mem_restrict] at a_1 a_2
+                  rw [Part.eq_none_iff', tDom a]
+                  rw [Not, Set.mem_insert_iff, Set.mem_setOf_eq, ← Not, not_or]
+                  apply And.intro
+                  . simp only [Set.subset_def, PFun.mem_dom, Set.mem_singleton_iff, forall_eq, not_and] at a_2 dom_hd
+                    by_contra hc
+                    have ⟨v, hv⟩ := dom_hd
+                    subst hc
+                    exact a_2 v rfl hv
+                  . simp only [Set.subset_def, PFun.mem_dom, List.coe_toFinset, Set.mem_setOf_eq, not_and] at a_1 dom_tl
+                    by_contra hc
+                    have ⟨v, hv⟩ := dom_tl a hc
+                    exact a_1 v hc hv
 
 variable [Nonempty ρ]  {dbs : ρ → Finset α}
 
@@ -565,54 +607,52 @@ theorem adom.evaluateT_def {as : Finset α} [Fintype (adomRs dbi.schema)] : (ado
 
 
 @[simp]
-theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] : (adom dbi.schema as).evaluateT dbi =
-  {t | t.Dom = ↑as ∧ t.ran ⊆ dbi.domain} := by
+theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi.schema)] [ne : Nonempty (adomRs dbi.schema)] :
+  (adom dbi.schema as).evaluateT dbi = {t | (∃rn ∈ adomRs dbi.schema, ∃t', t' ∈ (dbi.relations rn).tuples) ∧ t.Dom = ↑as ∧ t.ran ⊆ dbi.domain} := by
     rw [adom, RelationNamesToColumns.evalT_def]
     . rw [DatabaseInstance.domain]
       ext t
-      simp_all only [List.headD_eq_head?_getD, Finset.mem_toList,
-        Set.mem_toFinset, RelationSchema.ordering_eq_toFinset, exists_and_right,
+      simp_all only [Finset.mem_toList,
+        Set.mem_toFinset, RelationSchema.ordering_eq_toFinset,
         RelationSchema.ordering_mem, Set.mem_setOf_eq, PFun.ran, Set.mem_image,
         Set.setOf_subset_setOf, forall_exists_index]
       apply Iff.intro
       · intro a
+        simp_all only [true_and]
+        intro a_1 x h
+        obtain ⟨w, h_1⟩ := ne
         obtain ⟨left, right⟩ := a
-        obtain ⟨left, right_1⟩ := left
         obtain ⟨w_1, h_2⟩ := left
-        -- apply And.intro
-        -- . use ?_, w_1
-        . simp_all only [true_and]
-          intro a_1 x h_1
+        obtain ⟨left, right⟩ := right
+        obtain ⟨left_1, right_1⟩ := h_2
+        obtain ⟨w_2, h_2⟩ := right_1
 
-          have : x ∈ as := by rw [← Finset.mem_coe, ← right_1, PFun.mem_dom]; use a_1
-          obtain ⟨rn, hrn, ra, hra, t', ht', ht''⟩ := right x this
-          use rn, ra, t'
-          apply And.intro ht'
-          rw [ht'']
-          exact Part.eq_some_iff.mpr h_1
+        have : x ∈ as := by rw [← Finset.mem_coe, ← left, PFun.mem_dom]; use a_1
+        obtain ⟨rn, hrn, ra, hra, t', ht', ht''⟩ := right x this
+        use rn, ra, t'
+        apply And.intro ht'
+        rw [ht'']
+        exact Part.eq_some_iff.mpr h
 
       · intro a
-        simp_all only [and_true]
-        obtain ⟨left, right⟩ := a
-
+        simp_all only [true_and]
+        obtain ⟨_, left, right⟩ := a
+        intro a ha
+        have ⟨v, hv⟩ : ∃v, v ∈ t a := by rw [← PFun.mem_dom, left, Finset.mem_coe]; exact ha
+        have ⟨rn, ra, t', ht', ht''⟩ := right v a hv
+        use rn
         apply And.intro
-        . sorry
-        . intro a ha
-          have ⟨v, hv⟩ : ∃v, v ∈ t a := by rw [← PFun.mem_dom, left, Finset.mem_coe]; exact ha
-          have ⟨rn, ra, t', ht', ht''⟩ := right v a hv
-          use rn
+        . rw [adomRs, Set.mem_setOf_eq, ← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]
+          use ra
+          rw [← dbi.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema t' ht', PFun.mem_dom, ht'', ← Part.dom_iff_mem]
+          trivial
+        . use ra
           apply And.intro
-          . rw [adomRs, Set.mem_setOf_eq, ← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]
-            use ra
-            rw [← dbi.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema t' ht', PFun.mem_dom, ht'', ← Part.dom_iff_mem]
+          . rw [← dbi.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema t' ht', PFun.mem_dom, ht'', ← Part.dom_iff_mem]
             trivial
-          . use ra
-            apply And.intro
-            . rw [← dbi.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema t' ht', PFun.mem_dom, ht'', ← Part.dom_iff_mem]
-              trivial
-            . use t'
-              apply And.intro ht'
-              simp_all [← Part.eq_some_iff]
+          . use t'
+            apply And.intro ht'
+            simp_all [← Part.eq_some_iff]
 
     . simp_all [Option.getD]
       split
