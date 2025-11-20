@@ -580,7 +580,7 @@ theorem toRA.imp_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
         simp_all only [Finset.coe_inj, TupleToFun.tuple_eq_self, implies_true, exists_const, and_self]
       · intro ⟨⟨w_1, h_1⟩, right⟩
         simp_all [Finset.coe_inj, TupleToFun.tuple_eq_self, implies_true, and_self]
-        apply adom.exists_tuple_empty_ran (by grind) right
+        apply adom.exists_tuple_from_ran (by grind) right
 
 theorem toRA.not_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)]
   (h : rs ≠ ∅) (ih : (toRA dbi.schema q rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q rs brs t h}) :
@@ -614,7 +614,7 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
         by_contra hc
 
         have ⟨rn'', hrn'', t_, ht_⟩ : ∃ rn ∈ adomRs dbi.schema, ∃ t', t' ∈ (dbi.relations rn).tuples := by
-          apply adom.exists_tuple_empty_ran (by grind) right_1
+          apply adom.exists_tuple_from_ran (by grind) right_1
 
         have := right t'' rn'' hrn'' t_ ht_ ?_ ?_ ?_
         . rw [← not_forall_not] at this
@@ -688,7 +688,7 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
         simp_all only [and_self, and_true]
 
         apply And.intro
-        . exact adom.exists_tuple_empty_ran (by grind) right
+        . exact adom.exists_tuple_from_ran (by grind) right
         . intro x rn hrn t' ht' hp hq a
 
           by_contra hc
