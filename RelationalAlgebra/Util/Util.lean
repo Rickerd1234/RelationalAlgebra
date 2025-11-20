@@ -23,6 +23,15 @@ section rename
 def renameFunc [DecidableEq α] (old new : α) : α → α :=
   (λ a'' => if (a'' = new) then old else if (a'' = old) then new else a'')
 
+@[simp]
+theorem renameFunc.old_def [DecidableEq α] {old new : α}  : renameFunc old new old = new := by simp [renameFunc]
+
+@[simp]
+theorem renameFunc.new_def [DecidableEq α] {old new : α}  : renameFunc old new new = old := by simp [renameFunc]
+
+@[simp]
+theorem renameFunc.other_def [DecidableEq α] {old new a : α} (h : a ≠ old) (h : a ≠ new) : renameFunc old new a = a := by simp_all [renameFunc]
+
 -- Theorem proving that renameFunc is surjective
 theorem rename_func_surjective [DecidableEq α] (old new : α) : (renameFunc old new).Surjective := by
   simp only [renameFunc, Function.Surjective]
