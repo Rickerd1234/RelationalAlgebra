@@ -682,3 +682,19 @@ theorem adom.exists_tuple_from_ran {dbi : DatabaseInstance ρ α μ} {t : α →
       use v
       exact Part.eq_some_iff.mp ht₂
     . use t'
+
+theorem adom.exists_tuple_from_value {dbi : DatabaseInstance ρ α μ}
+  (h : ∀v, v ∈ dbi.domain) [ne : Nonempty μ] : ∃rn ∈ adomRs dbi.schema, ∃t', t' ∈ (dbi.relations rn).tuples := by
+    simp_rw [adomRs, Set.mem_setOf_eq, ← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]
+    simp_rw [DatabaseInstance.domain, Set.image, Set.mem_setOf_eq] at h
+    rw [← exists_true_iff_nonempty] at ne
+    obtain ⟨v, _⟩ := ne
+    obtain ⟨rn, a', t', ht₁, ht₂⟩  := h v
+    use rn
+    apply And.intro
+    . simp_rw [← dbi.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema t' ht₁]
+      use a'
+      rw [PFun.mem_dom]
+      use v
+      exact Part.eq_some_iff.mp ht₂
+    . use t'
