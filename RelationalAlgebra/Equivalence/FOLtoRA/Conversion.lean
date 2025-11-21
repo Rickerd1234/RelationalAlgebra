@@ -19,10 +19,43 @@ theorem toPrenex.freeVarFinset_def {q : FOL.Query dbs} : (toPrenex q).freeVarFin
 
 section toRA
 
-noncomputable def TermtoAtt (f : (Fin n → String)) : (fol dbs).Term (String ⊕ Fin n) → String
+noncomputable def TermtoAtt (brs : Finset String) : (fol dbs).Term (String ⊕ Fin n) → String
   | var (Sum.inl s) => s
-  | var (Sum.inr i) => f i
+  | var (Sum.inr i) => FreeMap n brs i
   | _ => Classical.arbitrary String
+
+
+noncomputable def TermfromAtt {brs : Finset String} (hn : n ≤ brs.card) : String → (fol dbs).Term (String ⊕ Fin n) :=
+  λ a => dite (a ∈ FRan (FreeMap n brs)) (inVar ∘ Fin.castLE (by rw [FreeMap.FRan_card_def hn]) ∘  RelationSchema.index) (λ _ => outVar a)
+
+theorem TermfromAtt.TermtoAtt_inv {hn : n ≤ brs.card} : TermtoAtt brs ∘ TermfromAtt hn (dbs := dbs) = id := by
+  ext a
+  simp [TermfromAtt, TermtoAtt]
+  split
+  next x s heq =>
+    split at heq
+    next h => simp_all only [Term.var.injEq, reduceCtorEq]
+    next h => simp_all only [Term.var.injEq, Sum.inl.injEq]
+  next x i heq =>
+    split at heq
+    next h =>
+      simp_all only [Term.var.injEq, Sum.inr.injEq]
+      subst heq
+      exact FreeMap.self_def_cast (Eq.mpr_prop (Eq.refl (a ∈ FRan (FreeMap n brs))) h) hn (Nat.le_refl n)
+    next h => simp_all only [Term.var.injEq, reduceCtorEq]
+  next x x_1 x_2 =>
+    simp_all only [imp_false]
+    split at x_1
+    next h =>
+      split at x_2
+      next h_1 =>
+        simp_all only [Term.var.injEq, reduceCtorEq, not_false_eq_true, implies_true, Sum.inr.injEq, forall_eq']
+      next h_1 => simp_all only [Term.var.injEq, reduceCtorEq, not_false_eq_true, implies_true, not_true_eq_false]
+    next h =>
+      split at x_2
+      next h_1 => simp_all only [not_true_eq_false]
+      next h_1 => simp_all only [not_false_eq_true, Term.var.injEq, Sum.inl.injEq, forall_eq']
+
 
 @[simp]
 def RealizeDomSet {dbi : DatabaseInstance String String μ} [folStruc dbi] [Nonempty μ]
@@ -30,8 +63,9 @@ def RealizeDomSet {dbi : DatabaseInstance String String μ} [folStruc dbi] [None
     q.Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) ∧ t.ran ⊆ dbi.domain
 
 @[simp]
-def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (String ⊕ Fin n)} (f : (Fin n → String)) (h : f.Injective) (h' : (t₁.varFinsetLeft ∪ t₂.varFinsetLeft) ∩ FRan f = ∅) :
-  (TermtoAtt f t₁) = (TermtoAtt f t₂) ↔ t₁ = t₂ := by
+def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (String ⊕ Fin n)} {brs : Finset String} (h : n ≤ brs.card) (h' : (t₁.varFinsetLeft ∪ t₂.varFinsetLeft) ∩ FRan (FreeMap n brs) = ∅) :
+  (TermtoAtt brs t₁) = (TermtoAtt brs t₂) ↔ t₁ = t₂ := by
+    have h := FreeMap.inj_n h
     apply Iff.intro
     . intro h''
       have ⟨k₁, hk₁⟩ := Term.cases t₁
@@ -57,14 +91,14 @@ def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (String ⊕ Fin n)} (f : (Fin n
         | inr val_2 =>
           simp_all only [Sum.inr.injEq]
           exact h h''
-    . exact congrArg (TermtoAtt f)
+    . exact congrArg (TermtoAtt brs)
 
 
-noncomputable def renamer (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : String :=
-  dite (ra ∈ dbs rn) (λ h => TermtoAtt (FreeMap n brs) (ts (RelationSchema.index h))) (λ _ => ra)
+noncomputable def renamer (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (ra : String) : String :=
+  dite (ra ∈ dbs rn) (λ h => TermtoAtt brs (ts (RelationSchema.index h))) (λ _ => ra)
 
 noncomputable def renamePairFunc (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : String → String :=
-  renameFunc ra (renamer ra ts brs)
+  renameFunc ra (renamer ts brs ra)
 
 noncomputable def renamePair (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   .r (renamePairFunc ra ts brs) (.R rn)
@@ -108,7 +142,7 @@ theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (Str
           use hd
 
 theorem test {dbi : DatabaseInstance String String μ}  {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
-  (dbi.schema rn).image (λ ra => renamer ra ts brs) ⊆
+  (dbi.schema rn).image (renamer ts brs) ⊆
     (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) := by
       rw [Finset.subset_iff]
       simp
@@ -126,7 +160,7 @@ theorem test {dbi : DatabaseInstance String String μ}  {ts : Fin (dbi.schema rn
 
 theorem test2 {dbi : DatabaseInstance String String μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
   (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ⊆
-    (dbi.schema rn).image (λ ra => renamer ra ts brs) := by
+    (dbi.schema rn).image (renamer ts brs) := by
       simp_rw [Finset.subset_iff, Finset.mem_biUnion, Finset.mem_univ, true_and,
         Finset.mem_image, forall_exists_index]
       intro a w hw
@@ -138,35 +172,43 @@ theorem test2 {dbi : DatabaseInstance String String μ} {ts : Fin (dbi.schema rn
       next t i heq => simp_all only [Finset.notMem_empty]
       next _f ts heq => exact False.elim (fol_empty_fun _f)
 
-def rjRes {dbi : DatabaseInstance String String μ} {t : String →. μ} {ras : List String}
-  (h : t.Dom = ((dbi.schema rn).image (λ ra => renamer ra ts brs))) (h' : ras.toFinset ⊆ dbi.schema rn) :
-     (ras.toFinset.image (λ ra => renamer ra ts brs)).toSet ⊆ t.Dom := by grind
+def rjRes {dbi : DatabaseInstance String String μ} {t : String →. μ} {ras : List String} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
+  (h : t.Dom = ((dbi.schema rn).image (λ ra => renamePairFunc ra ts brs ra))) (h' : ras.toFinset ⊆ dbi.schema rn) :
+    (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra)).toSet ⊆ t.Dom := by
+      rw [h]; rw [@Finset.coe_subset];
+      rw [Finset.subset_iff]
+      simp
+      intro a ha
+      have : a ∈ dbi.schema rn := by
+        simp_rw [Finset.subset_iff, List.mem_toFinset] at h'
+        exact h' ha
+      obtain ⟨k, hk⟩ := Term.cases (ts (RelationSchema.index this))
+      use a
 
 -- theorem t {dbi : DatabaseInstance String String μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
 --   {w : String →. μ}
 --   (h : a ∈ dbi.schema rn) (h' : ts (RelationSchema.index h) = var (Sum.inl val)) :
---     (renamer val ts brs) = a := by simp [renamer, h, h', renameFunc, TermtoAtt]
+--     (renamer ts brs val) = a := by simp [renamer, h, h', renameFunc, TermtoAtt]
 
 theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempty μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
   (h' : ras.toFinset ⊆ dbi.schema rn) :
     RA.Query.evaluateT dbi (relJoins ras ts brs) =
     {t | ∃t' h,
       RealizeDomSet (μ := μ)
-        ((Relations.boundedFormula (relations.R rn) ts).relabel (n := n) ((λ ra => Sum.inl (renamer ra ts brs))))
-        ((dbi.schema rn).image (λ ra => renamer ra ts brs))
+        (Relations.boundedFormula (relations.R rn) ts)
+        ((dbi.schema rn).image (λ ra => renamePairFunc ra ts brs ra))
         brs t' h
-      ∧ t'.restrict (rjRes h h') = t
+      ∧ t'.restrict (rjRes h h') ∘ (λ ra => renamePairFunc ra ts brs ra) = t
     } := by
       induction ras with
       | nil =>
         ext t
-        simp [Set.mem_setOf_eq]
         simp [relJoins]
         apply Iff.intro
         · intro ⟨⟨w, hw⟩, h'⟩
           let w' : String →. μ := w ∘ λ ra => renamePairFunc ra ts brs ra
           have hw_schema : w.Dom = ↑(dbi.schema rn) := by rw [← dbi.validSchema, ← ((dbi.relations rn).validSchema w hw)]
-          have hw'_schema : w'.Dom = (fun ra ↦ renamer ra ts brs) '' ↑(dbi.schema rn) := by
+          have hw'_schema : w'.Dom = (λ ra => renamePairFunc ra ts brs ra) '' ↑(dbi.schema rn) := by
             unfold w'
             simp_rw [Set.ext_iff, PFun.mem_dom, Function.comp_apply, ← PFun.mem_dom, hw_schema,
               Finset.mem_coe, Set.mem_image, renamePairFunc]
@@ -175,17 +217,14 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempt
               Finset.mem_coe]
             apply Iff.intro
             · intro h
-              use renamer x ts brs
-              simp [h]
-              rw [renamer]
-              simp [h]
+              use renamePairFunc x ts brs x
+              simp [renamePairFunc, h]
               sorry
 
             · intro a
               obtain ⟨w_1, h⟩ := a
               obtain ⟨left, right⟩ := h
               subst right
-              simp [renamer, left]
               sorry
 
           use w', hw'_schema
@@ -196,7 +235,7 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempt
             . convert hw
               ext a v
               simp
-              simp_all only [List.toFinset_nil, Finset.empty_subset, w']
+              simp_all only [List.toFinset_nil, Finset.empty_subset]
               apply Iff.intro
               · intro a_1
                 split at a_1
@@ -206,12 +245,13 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempt
                   subst a_1
                   cases k with
                   | inl val =>
-                    simp_all only [Sum.elim_inl, TupleToFun, Function.comp_apply]
+                    simp_all only [Sum.elim_inl, TupleToFun, Function.comp_apply, w', renamePairFunc]
+                    simp_rw [renameFunc.old_def]
                     sorry
                   | inr val_1 =>
                     simp_all only [Sum.elim_inr, Function.comp_apply, TupleToFun]
                     sorry
-                next h => simp_all only [Part.notMem_none, w']
+                next h => simp_all only [Part.notMem_none]
               · intro a_1
                 split
                 next h =>
@@ -226,21 +266,20 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempt
                     simp_all only [Sum.elim_inr, Function.comp_apply, TupleToFun]
                     sorry
                 next h =>
-                  simp_all only [Part.notMem_none, w']
+                  simp_all only [Part.notMem_none]
                   apply h
                   rw [← Finset.mem_coe, ← hw_schema, PFun.mem_dom]
                   use v
-            . have w_ran : w.ran ⊆ dbi.domain := by simp [PFun.ran, DatabaseInstance.domain]; intro v a hv; use rn, a, w; simp_all [Part.eq_some_iff]
-              have w_ran' : w.ran = w'.ran := by simp [w', PFun.ran, Set.ext_iff]; intro v; apply Function.Surjective.exists; simp [Function.Surjective]; sorry
-              exact Eq.trans_subset (id (Eq.symm w_ran')) w_ran
-          · simp [PFun.ext_iff, h']
+            . simp [PFun.ran, DatabaseInstance.domain]; intro v a hv; use rn, a, w; simp_all [Part.eq_some_iff]; sorry
+          · apply PFun.ext
+            intro a v
+            simp [h']
         · intro a
           obtain ⟨left, right⟩ := a
           obtain ⟨w, h⟩ := right
           obtain ⟨left_1, right⟩ := h
           obtain ⟨left_1, right_1⟩ := left_1
           subst right
-          simp_all only [Finset.coe_empty]
           apply And.intro
           · simp_all only [List.toFinset_nil, Finset.empty_subset]
             rw [← fol.Rel, folStruc_apply_RelMap] at left_1
@@ -371,16 +410,16 @@ theorem relToRA.evalT_def [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.sc
       --   sorry
 
 noncomputable def toRA
-  (f : (fol dbs).BoundedFormula String n) (rs brs : Finset String) : RA.Query String String :=
+  (f : (fol dbs).BoundedFormula String n) (rs brs : Finset String) (hn : n + depth f < brs.card) : RA.Query String String :=
     match f with
     | .falsum => .d (adom dbs rs) (adom dbs rs)
-    | .equal t₁ t₂ => .s (TermtoAtt (FreeMap n brs) t₁) (TermtoAtt (FreeMap n brs) t₂) (adom dbs rs)
+    | .equal t₁ t₂ => .s (TermtoAtt brs t₁) (TermtoAtt brs t₂) (adom dbs rs)
     | .rel (.R rn) ts => relToRA dbs rn ts rs brs
-    | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ rs brs) (toRA f₂ rs brs))
-    | .all sf => (adom dbs rs).d (.p rs ((adom dbs (rs ∪ FRan (FreeMap (n + 1) brs))).d (toRA sf (rs ∪ FRan (FreeMap (n + 1) brs)) brs)))
+    | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ rs brs (by simp_all; grind)) (toRA f₂ rs brs (by simp_all; grind)))
+    | .all sf => (adom dbs rs).d (.p rs ((adom dbs (rs ∪ FRan (FreeMap (n + 1) brs))).d (toRA sf (rs ∪ FRan (FreeMap (n + 1) brs)) brs (by simp_all; grind))))
 
 theorem toRA.schema_def :
-    (toRA dbs φ rs brs).schema dbs = rs := by
+    (toRA dbs φ rs brs hn).schema dbs = rs := by
   induction φ with
   | rel R ts =>
     cases R
@@ -390,9 +429,9 @@ theorem toRA.schema_def :
 end toRA
 
 theorem toRA.isWellTyped_def_IsAtomic {q : (fol dbs).BoundedFormula String n}
-  (hq : q.IsAtomic) (h' : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs)
+  (hq : q.IsAtomic) (h' : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
-    (toRA dbs q rs brs).isWellTyped dbs := by
+    (toRA dbs q rs brs hn).isWellTyped dbs := by
       induction hq with
       | equal t₁ t₂ =>
         simp [Term.bdEqual, toRA, adom.isWellTyped_def]
@@ -438,11 +477,11 @@ theorem toRA.isWellTyped_def_IsAtomic {q : (fol dbs).BoundedFormula String n}
         | R rn => simp [Relations.boundedFormula, toRA, relToRA.isWellTyped_def]
 
 theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] {q : (fol dbs).BoundedFormula String n}
-  (hq : q.IsQF) (h' : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) :
-    (toRA dbs q rs brs).isWellTyped dbs := by
+  (hq : q.IsQF) (h' : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card):
+    (toRA dbs q rs brs hn).isWellTyped dbs := by
       induction hq with
       | falsum => simp_all [toRA, adom.isWellTyped_def, adom.schema_def]
-      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at h'
+      | of_isAtomic h_at => exact isWellTyped_def_IsAtomic h_at h' hn
       | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
         rename_i q₁ q₂
         rw [toRA]
@@ -453,35 +492,35 @@ theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)]
         simp_all [adom.isWellTyped_def, adom.schema_def, toRA.schema_def]
 
 theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
-  (hq : q.IsPrenex) (h' : q.freeVarFinset ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (h'''' : 1 + n + depth q ≤ brs.card)
+  (hq : q.IsPrenex) (h' : q.freeVarFinset ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (hn : n + depth q < brs.card)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
-    (toRA dbs q (rs ∪ FRan (FreeMap n brs)) brs).isWellTyped dbs := by
+    (toRA dbs q (rs ∪ FRan (FreeMap n brs)) brs hn).isWellTyped dbs := by
       induction hq with
-      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf (by grind)
+      | of_isQF h_qf => exact isWellTyped_def_IsQF h_qf (by grind) (by grind)
       | all =>
         simp [toRA]
-        simp at h''''
+        simp at hn
         rename_i inst_1 n_1 φ h_1 h_ih
 
         have wt := h_ih h' h'' (by grind)
-        have sch : (rs ∪ (FRan (FreeMap n_1 brs) ∪ FRan (FreeMap (n_1 + 1) brs))) = (rs ∪ FRan (FreeMap (n_1 + 1) brs)) := by simp [FreeMap]
+        have sch : (rs ∪ (FRan (FreeMap n_1 brs) ∪ FRan (FreeMap (n_1 + 1) brs))) = (rs ∪ FRan (FreeMap (n_1 + 1) brs)) := by rw [FreeMap.FRan_union_add_one (by grind)]
 
         simp only [adom.isWellTyped_def, adom.schema_def, toRA.schema_def, true_and, and_true, *]
-        simp only [FreeMap, FRan.liftF_sub, Finset.union_subset_union_right]
+        exact Finset.union_subset_union_right (FreeMap.FRan_sub_add_one (by grind))
 
       | ex =>
         simp [toRA]
         rename_i inst_1 n_1 φ h_1 h_ih
-        simp at h' h'' h''''
+        simp at h' h'' hn
 
         have wt := h_ih h' h'' (by grind)
-        have sch : (rs ∪ (FRan (FreeMap n_1 brs) ∪ FRan (FreeMap (n_1 + 1) brs))) = (rs ∪ FRan (FreeMap (n_1 + 1) brs)) := by simp [FreeMap]
+        have sch : (rs ∪ (FRan (FreeMap n_1 brs) ∪ FRan (FreeMap (n_1 + 1) brs))) = (rs ∪ FRan (FreeMap (n_1 + 1) brs)) := by rw [FreeMap.FRan_union_add_one (by grind)]
 
         simp only [adom.isWellTyped_def, adom.schema_def, toRA.schema_def, true_and, and_true, *]
-        simp only [FreeMap, FRan.liftF_sub, Finset.union_subset_union_right]
+        exact Finset.union_subset_union_right (FreeMap.FRan_sub_add_one (by grind))
 
 theorem toRA.falsum_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] :
-    (toRA dbi.schema (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs).evaluateT dbi =
+    (toRA dbi.schema (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs hn).evaluateT dbi =
       {t | ∃h, RealizeDomSet (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs t h} := by
         have : (RA.Query.evaluateT dbi (adom dbi.schema rs)).diff (RA.Query.evaluateT dbi (adom dbi.schema rs)) = ∅ := Set.diff_self
         simp_rw [toRA, RA.Query.evaluateT, diffT, this]
@@ -489,7 +528,7 @@ theorem toRA.falsum_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStru
 
 theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)} {t : String →. μ} {rs : Finset String}
   (h : t.Dom = ↑rs) (h' : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs):
-    t (TermtoAtt (FreeMap n brs) t₁) = t (TermtoAtt (FreeMap n brs) t₂) ↔
+    t (TermtoAtt brs t₁) = t (TermtoAtt brs t₂) ↔
       (BoundedFormula.equal t₁ t₂).Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) := by
         have ⟨k₁, hk₁⟩ := Term.cases t₁
         have ⟨k₂, hk₂⟩ := Term.cases t₂
@@ -517,8 +556,8 @@ theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (μ := μ)] {t₁ t₂ :
         )
 
 theorem toRA.equal_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)}
-  (h : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs) :
-    (toRA dbi.schema (t₁ =' t₂) rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (t₁ =' t₂) rs brs t h} := by
+  (h : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs) (hn : n + depth (t₁ =' t₂) < brs.card) :
+    (toRA dbi.schema (t₁ =' t₂) rs brs hn).evaluateT dbi = {t | ∃h, RealizeDomSet (t₁ =' t₂) rs brs t h} := by
       simp_rw [Term.bdEqual, toRA, RA.Query.evaluateT, selectionT]
       simp_rw [RealizeDomSet]
 
@@ -564,10 +603,10 @@ theorem toRA.equal_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [Fintype 
         . exact ((term_equal_def w_1 h).mpr h_2)
 
 theorem toRA.imp_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)]
-  (hμ : ∀v : μ, v ∈ dbi.domain)
-  (ih₁ : (toRA dbi.schema q₁ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₁ rs brs t h})
-  (ih₂ : (toRA dbi.schema q₂ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₂ rs brs t h}) :
-    (toRA dbi.schema (q₁.imp q₂) rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q₁.imp q₂) rs brs t h} := by
+  (hμ : ∀v : μ, v ∈ dbi.domain) (hn : n + depth (q₁ ⟹ q₂) < brs.card)
+  (ih₁ : (toRA dbi.schema q₁ rs brs (by simp at hn; grind)).evaluateT dbi = {t | ∃h, RealizeDomSet q₁ rs brs t h})
+  (ih₂ : (toRA dbi.schema q₂ rs brs (by simp at hn; grind)).evaluateT dbi = {t | ∃h, RealizeDomSet q₂ rs brs t h}) :
+    (toRA dbi.schema (q₁.imp q₂) rs brs hn).evaluateT dbi = {t | ∃h, RealizeDomSet (q₁.imp q₂) rs brs t h} := by
       ext t
       simp only [toRA, RA.Query.evaluateT.eq_7, diffT, Set.diff, adom.complete_def,
         Set.mem_setOf_eq, RA.Query.evaluateT, not_and, not_not, RealizeDomSet,
@@ -583,15 +622,17 @@ theorem toRA.imp_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
         apply adom.exists_tuple_from_value hμ
 
 theorem toRA.not_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)]
-  (hμ : ∀v : μ, v ∈ dbi.domain) (ih : (toRA dbi.schema q rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q rs brs t h}) :
-    (toRA dbi.schema q.not rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q.not) rs brs t h} := by
-      exact imp_def hμ ih falsum_def
+  (hμ : ∀v : μ, v ∈ dbi.domain) (hn : n + depth (∼q) < brs.card)
+  (ih : (toRA dbi.schema q rs brs (by simp at hn; grind)).evaluateT dbi = {t | ∃h, RealizeDomSet q rs brs t h}) :
+    (toRA dbi.schema q.not rs brs hn).evaluateT dbi = {t | ∃h, RealizeDomSet (q.not) rs brs t h} := by
+      exact imp_def hμ hn ih falsum_def
 
 theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] {q : (fol dbi.schema).BoundedFormula String (n + 1)}
-  (hμ : ∀v : μ, v ∈ dbi.domain) (h : (FreeMap (n + 1) brs) (Fin.last n) ∉ q.freeVarFinset) (h' : n + 1 ≤ brs.card)
-  (ih : (toRA dbi.schema q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs).evaluateT dbi = {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs t h}) :
-    (toRA dbi.schema q.all (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q.all) (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
-      simp only [toRA, RA.Query.evaluateT, Finset.union_assoc, FRan.FreeMap_lift_union, ih, diffT, Set.diff]
+  (hμ : ∀v : μ, v ∈ dbi.domain) (hn : n + depth (∀'q) < brs.card) (h : (FreeMap (n + 1) brs) (Fin.last n) ∉ q.freeVarFinset)
+  (ih : (toRA dbi.schema q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs (by simp at hn; grind)).evaluateT dbi = {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs t h}) :
+    (toRA dbi.schema q.all (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs hn).evaluateT dbi = {t | ∃h, RealizeDomSet (q.all) (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
+      simp only [toRA, RA.Query.evaluateT, Finset.union_assoc, diffT, Set.diff]
+      rw [FreeMap.FRan_union_add_one (by grind), ih]
 
       ext t
 
@@ -637,7 +678,7 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
             | inl h_3 => simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
             | inr h_4 =>
               simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
-              exact Or.inr (FRan.liftF_sub h_4)
+              exact Or.inr (by apply FreeMap.FRan_sub_add_one (by simp at hn; grind) h_4)
           next h_2 =>
             split
             next h_3 =>
@@ -646,7 +687,7 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
             next h_3 =>
               simp_all [not_or, Part.not_none_dom]
               by_contra hc'
-              rw [FRan.mem_FreeMap_lift_cases h'] at hc'
+              rw [FreeMap.mem_FRan_add_one_cases (by grind)] at hc'
               simp_all
         . simp [PFun.ran, t'', Set.subset_def]
           intro v a hv
@@ -668,19 +709,16 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
             exact False.elim (h ha)
           . induction i using Fin.lastCases with
             | cast j =>
-              have : FreeMap (n + 1) brs j.castSucc ∈ FRan (FreeMap n brs) := by simp [FreeMap, liftF]
+              have : FreeMap (n + 1) brs j.castSucc ∈ FRan (FreeMap n brs) := by exact FRan.mem_def
               simp only [Fin.snoc_castSucc, Function.comp_apply]
               simp [TupleToFun, t'']
               congr
               simp [this]
-              rw [FreeMap.fromIndex_def _ h']
-              rw [FreeMap.fromIndex_def j ?_]
-              . simp [Fin.castLE]
-              . exact Nat.le_of_succ_le h'
+              rw [@FreeMap.add_one_def]
             | last =>
               simp [t'']
               have : FreeMap (n + 1) brs (Fin.last n) ∉ q.freeVarFinset ∪ FRan (FreeMap n brs) := by
-                exact Finset.notMem_union.mpr (And.intro h (FRan.notMem_FreeMap_lift h'))
+                exact Finset.notMem_union.mpr (And.intro h (FRan.notMem_FreeMap_lift (by grind)))
 
               simp [this]
 
@@ -705,79 +743,74 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc d
               simp [TupleToFun]
               have := (hc (FreeMap n brs j)).1 (by simp)
               congr
-              simp [this]
-              rw [FreeMap.fromIndex_def _ h']
-              rw [FreeMap.fromIndex_def j ?_]
-              . simp [Fin.castLE]
-              . grind
             | last => simp
 
 
 theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) :
-    (toRA dbi.schema q rs brs).evaluateT dbi =
+  (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card) :
+    (toRA dbi.schema q rs brs hn).evaluateT dbi =
       {t | ∃h, RealizeDomSet q rs brs t h} := by
       induction hq with
-      | equal t₁ t₂ => exact equal_def h
+      | equal t₁ t₂ => exact equal_def h hn
       | rel R ts =>
         cases R with
         | R rn => exact relToRA.evalT_def h
 
 
 theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
-  (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) :
-    (toRA dbi.schema q rs brs).evaluateT dbi =
+  (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card) :
+    (toRA dbi.schema q rs brs hn).evaluateT dbi =
       {t | ∃h, RealizeDomSet q rs brs t h} := by
       induction hq with
       | falsum => exact falsum_def
-      | of_isAtomic h_at => exact toRA.evalT_def_IsAtomic h_at h
+      | of_isAtomic h_at => exact toRA.evalT_def_IsAtomic h_at h hn
 
       | imp h_qf₁ h_qf₂ ih₁ ih₂ =>
         rw [Finset.union_subset_iff, BoundedFormula.freeVarFinset, Finset.union_subset_iff] at h
 
-        exact toRA.imp_def hμ (ih₁ (Finset.union_subset_iff.mpr ⟨h.1.1, h.2⟩)) (ih₂ (Finset.union_subset_iff.mpr ⟨h.1.2, h.2⟩))
+        exact toRA.imp_def hμ hn (ih₁ (Finset.union_subset_iff.mpr ⟨h.1.1, h.2⟩) (by simp at hn; grind)) (ih₂ (Finset.union_subset_iff.mpr ⟨h.1.2, h.2⟩) (by simp at hn; grind))
 
 
 theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n} [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)]
-  (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsPrenex) (h : n + depth q < brs.card) (h' : brs ∩ q.freeVarFinset = ∅) :
-    (toRA dbi.schema q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi =
+  (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsPrenex) (h' : brs ∩ q.freeVarFinset = ∅) (hn : n + depth q < brs.card) :
+    (toRA dbi.schema q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs hn).evaluateT dbi =
       {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
         induction hq with
-        | of_isQF hqf => exact evalT_def_IsQF hμ hqf (fun ⦃a⦄ a ↦ a)
+        | of_isQF hqf => exact evalT_def_IsQF hμ hqf (fun ⦃a⦄ a ↦ a) (by grind)
 
         | all hφ ih =>
-          apply all_def hμ ?_ (by grind)
+          apply all_def hμ (by grind) ?_
 
-          . simp [← Nat.add_assoc] at h
+          . simp [← Nat.add_assoc] at hn
 
-            exact ih h h'
+            exact ih h' hn
 
           . simp [Finset.eq_empty_iff_forall_notMem] at h'
             apply h'
-            rw [FreeMap.fromIndex_def]
+            rw [FreeMap.fromIndex_brs_def]
             . simp
             . grind
 
         | ex hφ ih =>
           rename_i n' φ
 
-          rw [BoundedFormula.ex]
+          simp_rw [BoundedFormula.ex]
           apply not_def hμ
           have helper {n} : ∀ψ : (fol dbi.schema).BoundedFormula String n, (∼ψ).freeVarFinset = ψ.freeVarFinset := by simp
           rw [helper (φ.not.all)]
 
-          apply all_def hμ ?_ (by grind) ∘ not_def hμ
+          apply all_def hμ (by simp at hn ⊢; grind) ?_ ∘ not_def hμ (by simp at hn ⊢; grind)
 
           . rw [helper φ]
             simp_rw [BoundedFormula.freeVarFinset, Finset.union_empty] at h' ⊢
-            simp [← Nat.add_assoc] at h
+            simp [← Nat.add_assoc] at hn
 
-            exact ih h h'
+            exact ih h' hn
 
           . simp [Finset.eq_empty_iff_forall_notMem] at h'
             simp
             apply h'
-            rw [FreeMap.fromIndex_def]
+            rw [FreeMap.fromIndex_brs_def]
             . simp
             . grind
 
@@ -786,21 +819,25 @@ theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fo
 -- Complete conversion
 @[simp]
 noncomputable def fol_to_ra_query (q : FOL.Query dbs) [Fintype (adomRs dbs)] : RA.Query String String :=
-  toRA dbs (toPrenex q) q.schema (FreshAtts (toPrenex q))
+  toRA dbs (toPrenex q) q.schema (FreshAtts (toPrenex q)) (by
+    have ⟨k, hk⟩ := FreshAtts.card_def (toPrenex q)
+    rw [hk]
+    grind only
+  )
 
 @[simp]
 theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
-  rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, toRA.schema_def]
+  rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toRA.schema_def]
 
 theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
   (fol_to_ra_query q).isWellTyped dbs := by
-    have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan.default = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp
-    rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toPrenex, ← this]
-    refine toRA.isWellTyped_def_IsPrenex ?_ ?_ ?_ ?_
+    have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan (FreeMap 0 (FreshAtts (toPrenex q))) = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan, FRanS]
+    rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, ← this]
+    apply toRA.isWellTyped_def_IsPrenex ?_ ?_ ?_ ?_
     . simp [BoundedFormula.toPrenex_isPrenex]
     . simp
     . simp
-    . have ⟨k, hk⟩ := FreshAtts.card_def q.toFormula.toPrenex
+    . have ⟨k, hk⟩ := FreshAtts.card_def (toPrenex q)
       rw [hk]
       grind only
 
@@ -810,21 +847,19 @@ theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.sch
     intro t
     rw [@Set.mem_inter_iff]
     rw [Set.mem_setOf_eq, FOL.Query.RealizeMin.ex_def dbi q t, FOL.BoundedQuery.Realize]
-    rw [fol_to_ra_query, BoundedQuery.schema, toPrenex]
+    rw [fol_to_ra_query, BoundedQuery.schema]
+    simp_rw [toPrenex]
 
     have hq := BoundedFormula.toPrenex_isPrenex (BoundedQuery.toFormula q)
     have helper : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan (FreeMap 0 (FreshAtts (BoundedQuery.toFormula q).toPrenex))
-      = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FreeMap]
+      = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan, FRanS]
     rw [← freeVarFinset_toPrenex, ← helper, toRA.evalT_def_IsPrenex hμ hq]
 
     rw [Set.mem_setOf_eq]
     simp only [BoundedFormula.realize_toPrenex, RealizeDomSet]
     simp_all only [freeVarFinset_toPrenex]
 
-    have : ∀t' : String → μ, (t' ∘ Fin.elim0) = (default : Fin 0 → μ) := by intro t'; ext v; exact False.elim (Fin.elim0 v)
-    simp_rw [FreeMap, this]
+    have : ∀t' : String → μ, (t' ∘ (FreeMap 0 (FreshAtts (BoundedQuery.toFormula q).toPrenex))) = (default : Fin 0 → μ) := by intro t'; ext v; exact False.elim (Fin.elim0 v)
+    simp_rw [this]
     . simp
-    . have ⟨k, hk⟩ := FreshAtts.card_def q.toFormula.toPrenex
-      rw [hk]
-      grind only
     . simp
