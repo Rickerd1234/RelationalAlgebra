@@ -7,6 +7,10 @@ variable {α β : Type} (f : PFun α β)
 theorem ran_mem {b : β} : b ∈ f.ran ↔ (∃a, f a = Part.some b)
     := by simp_all only [Part.eq_some_iff, PFun.ran, Set.mem_setOf_eq]
 
+theorem ran_comp_sub (g : α → α) : PFun.ran (f ∘ g) ⊆ f.ran := by
+  rw [PFun.ran, Function.comp_def, PFun.ran]
+  grind
+
 variable [DecidableEq α] [DecidableEq β] [Fintype f.Dom]
 
 instance (a : α) : Decidable (f a).Dom := by

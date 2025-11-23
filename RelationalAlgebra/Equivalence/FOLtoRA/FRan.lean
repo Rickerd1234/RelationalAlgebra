@@ -248,6 +248,10 @@ theorem FreeMap.self_def (h : a ∈ FRan (FreeMap n brs)) (h' : n ≤ brs.card) 
     subst hk
     exact self_fromIndex_def h'
 
+theorem FreeMap.index_self (h : FreeMap n brs i ∈ FRan (FreeMap n brs)) (h' : n ≤ brs.card) : (RelationSchema.index h) = i.cast (FRan_card_def h').symm := by
+  rw [← RelationSchema.fromIndex_inj, RelationSchema.fromIndex_index_eq, ← self_fromIndex_def h', @RelationSchema.index_fromIndex_eq]
+  rfl
+
 theorem FreeMap.self_def_cast (h : a ∈ FRan (FreeMap n brs)) (h' : n ≤ brs.card) (h'' : n ≤ n') :
   FreeMap n' brs ((RelationSchema.index h).castLE (by rw [FreeMap.FRan_card_def h']; exact h'')) = a := by
     have ⟨k, hk⟩ : ∃i : Fin (FRan (FreeMap n brs)).card, RelationSchema.fromIndex i = a := by use RelationSchema.index h; simp
