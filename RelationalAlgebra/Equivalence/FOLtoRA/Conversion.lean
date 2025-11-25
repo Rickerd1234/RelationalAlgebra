@@ -361,50 +361,48 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi (μ := μ
   (h' : ras.toFinset ⊆ dbi.schema rn) :
     RA.Query.evaluateT dbi (relJoins ras ts brs) =
     {t |
-      (∃t', t' ∈ (dbi.relations rn).tuples ∧ ∀ra ∈ dbi.schema rn, t ra = t' ra) ∧
-      (∀ra ∈ ras.toFinset,
-        ∃t' ∈ (dbi.relations rn).tuples,
-          (t' ra = t (renamePairFunc ra ts brs ra)))
-      ∧ (∀ra, (ra ∉ dbi.schema rn ∪ (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra))) → t ra = .none)
+      (∃t', t' ∈ (dbi.relations rn).tuples ∧
+        ∀ra, (ra ∈ dbi.schema rn → t ra = t' ra) ∧ (ra ∈ ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra) → t ra = t' (renamePairFunc ra ts brs ra))
+      ∧ (ra ∉ dbi.schema rn → ra ∉ (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra)) → t ra = .none))
     } := by
       induction ras with
       | nil =>
-        simp only [relJoins, List.foldr_nil, RA.Query.evaluateT, List.toFinset_nil,
-          Finset.notMem_empty, IsEmpty.forall_iff, implies_true, true_and]
-        ext t
-        simp only [Set.mem_setOf_eq]
-        apply Iff.intro
-        . intro ht
-          split_ands
-          . use t
-            simp_all
-          . intro ra hra
-            rw [@Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom]
-            rw [(dbi.relations rn).validSchema _ ht, DatabaseInstance.validSchema]
-            simp at hra
-            exact hra
-        . intro ⟨⟨t', ht', ht''⟩, ht⟩
-          convert ht'
-          refine PFun.ext' ?_ ?_
-          . intro a
-            rw [(dbi.relations rn).validSchema _ ht', DatabaseInstance.validSchema, Finset.mem_coe]
-            apply Iff.intro
-            · intro a_1
-              by_contra hc
-              simp at ht
-              simp [PFun.mem_dom, ht a hc] at a_1
-            · intro a_1
-              rw [PFun.mem_dom, ht'' a a_1, ← PFun.mem_dom]
-              rw [(dbi.relations rn).validSchema _ ht', DatabaseInstance.validSchema, Finset.mem_coe]
-              exact a_1
-          . intro ra p q
-            have : ra ∈ dbi.schema rn := by
-              rw [(dbi.relations rn).validSchema _ ht', DatabaseInstance.validSchema] at q;
-              exact q
-            simp_rw [PFun.fn_apply, ht'' ra this]
+        sorry
+        -- simp only [relJoins, List.foldr_nil, RA.Query.evaluateT, List.toFinset_nil,
+        --   Finset.image_empty, Finset.notMem_empty, IsEmpty.forall_iff, not_false_eq_true,
+        --   forall_const, true_and]
+        -- ext t
+        -- simp only [Set.mem_setOf_eq]
+        -- apply Iff.intro
+        -- . intro ht
+        --   use t
+        --   apply And.intro ht
+        --   simp only [implies_true, true_and]
+        --   intro ra hra
+        --   rw [Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema t ht, DatabaseInstance.validSchema]
+        --   exact hra
+        -- . intro ⟨t', ht', ht''⟩
+        --   convert ht'
+        --   refine PFun.ext' ?_ ?_
+        --   . intro a
+        --     rw [(dbi.relations rn).validSchema _ ht', DatabaseInstance.validSchema, Finset.mem_coe]
+        --     apply Iff.intro
+        --     · intro a_1
+        --       by_contra hc
+        --       simp [PFun.mem_dom, (ht'' a).2 hc] at a_1
+        --     · intro a_1
+        --       rw [PFun.mem_dom, (ht'' a).1 a_1, ← PFun.mem_dom]
+        --       rw [(dbi.relations rn).validSchema _ ht', DatabaseInstance.validSchema, Finset.mem_coe]
+        --       exact a_1
+        --   . intro ra p q
+        --     have : ra ∈ dbi.schema rn := by
+        --       rw [(dbi.relations rn).validSchema _ ht', DatabaseInstance.validSchema] at q;
+        --       exact q
+        --     simp_rw [PFun.fn_apply, (ht'' ra).1 this]
 
       | cons hd tl ih =>
-        simp only [List.toFinset_cons, Finset.mem_insert, List.mem_toFinset, forall_eq_or_imp]
+        simp only [List.toFinset_cons, Finset.image_insert, Finset.mem_insert, Finset.mem_image,
+          List.mem_toFinset, not_or, not_exists, not_and, and_imp]
         rw [relJoins]
         rw [List.foldr_cons]
         rw [← relJoins]
@@ -417,68 +415,96 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi (μ := μ
         simp [combinePair.evalT_def]
 
         apply Iff.intro
-        . intro ⟨t', ⟨t₁, ht₁⟩, t₂, ⟨⟨⟨t₃, ht₃⟩, ht₃'⟩, ht₂'⟩⟩
-          obtain ⟨left, right⟩ := ht₁
-          obtain ⟨left_1, right_1⟩ := ht₃
-          obtain ⟨left_2, right_2⟩ := ht₃'
-          obtain ⟨w, h⟩ := right
-          obtain ⟨left_3, right⟩ := h
+        . intro a
+          simp_all only [Finset.mem_image, List.mem_toFinset, forall_exists_index, and_imp, not_exists, not_and,
+            List.toFinset_cons]
+          obtain ⟨w, h⟩ := a
+          obtain ⟨left, right⟩ := h
+          obtain ⟨w_1, h⟩ := left
+          obtain ⟨w_2, h_1⟩ := right
+          obtain ⟨left, right⟩ := h
+          obtain ⟨left_1, right_1⟩ := h_1
+          obtain ⟨w_3, h⟩ := right
+          obtain ⟨w_4, h_1⟩ := left_1
+          obtain ⟨left_1, right⟩ := h
+          obtain ⟨left_2, right_2⟩ := h_1
 
+          use w_4
+          simp_all only [true_and]
+          intro ra
           apply And.intro
-          . use t₃
-            apply And.intro left_1
-            intro ra hra
+          · intro a
+            sorry
+          · apply And.intro
+            · intro a
+              cases a with
+              | inl h =>
+                subst h
+                sorry
+              | inr h_1 =>
+                obtain ⟨w_5, h⟩ := h_1
+                obtain ⟨left_3, right_3⟩ := h
+                sorry
+            · intro a a_1 a_2
+              apply (right_1 ra).2.2
+              . sorry
+              . sorry
 
-            have ⟨v₃, hv₃⟩ : ∃v, v ∈ t₃ ra := by
-              rw [← PFun.mem_dom, (dbi.relations rn).validSchema t₃ left_1, DatabaseInstance.validSchema]
-              exact hra
+          -- apply And.intro
+          -- . use t₃
+          --   apply And.intro left_1
+          --   intro ra hra
 
-            rw [← right_1 ra hra]
-            apply (ht₂' ra).2.1 v₃
-            . simp_all only
+          --   have ⟨v₃, hv₃⟩ : ∃v, v ∈ t₃ ra := by
+          --     rw [← PFun.mem_dom, (dbi.relations rn).validSchema t₃ left_1, DatabaseInstance.validSchema]
+          --     exact hra
 
-          . apply And.intro
-            . apply And.intro
-              . simp_all only [List.mem_toFinset, List.toFinset_cons]
-                use w ∘ renamePairFunc hd ts brs
-                apply And.intro left_3
-                rw [Function.comp_apply]
-                sorry -- Reachable
-              . intro ra hra
-                have ⟨t₄, ht₄, ht₄'⟩ := left_2 ra hra
-                use t₄
-                apply And.intro ht₄
-                simp_all
-                sorry -- Reachable
-            . intro ra hra hra' hra''
-              apply (ht₂' ra).2.2
-              . rw [← Part.eq_none_iff]
-                rw [Part.eq_none_iff']
-                apply (right ra).2.2
-                . rw [Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema t₁ left, dbi.validSchema]
-                  exact hra'
-                . have : PFun.Dom w = {ra | renamePairFunc hd ts brs ra ∈ dbi.schema rn} := by
-                    have w'Dom := (dbi.relations rn).validSchema (w ∘ renamePairFunc hd ts brs) left_3
-                    simp_rw [Set.ext_iff, PFun.mem_dom, Function.comp_apply (f := w), ← Function.comp_apply (f := w)] at w'Dom
-                    ext ra'
-                    have ⟨a', ha'⟩ : ∃a', renamePairFunc hd ts brs ra' = a' := by exact exists_eq'
-                    have := w'Dom a'
-                    subst ha'
-                    rw [renamePairFunc, Function.comp_apply, rename_func_cancel_self, ← renamePairFunc] at this
-                    rw [PFun.mem_dom, this]
-                    simp only [Finset.mem_coe, DatabaseInstance.validSchema.ext, Set.mem_setOf_eq]
-                  rw [Part.dom_iff_mem, ← PFun.mem_dom]
-                  rw [this, renamePairFunc]
-                  simp [renameFunc]
-                  split_ifs
-                  . rename_i h
-                    subst h
-                    simp [renamePairFunc] at hra
-                  . simp_all
-                  . simp_all
+          --   rw [← right_1 ra hra]
+          --   apply (ht₂' ra).2.1 v₃
+          --   . simp_all only
 
-              . rw [right_2 ra hra' hra'']
-                simp [Part.notMem_none]
+          -- . apply And.intro
+          --   . apply And.intro
+          --     . simp_all only [List.mem_toFinset, List.toFinset_cons]
+          --       use w ∘ renamePairFunc hd ts brs
+          --       apply And.intro left_3
+          --       rw [Function.comp_apply]
+          --       sorry -- Reachable
+          --     . intro ra hra
+          --       have ⟨t₄, ht₄, ht₄'⟩ := left_2 ra hra
+          --       use t₄
+          --       apply And.intro ht₄
+          --       simp_all
+          --       sorry -- Reachable
+          --   . intro ra hra hra' hra''
+          --     apply (ht₂' ra).2.2
+          --     . rw [← Part.eq_none_iff]
+          --       rw [Part.eq_none_iff']
+          --       apply (right ra).2.2
+          --       . rw [Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema t₁ left, dbi.validSchema]
+          --         exact hra'
+          --       . have : PFun.Dom w = {ra | renamePairFunc hd ts brs ra ∈ dbi.schema rn} := by
+          --           have w'Dom := (dbi.relations rn).validSchema (w ∘ renamePairFunc hd ts brs) left_3
+          --           simp_rw [Set.ext_iff, PFun.mem_dom, Function.comp_apply (f := w), ← Function.comp_apply (f := w)] at w'Dom
+          --           ext ra'
+          --           have ⟨a', ha'⟩ : ∃a', renamePairFunc hd ts brs ra' = a' := by exact exists_eq'
+          --           have := w'Dom a'
+          --           subst ha'
+          --           rw [renamePairFunc, Function.comp_apply, rename_func_cancel_self, ← renamePairFunc] at this
+          --           rw [PFun.mem_dom, this]
+          --           simp only [Finset.mem_coe, DatabaseInstance.validSchema.ext, Set.mem_setOf_eq]
+          --         rw [Part.dom_iff_mem, ← PFun.mem_dom]
+          --         rw [this, renamePairFunc]
+          --         simp [renameFunc]
+          --         split_ifs
+          --         . rename_i h
+          --           subst h
+          --           simp [renamePairFunc] at hra
+          --         . simp_all
+          --         . simp_all
+
+          --     . rw [right_2 ra hra' hra'']
+          --       simp [Part.notMem_none]
         . sorry
 
 variable (dbs : String → Finset String) [Fintype (adomRs dbs)]
