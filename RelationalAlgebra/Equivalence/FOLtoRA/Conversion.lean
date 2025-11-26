@@ -362,7 +362,7 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi (μ := μ
     RA.Query.evaluateT dbi (relJoins ras ts brs) =
     {t |
       (∃t', t' ∈ (dbi.relations rn).tuples ∧
-        ∀ra, (ra ∈ dbi.schema rn → t ra = t' ra) ∧ (ra ∈ ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra) → t ra = t' (renamePairFunc ra ts brs ra))
+        ∀ra, (ra ∈ dbi.schema rn → t ra = t' ra) ∧ (ra ∈ ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra) → ∀ra' ∈ dbi.schema rn, t ra = t' (renamePairFunc ra' ts brs ra) ∧ t (renamePairFunc ra' ts brs ra) = t' ra)
       ∧ (ra ∉ dbi.schema rn → ra ∉ (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra)) → t ra = .none))
     } := by
       induction ras with
@@ -434,21 +434,37 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi (μ := μ
           intro ra
           apply And.intro
           · intro a
-            sorry
+            have ⟨v, hv⟩ : ∃v, v ∈ w_4 ra := by
+              rw [← PFun.mem_dom, (dbi.relations rn).validSchema _ left_2, DatabaseInstance.validSchema]
+              exact a
+            rw [← (right_2 ra).1 a] at ⊢ hv
+            exact (right_1 ra).2.1 v hv
           · apply And.intro
             · intro a
               cases a with
               | inl h =>
                 subst h
-                sorry
+                intro ra' hra'
+                apply And.intro
+                · nth_rw 2 [renamePairFunc]
+                  rw [renameFunc]
+                  aesop
+                · sorry
               | inr h_1 =>
                 obtain ⟨w_5, h⟩ := h_1
                 obtain ⟨left_3, right_3⟩ := h
-                sorry
+                subst right_3
+                apply And.intro
+                · sorry
+                · sorry
             · intro a a_1 a_2
               apply (right_1 ra).2.2
-              . sorry
-              . sorry
+              . rw [← Part.eq_none_iff, Part.eq_none_iff']
+                apply (right ra).2.2
+                . sorry
+                . sorry
+              . rw [← Part.eq_none_iff]
+                apply (right_2 ra).2.2 a a_2
 
           -- apply And.intro
           -- . use t₃
