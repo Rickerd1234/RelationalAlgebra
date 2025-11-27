@@ -309,6 +309,77 @@ theorem combinePair.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi (μ :=
                       rw [← Part.eq_none_iff'] at this
                       simp [this]
 
+set_option maxHeartbeats 2000000
+
+theorem combinePair.evalT_alt [Fintype (adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Nonempty μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
+  (h : ra ∈ dbi.schema rn) :
+    RA.Query.evaluateT dbi (combinePair ra ts brs) =
+      {t | ∃t', t' ∈ (dbi.relations rn).tuples ∧ (∀a ∈ dbi.schema rn, t' a = t a ∧ t' a = t (renamePairFunc ra ts brs a)) ∧ (∀a, a ∉ dbi.schema rn → a ≠ ra → t a = .none)} := by
+        simp_all [combinePair.evalT_def]
+        ext t
+        simp_all only [Set.mem_setOf_eq]
+        apply Iff.intro
+        · intro a
+          obtain ⟨w, h⟩ := a
+          obtain ⟨left, right⟩ := h
+          obtain ⟨w_1, h⟩ := right
+          obtain ⟨left_1, right⟩ := h
+          use w
+          apply And.intro left
+          apply And.intro
+          . intro ra' hra'
+            apply And.intro
+            . rw [(right ra').1]
+              rw [Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema _ left, DatabaseInstance.validSchema]
+              exact hra'
+            . rw [← (right ra').1]
+              . simp [renamePairFunc, renameFunc]
+                split_ifs
+                . sorry
+                . sorry
+                . simp
+              . rw [Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema _ left, DatabaseInstance.validSchema]
+                exact hra'
+          . intro ra' hra' hra''
+            sorry
+        · intro a
+          obtain ⟨w, h⟩ := a
+          obtain ⟨left, right⟩ := h
+          obtain ⟨left_1, right⟩ := right
+          use w
+          simp_all only [true_and]
+          use w ∘ renamePairFunc ra ts brs
+          simp_all only [Function.comp_apply]
+          apply And.intro
+          · convert left
+            ext a v
+            simp [renamePairFunc, rename_func_cancel_self]
+          · intro a
+            apply And.intro
+            · intro a_1
+              apply Eq.symm
+              apply (left_1 a ?_).1
+              rw [← DatabaseInstance.validSchema, ← Finset.mem_coe,
+                ← (dbi.relations rn).validSchema _ left, PFun.mem_dom, ← Part.dom_iff_mem]
+              exact a_1
+
+            · apply And.intro
+              · intro a_1
+                rw [Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema _ left, DatabaseInstance.validSchema] at a_1
+                rw [(left_1 _ a_1).2]
+                rw [renamePairFunc, rename_func_cancel_self]
+              · intro a_1 a_2
+                rw [← Part.eq_none_iff']
+                apply right
+                . rw [← DatabaseInstance.validSchema, ← Finset.mem_coe,
+                    ← (dbi.relations rn).validSchema _ left, PFun.mem_dom, ← Part.dom_iff_mem]
+                  apply a_1
+                . by_contra hc
+                  subst hc
+                  apply a_1
+                  rw [Part.dom_iff_mem, ← PFun.mem_dom, (dbi.relations rn).validSchema _ left, DatabaseInstance.validSchema]
+                  exact h
+
 
 noncomputable def relJoins (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   ras.foldr (λ ra sq => .j (combinePair ra ts brs) sq) (.R rn)
@@ -443,7 +514,13 @@ theorem relJoins.evalT_def [Fintype (adomRs dbi.schema)] [folStruc dbi (μ := μ
                 use w ∘ renamePairFunc hd ts brs
                 apply And.intro left_3
                 rw [Function.comp_apply]
-                sorry -- Reachable
+                rw [(ht₂' _).1 ?_ ?_]
+                rw [← (right _).2.1 ?_]
+                . sorry
+                . sorry
+                . rw [(right _).2.1 ?_]
+                  sorry
+                  sorry
               . intro ra hra
                 have ⟨t₄, ht₄, ht₄'⟩ := left_2 ra hra
                 use t₄
