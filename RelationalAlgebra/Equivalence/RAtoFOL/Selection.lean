@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi a b p q} [struc : FOL.folStruc dbi (μ := μ)] [Nonempty μ]
+variable {dbi a b p q} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih: ∀t, (ra_to_fol_query dbi.schema q).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :

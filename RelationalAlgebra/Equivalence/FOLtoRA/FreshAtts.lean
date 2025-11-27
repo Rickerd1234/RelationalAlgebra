@@ -62,7 +62,7 @@ theorem freshStrings.card_def : (freshStrings n).card = n := by
 open FOL Language BoundedFormula
 
 @[simp]
-def FreshAtts (f : (fol dbs).BoundedFormula String n) :=
+def FreshAtts (f : (fol dbs).BoundedFormula String n) : Finset String :=
   (freshStrings (n + 1 + depth f + f.freeVarFinset.card)) \ f.freeVarFinset
 
 theorem FreshAtts.empty_inter : FreshAtts f ∩ f.freeVarFinset = ∅ := by simp
