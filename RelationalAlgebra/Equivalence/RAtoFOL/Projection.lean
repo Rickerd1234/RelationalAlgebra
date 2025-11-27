@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi rs q} [FOL.folStruc dbi (μ := μ)] [Nonempty μ]
+variable {dbi rs q} [FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
 theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
   (ih: (ra_to_fol_query dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
