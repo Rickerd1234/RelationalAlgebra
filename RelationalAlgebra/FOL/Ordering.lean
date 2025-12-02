@@ -96,6 +96,10 @@ theorem RelationSchema.index?_none [LawfulBEq α] : index? rs att = .none ↔ at
 def RelationSchema.index [LawfulBEq α] (h : att ∈ rs) : Fin rs.card :=
   (RelationSchema.index? rs att).get (index?_isSome.mpr h)
 
+@[simp]
+theorem RelationSchema.index?_eq_index_if_mem [LawfulBEq α] (h : att ∈ rs) : (index? rs att) = .some (index h) := by
+  simp [index]
+
 -- Proof usefull properties for index
 @[simp]
 theorem RelationSchema.index_lt_card [LawfulBEq α] (h : att ∈ rs) : index h < rs.card := by
@@ -158,7 +162,7 @@ theorem RelationSchema.index?_inj [LawfulBEq α] : index? rs i = index? rs j ↔
 
 @[simp]
 theorem RelationSchema.index?_inj_mem [LawfulBEq α]  (h1 : i ∈ rs) (h2 : j ∈ rs) : index? rs i = index? rs j ↔ i = j := by
-  aesop
+  simp_all only [index?_inj, not_true_eq_false, and_self, or_false]
 
 @[simp]
 theorem RelationSchema.index_inj [LawfulBEq α] (h1 : i ∈ rs) (h2 : j ∈ rs) : index h1 = index h2 ↔ i = j := by
