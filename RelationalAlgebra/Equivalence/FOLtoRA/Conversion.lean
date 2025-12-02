@@ -121,7 +121,7 @@ theorem renamer.mem_def {dbs : String → Finset String} {ts : Fin (dbs rn).card
     rw [RelationSchema.index]
     simp_rw [renamer, hk, Option.map_some, Option.getD_some, Option.get]
 
-noncomputable def getRAs (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u a : String) : Finset String :=
+noncomputable def getRAs {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u a : String) : Finset String :=
   (dbs rn).filter (λ ra => renamer ts brs u ra = a)
 
 theorem getRAs.mem_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} {brs : Finset String} {u a : String} :
@@ -151,7 +151,7 @@ theorem getRAs.renamer_def (ts : Fin (dbs rn).card → (fol dbs).Term (String �
       subst a_1
       use w
 
-noncomputable def renamePairFunc (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : String → String :=
+noncomputable def renamePairFunc {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : String → String :=
   renameFunc ra (renamer ts brs u ra)
 
 -- noncomputable def renamePairTuple (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : (String →. μ) → String →. μ :=
@@ -182,7 +182,7 @@ theorem getRAs.biUnion_renamePairFunc_def (ts : Fin (dbs rn).card → (fol dbs).
     use a'
     apply And.intro ha' renameFunc.old_def
 
-noncomputable def renamePair (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
+noncomputable def renamePair {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
   .r (renamePairFunc ra ts brs u) (.R rn)
 
 theorem renamePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
@@ -266,7 +266,7 @@ theorem renamePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema)
 --             sorry
 
 
-noncomputable def combinePair (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
+noncomputable def combinePair {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
   .j (renamePair ra ts brs u) (.R rn)
 
 theorem combinePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
@@ -405,7 +405,7 @@ theorem combinePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema
                       simp [this]
 
 
-noncomputable def relJoins (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
+noncomputable def relJoins {dbs : String → Finset String} (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
   ras.foldr (λ ra sq => .j (combinePair ra ts brs u) sq) (.R rn)
 
 theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ras.toFinset ⊆ dbs rn) :
@@ -849,7 +849,7 @@ theorem toRA.falsum_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStru
         simp_rw [toRA, RA.Query.evaluateT, diffT, this]
         simp [RealizeDomSet, BoundedFormula.Realize]
 
-theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)} {t : String →. μ} {rs : Finset String}
+theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (α := String) (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)} {t : String →. μ} {rs : Finset String}
   (h : t.Dom = ↑rs) (h' : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs):
     t (TermtoAtt brs t₁) = t (TermtoAtt brs t₂) ↔
       (BoundedFormula.equal t₁ t₂).Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) := by
