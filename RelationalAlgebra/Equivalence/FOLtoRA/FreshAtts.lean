@@ -1,4 +1,5 @@
 import RelationalAlgebra.FOL.ModelTheoryExtensions
+import RelationalAlgebra.Equivalence.FOLtoRA.Adom
 import Mathlib.Data.Finset.Fin
 
 open RM
@@ -65,25 +66,44 @@ theorem freshStrings.excl {rs : Finset String} (h : x ∈ (freshStrings (rs.card
 open FOL Language BoundedFormula
 
 @[simp]
-def FreshAtts (f : (fol dbs).BoundedFormula String n) : Finset String :=
-  (freshStrings (n + 1 + depth f + f.freeVarFinset.card)) \ f.freeVarFinset
+def FreshAttsAux (rs : Finset String) (n : ℕ) : Finset String :=
+  (freshStrings (n + rs.card)) \ rs
 
-theorem FreshAtts.empty_inter : FreshAtts f ∩ f.freeVarFinset = ∅ := by simp
+theorem FreshAttsAux.empty_inter : FreshAttsAux rs n ∩ rs = ∅ := by simp
+
+@[simp]
+theorem FreshAttsAux.card_def : ∃m, (FreshAttsAux rs n).card = n + m := by
+  rw [FreshAttsAux, Finset.card_sdiff, freshStrings.card_def]
+  rw [Nat.add_sub_assoc]
+  . grind
+  . rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]
+    exact Finset.card_le_card Finset.subset_union_right
+
+@[simp]
+def FreshAtts [Fintype ↑(adomAtts dbs (α := String))] (f : (fol dbs).BoundedFormula String n) : Finset String :=
+  FreshAttsAux (f.freeVarFinset ∪ (adomAtts dbs).toFinset) (n + 1 + depth f)
+
+theorem FreshAtts.empty_inter_freeVarFinset [Fintype ↑(adomAtts dbs (α := String))] {f : (fol dbs).BoundedFormula String n} :
+  FreshAtts f ∩ f.freeVarFinset = ∅ := by simp; grind
+
+theorem FreshAtts.empty_inter_dbs [Fintype ↑(adomAtts dbs (α := String))] {f : (fol dbs).BoundedFormula String n} :
+  FreshAtts f ∩ (adomAtts dbs).toFinset = ∅ := by simp; grind
+
+theorem FreshAtts.empty_inter_union [Fintype ↑(adomAtts dbs (α := String))] {f : (fol dbs).BoundedFormula String n} :
+  FreshAtts f ∩ (f.freeVarFinset ∪ (adomAtts dbs).toFinset) = ∅ := by simp
 
 example (rs rs' : Finset String) : (rs ∩ rs').card ≤ rs.card := by
   rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]
   exact Finset.card_le_card Finset.subset_union_right
 
 @[simp]
-theorem FreshAtts.card_def (f : (fol dbs).BoundedFormula String n) : ∃m, (FreshAtts f).card = n + 1 + m + depth f := by
-  rw [FreshAtts, Finset.card_sdiff, freshStrings.card_def]
-  rw [Nat.add_sub_assoc, Nat.add_assoc]
-  . grind
-  . rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]
-    exact Finset.card_le_card Finset.subset_union_right
+theorem FreshAtts.card_def [Fintype ↑(adomAtts dbs (α := String))] (f : (fol dbs).BoundedFormula String n) : ∃m, (FreshAtts f).card = n + 1 + depth f + m := by
+  rw [FreshAtts]
+  exact FreshAttsAux.card_def
+
 
 @[simp]
-theorem FreshAtts.card_gt_def {f : (fol dbs).BoundedFormula String n} : n + depth f < (FreshAtts f).card  := by
+theorem FreshAtts.card_gt_def [Fintype ↑(adomAtts dbs (α := String))] {f : (fol dbs).BoundedFormula String n} : n + depth f < (FreshAtts f).card  := by
   have ⟨k, hk⟩ := FreshAtts.card_def (f := f)
   rw [hk]
   grind
