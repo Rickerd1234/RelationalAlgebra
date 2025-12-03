@@ -164,7 +164,7 @@ theorem FreeMap.FRan_sub_brs (h : n ≤ brs.card) : FRan (FreeMap n brs) ⊆ brs
 theorem FreeMap.FRan_union_add_one (h : n + 1 ≤ brs.card) : FRan (FreeMap n brs) ∪ FRan (FreeMap (n + 1) brs) = FRan (FreeMap (n + 1) brs) := by
   simp [h]
 
-theorem FreeMap.mem_def : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = Classical.arbitrary String := by
+theorem FreeMap.mem_def' : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = Classical.arbitrary String := by
   induction n with
   | zero => exact Fin.elim0 i
   | succ n' ih =>
@@ -179,6 +179,13 @@ theorem FreeMap.mem_def : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = Classica
         rw [← RelationSchema.ordering_mem]
         grind
       next h => simp
+
+theorem FreeMap.mem_def (h : ↑i < brs.card) : FreeMap n brs i ∈ brs := by
+  rw [← RelationSchema.ordering_mem]
+  rw [FreeMap]
+  rw [@List.mem_iff_getElem]
+  use ↑i
+  simp_all
 
 theorem FreeMap.fromIndex_brs_def {i : Fin n} (h : n ≤ brs.card) : FreeMap n brs i = RelationSchema.fromIndex (i.castLE h) := by
   induction n with
