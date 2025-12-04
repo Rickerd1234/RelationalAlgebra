@@ -474,7 +474,7 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
               simp
 
         . intro ⟨t₁, ht₁, ht₁', ht⟩
-          use t
+          use λ a => ite (a ∈ dbi.schema rn ∨ a = renamer ts brs u hd) (t a) (.none)
           apply And.intro
           . apply And.intro
             . use t₁
@@ -492,9 +492,12 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
               obtain ⟨left, right⟩ := hnodup
               apply And.intro
               · intro x h_1
+                have : a ∈ dbi.schema rn := by
+                  rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
+                  use x
+                rw [if_pos (Or.inl this)]
                 rw [(ht₁' a _).1]
-                rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
-                use x
+                exact this
               · apply And.intro
                 · intro x h_1
                   have ha' : (renamePairFunc hd ts brs u a) ∈ dbi.schema rn := by
@@ -503,14 +506,16 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
 
                   by_cases hc : a = hd
                   . subst hc
+                    rw [if_pos (Or.inl hhd)]
                     rw [← (ht₁' a hhd).1, (ht₁' a hhd).2 (Or.inl rfl), ← (ht₁' _ ha').1]
                   . by_cases hc' : a = renamer ts brs u hd
                     . subst hc'
                       simp [renamePairFunc, renameFunc] at ha' h_1 ⊢
                       rw [(ht₁' _ hhd).2 (Or.inl rfl), renamePairFunc, renameFunc.old_def]
                     . simp [renamePairFunc, renameFunc, hc, hc'] at ha' ⊢
+                      rw [if_pos ha']
                       rw [(ht₁' a ha').1]
-                · intro a_1 a_2
+                · intro a_1 a_2 a_3
 
                   have ha' : a ∉ dbi.schema rn := by
                     rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁]
@@ -526,11 +531,12 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
                   . intro x hx
                     by_contra hc
                     subst hc
-                    sorry
-
-
-
+                    simp [ha'] at a_3
+                    simp [a_3, renamePairFunc] at a_2
+                    have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₁ hhd
+                    apply a_2 v hv
             . simp [renamePairFunc] at ht₁'
+              simp only [hhd, true_or, ↓reduceIte, or_true]
               rw [← (ht₁' hd hhd).2 (Or.inl rfl), (ht₁' hd hhd).1]
           . use t
             apply And.intro
@@ -550,11 +556,32 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
             . intro a
               simp_all only [not_false_eq_true, Finset.mem_union, Finset.mem_image, List.mem_toFinset, not_or,
                 not_exists, not_and, and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert,
-                or_false, List.nodup_cons, implies_true, true_and]
-              intro a_1
+                or_false, List.nodup_cons, left_eq_ite_iff, implies_true, true_and]
               obtain ⟨left, right⟩ := hnodup
-              ext a_2 : 1
-              simp_all only [Part.notMem_none]
+              split
+              next h_1 =>
+                simp_all only [not_false_eq_true, implies_true, forall_const]
+                cases h_1 with
+                | inl
+                  h_2 =>
+                  simp_all only [not_true_eq_false, not_isEmpty_of_nonempty, IsEmpty.forall_iff, implies_true, true_and]
+                  intro a_1
+                  ext a_2 : 1
+                  simp_all only [Part.notMem_none]
+                | inr h_3 =>
+                  subst h_3
+                  simp_all only [not_true_eq_false, not_isEmpty_of_nonempty, IsEmpty.forall_iff, implies_true, true_and]
+                  intro a
+                  ext a_1 : 1
+                  simp_all only [Part.notMem_none]
+              next
+                h_1 =>
+                simp_all only [not_or, Part.notMem_none, not_true_eq_false, not_isEmpty_of_nonempty, IsEmpty.forall_iff,
+                  implies_true, not_false_eq_true, forall_const, true_and]
+                intro a_1
+                obtain ⟨left_1, right_1⟩ := h_1
+                ext a_2 : 1
+                simp_all only [not_false_eq_true, Part.notMem_none]
 
 theorem eq_comp_renamer {t : String →. μ} {dbi : DatabaseInstance String String μ} {rs : Finset String} [folStruc dbi] [Nonempty μ] {tDom : t.Dom = ↑rs} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
   (h₁ : ∀i, TermtoAtt brs (ts i) ∈ rs) (h₂ : u ∉ rs)
