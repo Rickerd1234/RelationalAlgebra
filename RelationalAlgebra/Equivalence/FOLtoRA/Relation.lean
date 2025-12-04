@@ -474,51 +474,87 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
               simp
 
         . intro ⟨t₁, ht₁, ht₁', ht⟩
-          sorry
-          -- use t
-          -- apply And.intro
-          -- . use t₁
-          --   apply And.intro ht₁
-          --   use t₁ ∘ renamePairFunc hd ts brs u
-          --   have : t₁ ∘ renamePairFunc hd ts brs u ∘ renamePairFunc hd ts brs u = t₁ := by
-          --     simp [funext, renamePairFunc, rename_func_cancel_self]
-          --   simp [Function.comp_assoc, this, ht₁]
-          --   intro a
-          --   simp_all only [Finset.mem_image, List.mem_toFinset, not_exists, not_and, Finset.mem_union, not_or,
-          --     and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert, not_false_eq_true]
-          --   obtain ⟨left, right⟩ := hu
-          --   apply And.intro
-          --   · intro x h_1
-          --     rw [(ht₁' a ?_).1]
-          --     . rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
-          --       use x
-          --   · apply And.intro
-          --     · intro x h_1
-          --       sorry
-          --     · intro a_1 a_2
+          use t
+          apply And.intro
+          . apply And.intro
+            . use t₁
+              apply And.intro ht₁
+              use t₁ ∘ renamePairFunc hd ts brs u
+              have : (t₁ ∘ renamePairFunc hd ts brs u) ∘ renamePairFunc hd ts brs u = t₁ := by
+                funext; simp [renamePairFunc, rename_func_cancel_self]
 
-          --       have : a ∉ dbi.schema rn :=
-          --         sorry
+              simp [this, ht₁]
 
-          --       apply ht
-          --       . sorry
-          --       . by_contra hc
-          --         have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₁ hc
-          --         apply a_1 v hv
+              intro a
+              simp_all only [not_false_eq_true, Finset.mem_union, Finset.mem_image, List.mem_toFinset, not_or,
+                not_exists, not_and, and_imp, forall_const, List.toFinset_cons, Finset.image_insert,
+                Finset.mem_insert, or_false, List.nodup_cons]
+              obtain ⟨left, right⟩ := hnodup
+              apply And.intro
+              · intro x h_1
+                rw [(ht₁' a _).1]
+                rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
+                use x
+              · apply And.intro
+                · intro x h_1
+                  have ha' : (renamePairFunc hd ts brs u a) ∈ dbi.schema rn := by
+                    rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
+                    use x
+
+                  by_cases hc : a = hd
+                  . subst hc
+                    rw [← (ht₁' a hhd).1, (ht₁' a hhd).2 (Or.inl rfl), ← (ht₁' _ ha').1]
+                  . by_cases hc' : a = renamer ts brs u hd
+                    . subst hc'
+                      simp [renamePairFunc, renameFunc] at ha' h_1 ⊢
+                      rw [(ht₁' _ hhd).2 (Or.inl rfl), renamePairFunc, renameFunc.old_def]
+                    . simp [renamePairFunc, renameFunc, hc, hc'] at ha' ⊢
+                      rw [(ht₁' a ha').1]
+                · intro a_1 a_2
+
+                  have ha' : a ∉ dbi.schema rn := by
+                    rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁]
+                    simp only [PFun.mem_dom, a_1, exists_false, not_false_eq_true]
+
+                  apply ht
+                  . by_contra hc
+                    subst hc
+                    simp [renamePairFunc] at a_2
+                    have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₁ hhd
+                    apply a_2 v hv
+                  . apply ha'
+                  . intro x hx
+                    by_contra hc
+                    subst hc
+                    sorry
 
 
-          --       . simp [renamePairFunc] at a_2
-          --         sorry
-          -- . use t
-          --   apply And.intro
-          --   . use t₁
-          --     apply And.intro ht₁
-          --     apply And.intro
-          --     . sorry
-          --     . sorry
-          --   . simp only [implies_true, forall_self_imp, true_and]
-          --     intro ra hra
-          --     exact Part.eq_none_iff.mpr hra
+
+            . simp [renamePairFunc] at ht₁'
+              rw [← (ht₁' hd hhd).2 (Or.inl rfl), (ht₁' hd hhd).1]
+          . use t
+            apply And.intro
+            use t₁
+            split_ands
+            . exact ht₁
+            . intro ra hra
+              apply And.intro
+              . simp_all
+              . intro hra'
+                rw [← (ht₁' ra hra).2 (Or.inr hra')]
+            · intro ra a a_1
+              apply ht
+              . sorry
+              . exact a
+              . exact a_1
+            . intro a
+              simp_all only [not_false_eq_true, Finset.mem_union, Finset.mem_image, List.mem_toFinset, not_or,
+                not_exists, not_and, and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert,
+                or_false, List.nodup_cons, implies_true, true_and]
+              intro a_1
+              obtain ⟨left, right⟩ := hnodup
+              ext a_2 : 1
+              simp_all only [Part.notMem_none]
 
 theorem eq_comp_renamer {t : String →. μ} {dbi : DatabaseInstance String String μ} {rs : Finset String} [folStruc dbi] [Nonempty μ] {tDom : t.Dom = ↑rs} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
   (h₁ : ∀i, TermtoAtt brs (ts i) ∈ rs) (h₂ : u ∉ rs)
