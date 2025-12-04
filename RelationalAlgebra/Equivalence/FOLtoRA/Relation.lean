@@ -134,107 +134,125 @@ theorem combinePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (
       simp [combinePair, renamePair.isWellTyped_def]
 
 theorem combinePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
-    RA.Query.evaluateT dbi (combinePair ra ts brs u) =
-      {t : String →. μ | ∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs u) ∈ (dbi.relations rn).tuples ∧
-            ∀a, (a ∈ t₁.Dom → t a = t₁ a) ∧ (a ∈ PFun.Dom t₂ → t a = t₂ a) ∧ (a ∉ t₁.Dom ∪ PFun.Dom t₂ → t a = .none)
-      } := by
-        simp_all only [combinePair, RA.Query.evaluateT, joinT, joinSingleT,
-          Set.mem_union, not_or, and_imp]
-        ext t
-        apply Iff.intro
-        · intro h
-          obtain ⟨t₂, h⟩ := h
-          obtain ⟨ht₂, h⟩ := h
-          obtain ⟨t₁, h⟩ := h
-          obtain ⟨ht₁, h⟩ := h
+  RA.Query.evaluateT dbi (combinePair ra ts brs u) =
+    {t : String →. μ | ∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs u) ∈ (dbi.relations rn).tuples ∧
+          ∀a, (a ∈ t₁.Dom → t a = t₁ a) ∧ (a ∈ PFun.Dom t₂ → t a = t₂ a) ∧ (a ∉ t₁.Dom ∪ PFun.Dom t₂ → t a = .none)
+    } := by
+      simp_all only [combinePair, RA.Query.evaluateT, joinT, joinSingleT,
+        Set.mem_union, not_or, and_imp]
+      ext t
+      apply Iff.intro
+      · intro h
+        obtain ⟨t₂, h⟩ := h
+        obtain ⟨ht₂, h⟩ := h
+        obtain ⟨t₁, h⟩ := h
+        obtain ⟨ht₁, h⟩ := h
 
-          simp_all only [PFun.mem_dom, forall_exists_index, not_exists, Set.mem_setOf_eq]
+        simp_all only [PFun.mem_dom, forall_exists_index, not_exists, Set.mem_setOf_eq]
 
-          use t₁
-          simp [*]
-          use t₂
+        use t₁
+        simp [*]
+        use t₂
+        split_ands
+        · rw [renamePair.evalT_def] at ht₂
+          exact ht₂
+        . intro a
           split_ands
-          · rw [renamePair.evalT_def] at ht₂
-            exact ht₂
-          . intro a
-            split_ands
-            . intro v₁ hv₁
-              rw [(h a).2.1 v₁ hv₁]
+          . intro v₁ hv₁
+            rw [(h a).2.1 v₁ hv₁]
 
-            . intro v₂ hv₂
-              rw [(h a).1 v₂ hv₂]
+          . intro v₂ hv₂
+            rw [(h a).1 v₂ hv₂]
 
-            . intro h₁ h₂
-              apply (h a).2.2 h₂ h₁
+          . intro h₁ h₂
+            apply (h a).2.2 h₂ h₁
 
-        · intro a
-          simp_all only [Set.mem_setOf_eq]
-          obtain ⟨t₁, h⟩ := a
-          obtain ⟨ht₁, h⟩ := h
-          obtain ⟨t₂, h⟩ := h
-          obtain ⟨ht₂, htj⟩ := h
+      · intro a
+        simp_all only [Set.mem_setOf_eq]
+        obtain ⟨t₁, h⟩ := a
+        obtain ⟨ht₁, h⟩ := h
+        obtain ⟨t₂, h⟩ := h
+        obtain ⟨ht₂, htj⟩ := h
 
-          have ht₂' : t₂ ∈ RA.Query.evaluateT dbi (renamePair ra ts brs u) := by simp [renamePair.evalT_def, ht₂]
+        have ht₂' : t₂ ∈ RA.Query.evaluateT dbi (renamePair ra ts brs u) := by simp [renamePair.evalT_def, ht₂]
 
-          have t₂Dom := RA.Query.evaluate.validSchema (renamePair ra ts brs u) renamePair.isWellTyped_def t₂ ht₂'
-          rw [renamePair.schema_def] at t₂Dom
+        have t₂Dom := RA.Query.evaluate.validSchema (renamePair ra ts brs u) renamePair.isWellTyped_def t₂ ht₂'
+        rw [renamePair.schema_def] at t₂Dom
 
-          have t₁Dom := (dbi.relations rn).validSchema t₁ ht₁
-          rw [DatabaseInstance.validSchema] at t₁Dom
+        have t₁Dom := (dbi.relations rn).validSchema t₁ ht₁
+        rw [DatabaseInstance.validSchema] at t₁Dom
 
-          haveI : ∀a, Decidable (a ∈ PFun.Dom t₁) := fun a ↦ decidable_dom t₁Dom a
-          haveI : ∀a, Decidable (a ∈ PFun.Dom t₂) := fun a ↦ decidable_dom t₂Dom a
+        haveI : ∀a, Decidable (a ∈ PFun.Dom t₁) := fun a ↦ decidable_dom t₁Dom a
+        haveI : ∀a, Decidable (a ∈ PFun.Dom t₂) := fun a ↦ decidable_dom t₂Dom a
 
 
-          use λ a => ite (a ∈ PFun.Dom t₂) (t a) .none
+        use λ a => ite (a ∈ PFun.Dom t₂) (t a) .none
+        apply And.intro
+        . convert ht₂' with _ _ a
+          split_ifs with h'
+          . rw [(htj a).2.1 h']
+          . rw [Eq.comm, Part.eq_none_iff']
+            exact h'
+        . use λ a => ite (a ∈ t₁.Dom) (t a) .none
           apply And.intro
-          . convert ht₂' with _ _ a
+          . convert ht₁ with a
             split_ifs with h'
-            . rw [(htj a).2.1 h']
+            . rw [(htj a).1 h']
             . rw [Eq.comm, Part.eq_none_iff']
               exact h'
-          . use λ a => ite (a ∈ t₁.Dom) (t a) .none
+          . intro a
             apply And.intro
-            . convert ht₁ with a
-              split_ifs with h'
-              . rw [(htj a).1 h']
-              . rw [Eq.comm, Part.eq_none_iff']
-                exact h'
-            . intro a
-              apply And.intro
+            . intro h
+              simp_all only [Finset.coe_image]
+              split
+              next h_1 =>
+                simp_all only [Finset.mem_coe, Set.mem_image, forall_exists_index, and_imp,
+                  not_exists, not_and, PFun.dom_mk, Set.mem_setOf_eq]
+              next h_1 => simp [h_1] at h
+            . apply And.intro
               . intro h
                 simp_all only [Finset.coe_image]
                 split
                 next h_1 =>
                   simp_all only [Finset.mem_coe, Set.mem_image, forall_exists_index, and_imp,
                     not_exists, not_and, PFun.dom_mk, Set.mem_setOf_eq]
-                next h_1 => simp [h_1] at h
-              . apply And.intro
-                . intro h
-                  simp_all only [Finset.coe_image]
-                  split
-                  next h_1 =>
-                    simp_all only [Finset.mem_coe, Set.mem_image, forall_exists_index, and_imp,
-                      not_exists, not_and, PFun.dom_mk, Set.mem_setOf_eq]
-                  next h_1 =>
-                    rw [PFun.dom_mk, Set.mem_setOf_eq, if_neg h_1] at h
-                    exact False.elim h
-                . intro h₂ h₁
-                  simp [Part.eq_none_iff]
-                  intro v
-                  by_cases hc₁ : a ∈ t₁.Dom
-                  . rw [PFun.mem_dom, if_pos hc₁, not_exists] at h₁
-                    exact h₁ v
+                next h_1 =>
+                  rw [PFun.dom_mk, Set.mem_setOf_eq, if_neg h_1] at h
+                  exact False.elim h
+              . intro h₂ h₁
+                simp [Part.eq_none_iff]
+                intro v
+                by_cases hc₁ : a ∈ t₁.Dom
+                . rw [PFun.mem_dom, if_pos hc₁, not_exists] at h₁
+                  exact h₁ v
 
-                  . by_cases hc₂ : a ∈ PFun.Dom t₂
-                    . rw [PFun.mem_dom, if_pos hc₂, not_exists] at h₂
-                      exact h₂ v
-                    . have := (htj a).2.2 hc₁ hc₂
-                      simp [this]
+                . by_cases hc₂ : a ∈ PFun.Dom t₂
+                  . rw [PFun.mem_dom, if_pos hc₂, not_exists] at h₂
+                    exact h₂ v
+                  . have := (htj a).2.2 hc₁ hc₂
+                    simp [this]
 
+noncomputable def prunePair {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
+  .s ra (renamer ts brs u ra) (combinePair ra ts brs u)
+
+theorem prunePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+  (prunePair ra ts brs u).schema dbs = (combinePair ra ts brs u).schema dbs := by
+    simp [prunePair]
+
+theorem prunePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn):
+    RA.Query.isWellTyped dbs (prunePair ra ts brs u) := by
+      simp [prunePair, combinePair.isWellTyped_def, combinePair.schema_def, h, renamePairFunc]
+
+theorem prunePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
+  RA.Query.evaluateT dbi (prunePair ra ts brs u) =
+    {t : String →. μ | (∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs u) ∈ (dbi.relations rn).tuples ∧
+          ∀a, (a ∈ t₁.Dom → t a = t₁ a) ∧ (a ∈ PFun.Dom t₂ → t a = t₂ a) ∧ (a ∉ t₁.Dom ∪ PFun.Dom t₂ → t a = .none)) ∧ (t ra = t (renamer ts brs u ra))
+    } := by
+      simp only [prunePair, RA.Query.evaluateT.eq_2, selectionT, combinePair.evalT_def,
+        Set.mem_setOf_eq]
 
 noncomputable def relJoins {dbs : String → Finset String} (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : RA.Query String String :=
-  ras.foldr (λ ra sq => .j (combinePair ra ts brs u) sq) (.R rn)
+  ras.foldr (λ ra sq => .j (prunePair ra ts brs u) sq) (.R rn)
 
 theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ras.toFinset ⊆ dbs rn) :
   (relJoins ras ts brs u).schema dbs = (ras.toFinset.image (λ ra => renamePairFunc ra ts brs u ra)) ∪ (dbs rn) := by
@@ -245,7 +263,7 @@ theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String �
       have hhd : hd ∈ dbs rn := by simp at h; grind
       have htl : tl.toFinset ⊆ dbs rn := by simp at h; grind
       simp_all only [forall_const, List.toFinset_cons, List.foldr_cons, RA.Query.schema.eq_4,
-        RA.Query.schema, Finset.insert_union, Finset.image_insert, combinePair.schema_def]
+        RA.Query.schema, Finset.insert_union, Finset.image_insert, prunePair.schema_def, combinePair.schema_def]
       simp_all only [Finset.union_singleton, Finset.insert_union]
       grind
 
@@ -257,8 +275,7 @@ theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (Str
       | cons hd tl ih =>
         have hhd : hd ∈ dbs rn := by simp at h; grind
         have htl : tl.toFinset ⊆ dbs rn := by simp at h; grind
-        simp only [List.foldr_cons, RA.Query.isWellTyped.eq_4, RA.Query.isWellTyped,
-          combinePair.isWellTyped_def, true_and]
+        simp only [List.foldr_cons, RA.Query.isWellTyped, prunePair.isWellTyped_def hhd, true_and]
         apply ih htl
 
 theorem test {dbi : DatabaseInstance String String μ} (t' : String →. μ) :
@@ -281,7 +298,7 @@ theorem test {dbi : DatabaseInstance String String μ} (t' : String →. μ) :
 set_option maxHeartbeats 2000000
 
 theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
-  (h : ras.toFinset ⊆ dbi.schema rn) (hdisj : dbi.schema rn ∩ ras.toFinset.image (renamer ts brs u) = ∅) (hu : u ∉ ras.toFinset.image (renamer ts brs u)) :
+  (h : ras.toFinset ⊆ dbi.schema rn) (hdisj : dbi.schema rn ∩ ras.toFinset.image (renamer ts brs u) = ∅) (hu : u ∉ ras.toFinset.image (renamer ts brs u)) (hnodup : ras.Nodup) :
     RA.Query.evaluateT dbi (relJoins ras ts brs u) =
     {t | ∃t' : String →. μ, t' ∈ (dbi.relations rn).tuples ∧
       (
@@ -329,14 +346,13 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
           rw [List.toFinset_cons] at hu
           grind
 
-        rw [ih htl hdisj' hu']
+        rw [ih htl hdisj' hu' (List.Nodup.of_cons hnodup)]
         ext t
 
-        simp [combinePair.evalT_def]
+        simp [prunePair.evalT_def]
 
         apply Iff.intro
-        . intro ⟨t₁, ⟨t₃, ht₃, ⟨t₄, ht₄, ht₁⟩⟩, t₂, ⟨t₅, ht₅, ht₂'⟩, ht⟩
-          use t
+        . intro ⟨t₁, ⟨⟨t₃, ht₃, ⟨t₄, ht₄, ht₁⟩⟩, ht₁'⟩, t₂, ⟨t₅, ht₅, ht₂'⟩, ht⟩
 
           have t₄Dom' : PFun.Dom (t₄ ∘ renamePairFunc hd ts brs u) = dbi.schema rn := by
             rw [← DatabaseInstance.validSchema, ← (dbi.relations rn).validSchema _ ht₄]
@@ -355,137 +371,154 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin 
               subst ha
               use v
 
-          apply And.intro
-          . convert ht₃
-            ext a v
+          simp [Finset.ext_iff] at hdisj
+          use (λ a => ite (a = hd) (t hd) (ite (a = renamer ts brs u hd) (t₄ (renamePairFunc hd ts brs u a)) (ite (a ∈ dbi.schema rn) (t a) (.none))))
+          split_ands
+          . convert ht₃ with ra
             simp_all only [not_false_eq_true, Finset.mem_union, Finset.mem_image, List.mem_toFinset, not_or,
               not_exists, not_and, and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert,
-              or_false]
+              or_false, Finset.coe_image]
             obtain ⟨left, right⟩ := ht₂'
-            apply Iff.intro
-            · intro a_1
-              by_cases hc : a ∈ dbi.schema rn
-              . have ⟨v', hv'⟩ := t_ex_v_if_mem_schema ht₃ hc
-                rw [← (ht₁ a).1 _ hv']
-                rw [← (ht₁ a).1 _ hv'] at hv'
-                rw [← (ht a).1 _ hv']
-                exact a_1
+            split_ifs
+            next h_1 =>
+              subst h_1
+              have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₃ hhd
+              rw [← (ht₁ ra).1 _ hv]
+              rw [← (ht₁ ra).1 _ hv] at hv
+              rw [(ht ra).1 _ hv]
+            next h_1 =>
+              subst h_1
+              simp [renamePairFunc]
+              have : t₄ hd = .none := by
+                rw [Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, t₄Dom]
+                simp [renamePairFunc, renameFunc]
+                intro x hx
+                apply And.intro
+                . exact (hdisj x hx).1
+                . split_ifs with h'
+                  . subst h'
+                    simp [Eq.comm, (hdisj x hx).1]
+                  . trivial
 
-              . simp [t_eq_none_if_notMem_schema ht₃ hc] at *
-                sorry
+              simp [this, Eq.comm]
+              apply t_eq_none_if_notMem_schema ht₃
+              by_contra hc
+              apply (hdisj _ hc).1
+              rfl
 
-
-              -- by_cases hc₁ : ∃x, x ∈ t₁ a
-              -- . by_cases hc₄ : ∃x, x ∈ t₄ a
-              --   . rw [← PFun.mem_dom] at hc₁ hc₄
-              --     sorry
-              --   . simp at hc₄
-              --     sorry
-              --     -- rw [(ht₁ a).2.2 hc hc₄] at hc₁
-              --     -- simp at hc₁
-              -- . simp at hc₁
-              --   by_cases hc₄ : ∃x, x ∈ t₄ a
-              --   . obtain ⟨v, hv⟩ := hc₄
-              --     rw [(ht₁ a).2.1 _ hv] at hc₁
-              --     simp [hc₁] at hv
-              --   . simp at hc₄
-              --     by_cases hc₅ : ∃x, x ∈ t₅ a
-              --     . sorry
-              --     . simp at hc₅
-              --       sorry
-            · intro a_1
-              rw [← (ht₁ a).1 _ a_1] at a_1
-              rw [← (ht a).1 _ a_1] at a_1
-              exact a_1
-          . simp_all only [not_false_eq_true, Finset.mem_union, Finset.mem_image, List.mem_toFinset, not_or, not_exists,
-              not_and, and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert, or_false,
-              true_and]
-            obtain ⟨left, right⟩ := ht₂'
+            next h_1 =>
+              have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₃ h_1
+              rw [← (ht₁ ra).1 _ hv]
+              rw [← (ht₁ ra).1 _ hv] at hv
+              rw [(ht ra).1 _ hv]
+            next h_1 => exact Eq.symm (t_eq_none_if_notMem_schema ht₃ h_1)
+          . intro ra hra
+            simp [hra]
             apply And.intro
-            · intro ra hra a_1
-              cases a_1 with
-              | inl h_1 =>
-                subst h_1
-                have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₃ hhd
+            . split_ifs with h' h''
+              . subst h'
+                rfl
+              . subst h''
+                exact False.elim ((hdisj _ hra).1 rfl)
+              . rfl
+            . intro h₁
+              split_ifs with h' h''
+              . subst h'
+                simp [renamePairFunc]
+                have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₃ hra
                 rw [← (ht₁ ra).1 _ hv] at hv
                 rw [(ht ra).1 _ hv]
-                sorry
-              | inr h_2 =>
-                have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₅ hra
-                rw [(left ra hra).1] at hv
-                rw [(ht ra).2.1 _ hv]
-                rw [← (left ra hra).1, (left ra hra).2 h_2] at hv ⊢
-                rw [(ht _).2.1 _ hv]
-            · intro a a_1 a_2 a_3
-              apply (ht _).2.2
-              . rw [← Part.eq_none_iff]
-                apply (ht₁ _).2.2
-                . rw [← Part.eq_none_iff, Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom,
-                    (dbi.relations rn).validSchema _ ht₃, DatabaseInstance.validSchema]
-                  exact a_2
-                . rw [← Part.eq_none_iff, Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, t₄Dom]
-                  simp [renamePairFunc]
-                  intro x hx
-                  by_cases hc : x = hd
-                  . subst hc
-                    simp [renameFunc.old_def, Eq.comm, a_1]
-                  . by_cases hc' : x = renamer ts brs u hd
-                    . subst hc'
-                      simp [renameFunc.new_def]
-                      by_contra hc''
-                      subst hc''
-                      exact a_2 hhd
-                    . simp [renameFunc, hc, hc']
-                      by_contra hc''
-                      subst hc''
-                      exact a_2 hx
-              . rw [right a a_2 a_3]
-                simp
+                rw [ht₁'] at ⊢ hv
+                rw [← (ht _).1 _ hv]
+
+              . subst h''
+                exact False.elim ((hdisj _ hra).1 rfl)
+              . cases h₁ with
+                | inl h_1 =>
+                  exact False.elim (h' h_1)
+
+                | inr h_1 =>
+                  have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₅ hra
+                  rw [(ht₂'.1 ra hra).1] at hv
+                  rw [(ht ra).2.1 _ hv]
+                  rw [← (ht₂'.1 ra hra).1]
+                  rw [← (ht₂'.1 ra hra).1] at hv
+                  rw [(ht₂'.1 ra hra).2 h_1]
+                  rw [(ht₂'.1 ra hra).2 h_1] at hv
+                  rw [(ht _).2.1 _ hv]
+
+          . intro a a_1 a_2 a_3
+            apply (ht _).2.2
+            . rw [← Part.eq_none_iff]
+              apply (ht₁ _).2.2
+              . rw [← Part.eq_none_iff, Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom,
+                  (dbi.relations rn).validSchema _ ht₃, DatabaseInstance.validSchema]
+                exact a_2
+              . rw [← Part.eq_none_iff, Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, t₄Dom]
+                simp [renamePairFunc]
+                intro x hx
+                by_cases hc : x = hd
+                . subst hc
+                  simp [renameFunc.old_def, Eq.comm, a_1]
+                . by_cases hc' : x = renamer ts brs u hd
+                  . subst hc'
+                    simp [renameFunc.new_def]
+                    by_contra hc''
+                    subst hc''
+                    exact a_2 hhd
+                  . simp [renameFunc, hc, hc']
+                    by_contra hc''
+                    subst hc''
+                    exact a_2 hx
+            . rw [ht₂'.2 a a_2 a_3]
+              simp
+
         . intro ⟨t₁, ht₁, ht₁', ht⟩
-          use t
-          apply And.intro
-          . use t₁
-            apply And.intro ht₁
-            use t₁ ∘ renamePairFunc hd ts brs u
-            have : t₁ ∘ renamePairFunc hd ts brs u ∘ renamePairFunc hd ts brs u = t₁ := by
-              simp [funext, renamePairFunc, rename_func_cancel_self]
-            simp [Function.comp_assoc, this, ht₁]
-            intro a
-            simp_all only [Finset.mem_image, List.mem_toFinset, not_exists, not_and, Finset.mem_union, not_or,
-              and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert, not_false_eq_true]
-            obtain ⟨left, right⟩ := hu
-            apply And.intro
-            · intro x h_1
-              rw [(ht₁' a ?_).1]
-              . rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
-                use x
-            · apply And.intro
-              · intro x h_1
-                sorry
-              · intro a_1 a_2
+          sorry
+          -- use t
+          -- apply And.intro
+          -- . use t₁
+          --   apply And.intro ht₁
+          --   use t₁ ∘ renamePairFunc hd ts brs u
+          --   have : t₁ ∘ renamePairFunc hd ts brs u ∘ renamePairFunc hd ts brs u = t₁ := by
+          --     simp [funext, renamePairFunc, rename_func_cancel_self]
+          --   simp [Function.comp_assoc, this, ht₁]
+          --   intro a
+          --   simp_all only [Finset.mem_image, List.mem_toFinset, not_exists, not_and, Finset.mem_union, not_or,
+          --     and_imp, forall_const, List.toFinset_cons, Finset.image_insert, Finset.mem_insert, not_false_eq_true]
+          --   obtain ⟨left, right⟩ := hu
+          --   apply And.intro
+          --   · intro x h_1
+          --     rw [(ht₁' a ?_).1]
+          --     . rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ ht₁, PFun.mem_dom]
+          --       use x
+          --   · apply And.intro
+          --     · intro x h_1
+          --       sorry
+          --     · intro a_1 a_2
 
-                have : a ∉ dbi.schema rn :=
-                  sorry
+          --       have : a ∉ dbi.schema rn :=
+          --         sorry
 
-                apply ht
-                . sorry
-                . by_contra hc
-                  have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₁ hc
-                  apply a_1 v hv
+          --       apply ht
+          --       . sorry
+          --       . by_contra hc
+          --         have ⟨v, hv⟩ := t_ex_v_if_mem_schema ht₁ hc
+          --         apply a_1 v hv
 
 
-                . simp [renamePairFunc] at a_2
-                  sorry
-          . use t
-            apply And.intro
-            . use t₁
-              apply And.intro ht₁
-              apply And.intro
-              . sorry
-              . sorry
-            . simp only [implies_true, forall_self_imp, true_and]
-              intro ra hra
-              exact Part.eq_none_iff.mpr hra
+          --       . simp [renamePairFunc] at a_2
+          --         sorry
+          -- . use t
+          --   apply And.intro
+          --   . use t₁
+          --     apply And.intro ht₁
+          --     apply And.intro
+          --     . sorry
+          --     . sorry
+          --   . simp only [implies_true, forall_self_imp, true_and]
+          --     intro ra hra
+          --     exact Part.eq_none_iff.mpr hra
 
 theorem eq_comp_renamer {t : String →. μ} {dbi : DatabaseInstance String String μ} {rs : Finset String} [folStruc dbi] [Nonempty μ] {tDom : t.Dom = ↑rs} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
   (h₁ : ∀i, TermtoAtt brs (ts i) ∈ rs) (h₂ : u ∉ rs)
@@ -555,7 +588,7 @@ theorem relJoinsMin.evalT_def {dbi : DatabaseInstance String String μ} {ts : Fi
     {t | ∃t' : String →. μ, t' ∈ (dbi.relations rn).tuples ∧ (∀ra ∈ dbi.schema rn, t' ra = t (renamePairFunc ra ts brs u ra)) ∧ (∀a ∉ (dbi.schema rn).image (renamer ts brs u), t a = .none)} := by
       ext t
       rw [relJoinsMin, RA.Query.evaluateT]
-      rw [relJoins.evalT_def' (by simp) (by simp [hdisj]) (by simp [hu])]
+      rw [relJoins.evalT_def' (by simp) (by simp [hdisj]) (by simp [hu]) (by simp)]
       simp [renamePairFunc]
       simp_all only [forall_const]
       apply Iff.intro
