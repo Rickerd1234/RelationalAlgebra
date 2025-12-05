@@ -81,7 +81,7 @@ theorem FreshAttsAux.card_def : ∃m, (FreshAttsAux rs n).card = n + m := by
 
 @[simp]
 def FreshAtts [Fintype ↑(adomAtts dbs (α := String))] (f : (fol dbs).BoundedFormula String n) : Finset String :=
-  FreshAttsAux (f.freeVarFinset ∪ (adomAtts dbs).toFinset) (n + 1 + depth f)
+  FreshAttsAux (f.freeVarFinset ∪ (adomAtts dbs).toFinset ∪ {default}) (n + 1 + depth f)
 
 theorem FreshAtts.empty_inter_freeVarFinset [Fintype ↑(adomAtts dbs (α := String))] {f : (fol dbs).BoundedFormula String n} :
   FreshAtts f ∩ f.freeVarFinset = ∅ := by simp; grind
@@ -90,7 +90,7 @@ theorem FreshAtts.empty_inter_dbs [Fintype ↑(adomAtts dbs (α := String))] {f 
   FreshAtts f ∩ (adomAtts dbs).toFinset = ∅ := by simp; grind
 
 theorem FreshAtts.empty_inter_union [Fintype ↑(adomAtts dbs (α := String))] {f : (fol dbs).BoundedFormula String n} :
-  FreshAtts f ∩ (f.freeVarFinset ∪ (adomAtts dbs).toFinset) = ∅ := by simp
+  FreshAtts f ∩ (f.freeVarFinset ∪ (adomAtts dbs).toFinset ∪ {""}) = ∅ := by simp; grind
 
 example (rs rs' : Finset String) : (rs ∩ rs').card ≤ rs.card := by
   rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]

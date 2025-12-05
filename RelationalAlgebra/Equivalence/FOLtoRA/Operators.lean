@@ -22,7 +22,7 @@ noncomputable def toRA
     match f with
     | .falsum => .d (adom dbs rs) (adom dbs rs)
     | .equal t₁ t₂ => .s (TermtoAtt brs t₁) (TermtoAtt brs t₂) (adom dbs rs)
-    | .rel (.R rn) ts => relToRA ts rs brs (FreshString rs)
+    | .rel (.R rn) ts => relToRA ts rs brs
     | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ rs brs (by simp_all; grind)) (toRA f₂ rs brs (by simp_all; grind)))
     | .all sf => (adom dbs rs).d (.p rs ((adom dbs (rs ∪ FRan (FreeMap (n + 1) brs))).d (toRA sf (rs ∪ FRan (FreeMap (n + 1) brs)) brs (by simp_all; grind))))
 

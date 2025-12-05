@@ -64,8 +64,8 @@ theorem FRan.default_eq_empty : FRan Fin.elim0 = ∅ := by simp [FRan, FRanS]
 @[simp]
 theorem FRan.mem_def : f i ∈ FRan f := by simp [FRan, FRanS]
 
-noncomputable def FreeMap (n : ℕ) (brs : Finset String) : Fin n → String :=
-  λ i => (RelationSchema.ordering brs).getD i (Classical.arbitrary String)
+def FreeMap (n : ℕ) (brs : Finset String) : Fin n → String :=
+  λ i => (RelationSchema.ordering brs).getD i (default)
 
 theorem FreeMap.FRan_def (h : n ≤ brs.card) : FRan (FreeMap n brs) = ((RelationSchema.ordering brs).take n).toFinset := by
   simp [FRan, FRanS, FreeMap]
@@ -161,10 +161,18 @@ theorem FreeMap.FRan_sub_brs (h : n ≤ brs.card) : FRan (FreeMap n brs) ⊆ brs
   exact List.mem_of_mem_take ha
 
 @[simp]
+theorem FreeMap.notMem_notMem_FRan (h : n ≤ brs.card) : x ∉ brs → x ∉ FRan (FreeMap n brs) := by
+  intro a
+  apply Aesop.BuiltinRules.not_intro
+  intro a_1
+  apply a
+  apply FreeMap.FRan_sub_brs h a_1
+
+@[simp]
 theorem FreeMap.FRan_union_add_one (h : n + 1 ≤ brs.card) : FRan (FreeMap n brs) ∪ FRan (FreeMap (n + 1) brs) = FRan (FreeMap (n + 1) brs) := by
   simp [h]
 
-theorem FreeMap.mem_def' : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = Classical.arbitrary String := by
+theorem FreeMap.mem_def' : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = default := by
   induction n with
   | zero => exact Fin.elim0 i
   | succ n' ih =>

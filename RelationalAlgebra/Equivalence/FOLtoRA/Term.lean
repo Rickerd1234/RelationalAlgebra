@@ -6,13 +6,13 @@ import RelationalAlgebra.Util.Util
 
 open RM FOL FirstOrder Language
 
-noncomputable def TermtoAtt (brs : Finset String) : (fol dbs).Term (String ⊕ Fin n) → String
+def TermtoAtt (brs : Finset String) : (fol dbs).Term (String ⊕ Fin n) → String
   | var (Sum.inl s) => s
   | var (Sum.inr i) => FreeMap n brs i
-  | _ => Classical.arbitrary String
+  | _ => default
 
 
-noncomputable def TermfromAtt {brs : Finset String} (hn : n ≤ brs.card) : String → (fol dbs).Term (String ⊕ Fin n) :=
+def TermfromAtt {brs : Finset String} (hn : n ≤ brs.card) : String → (fol dbs).Term (String ⊕ Fin n) :=
   λ a => dite (a ∈ FRan (FreeMap n brs)) (inVar ∘ Fin.castLE (by rw [FreeMap.FRan_card_def hn]) ∘  RelationSchema.index) (λ _ => outVar a)
 
 theorem TermfromAtt.TermtoAtt_inv {hn : n ≤ brs.card} : TermtoAtt brs ∘ TermfromAtt hn (dbs := dbs) = id := by
@@ -90,38 +90,142 @@ def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (String ⊕ Fin n)} {brs : Fins
 
 
 
-noncomputable def renamer {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (undefined ra : String) : String :=
-  ((RelationSchema.index? (dbs rn) ra).map (TermtoAtt brs ∘ ts)).getD (undefined)
+def renamer {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (ra : String) : String :=
+  ((RelationSchema.index? (dbs rn) ra).map (TermtoAtt brs ∘ ts)).getD (default)
 
 theorem renamer.notMem_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∉ dbs rn) :
-  renamer ts brs u ra = u := by
+  renamer ts brs ra = default := by
     rw [renamer, RelationSchema.index?_none.mpr h, Option.map_none, Option.getD_none]
 
 theorem renamer.mem_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
-  renamer ts brs u ra = (TermtoAtt brs ∘ ts) (RelationSchema.index h) := by
+  renamer ts brs ra = (TermtoAtt brs ∘ ts) (RelationSchema.index h) := by
     have ⟨k, hk⟩ := RelationSchema.index?_isSome_eq_iff.mp (RelationSchema.index?_isSome.mpr h)
     rw [RelationSchema.index]
     simp_rw [renamer, hk, Option.map_some, Option.getD_some, Option.get]
 
-noncomputable def renamePairFunc {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u : String) : String → String :=
-  renameFunc ra (renamer ts brs u ra)
+def renamePairFunc {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : String → String :=
+  renameFunc ra (renamer ts brs ra)
 
-noncomputable def getRAs {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (u a : String) : Finset String :=
-  (dbs rn).filter (λ ra => renamer ts brs u ra = a)
+def getRAs {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (a : String) : Finset String :=
+  (dbs rn).filter (λ ra => renamer ts brs ra = a)
 
-theorem getRAs.mem_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} {brs : Finset String} {u a : String} :
-  ra ∈ getRAs ts brs u a ↔ ra ∈ dbs rn ∧ renamer ts brs u ra = a := by simp [getRAs]
+theorem getRAs.mem_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} {brs : Finset String} {a : String} :
+  ra ∈ getRAs ts brs a ↔ ra ∈ dbs rn ∧ renamer ts brs ra = a := by simp [getRAs]
 
-noncomputable instance {dbs} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} : Fintype ↑{ra | ra ∈ dbs rn ∧ renamer ts brs u ra = a} := by
-  apply Fintype.ofFinset (getRAs ts brs u a)
+instance {dbs} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} : Fintype ↑{ra | ra ∈ dbs rn ∧ renamer ts brs ra = a} := by
+  apply Fintype.ofFinset (getRAs ts brs a)
   intro ra
   simp [Set.mem_setOf_eq.mp getRAs.mem_def]
 
 theorem getRAs.def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} {brs : Finset String} {a : String} :
-  getRAs ts brs u a = {ra | ra ∈ dbs rn ∧ renamer ts brs u ra = a} := by simp [getRAs]
+  getRAs ts brs a = {ra | ra ∈ dbs rn ∧ renamer ts brs ra = a} := by simp [getRAs]
 
-theorem getRAs.renamer_def (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (a : String) (h : getRAs ts brs u a ≠ ∅) :
-  (getRAs ts brs u a).image (λ ra => renamer ts brs u ra) = {a} := by
+
+def renamer_inv_r {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs rs : Finset String) (a : String) : String :=
+  (RelationSchema.ordering ((getRAs ts brs a) ∩ rs)).headD default
+
+theorem renamer_inv_r.mem_inter_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ getRAs ts brs x) (h' : ra ∈ rs) :
+  renamer_inv_r ts brs rs x ∈ getRAs ts brs x ∩ rs := by
+    rw [renamer_inv_r, List.headD_eq_head?]
+    rw [← RelationSchema.ordering_mem]
+    rw [List.head?_eq_getElem?]
+    rw [@List.getD_getElem?]
+    split_ifs
+    . simp_all
+    . simp_all [Finset.ext_iff]
+
+theorem renamer_inv_r.mem_dbs_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ rs) (h' : rs ⊆ dbs rn) :
+  renamer_inv_r ts brs rs (renamer ts brs ra) ∈ dbs rn := by
+    have : ra ∈ getRAs ts brs (renamer ts brs ra) := by
+      refine getRAs.mem_def.mpr (And.intro (h' h) rfl)
+    have := renamer_inv_r.mem_inter_def this h
+    rw [getRAs] at this
+    simp_all only [Finset.mem_inter, Finset.mem_filter]
+
+
+theorem renamer_inv_r.mem_rs_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ rs) (h' : rs ⊆ dbs rn) :
+  renamer_inv_r ts brs rs (renamer ts brs ra) ∈ rs := by
+    have : ra ∈ getRAs ts brs (renamer ts brs ra) := by
+      refine getRAs.mem_def.mpr (And.intro (h' h) rfl)
+    have := renamer_inv_r.mem_inter_def this h
+    rw [getRAs] at this
+    simp_all only [Finset.mem_inter, Finset.mem_filter]
+
+theorem renamer_inv_r.ex_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ rs) (h' : rs ⊆ dbs rn) :
+  ∃k, k = renamer_inv_r ts brs rs (renamer ts brs ra) ∧ k ∈ dbs rn ∧ k ∈ rs := by
+    simp_all only [exists_eq_left]
+    apply And.intro
+    · exact mem_dbs_def h h'
+    · exact mem_rs_def h h'
+
+
+def renamer_inv {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (a : String) : String :=
+  (RelationSchema.ordering (getRAs ts brs a)).headD default
+
+theorem renamer_inv.mem_inter_def (h : ra ∈ getRAs ts brs x) :
+  renamer_inv ts brs x ∈ getRAs ts brs x := by
+    rw [renamer_inv, List.headD_eq_head?]
+    rw [← RelationSchema.ordering_mem]
+    rw [List.head?_eq_getElem?]
+    rw [@List.getD_getElem?]
+    split
+    . simp_all only [List.getElem_mem]
+    . simp_all only [RelationSchema.ordering_card, Finset.card_pos,
+      Finset.not_nonempty_iff_eq_empty, Finset.ext_iff, Finset.notMem_empty, iff_false,
+      RelationSchema.ordering_mem]
+
+theorem renamer_inv.mem_dbs_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
+  renamer_inv ts brs (renamer ts brs ra) ∈ dbs rn := by
+    have : ra ∈ getRAs ts brs (renamer ts brs ra) := by
+      refine getRAs.mem_def.mpr (And.intro h rfl)
+    have := renamer_inv.mem_inter_def this
+    rw [getRAs] at this
+    simp_all only [Finset.mem_filter]
+
+theorem renamer_inv.ex_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
+  ∃k, k = renamer_inv ts brs (renamer ts brs ra) ∧ k ∈ dbs rn := by
+    simp_all only [exists_eq_left]
+    exact mem_dbs_def h
+
+def renamer_inv_i (i : Fin (Finset.card (getRAs ts brs a))) : String :=
+  RelationSchema.fromIndex i
+
+theorem renamer_inv_i.mem_def (i : Fin (getRAs ts brs x).card) :
+  renamer_inv_i i ∈ getRAs ts brs x := by
+    rw [renamer_inv_i]
+    exact RelationSchema.fromIndex_mem i
+
+theorem renamer_inv_i.mem_dbs_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (i : Fin (getRAs ts brs (renamer ts brs ra)).card) :
+  renamer_inv_i i ∈ dbs rn := by
+    rw [renamer_inv_i]
+    apply (getRAs.mem_def.mp (RelationSchema.fromIndex_mem i)).1
+
+theorem renamer_inv_i.ex_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
+  ∃i : Fin (getRAs ts brs (renamer ts brs ra)).card, renamer_inv_i i = ra := by
+    simp [renamer_inv_i]
+    have : ra ∈ getRAs ts brs (renamer ts brs ra) := by refine getRAs.mem_def.mpr (And.intro h rfl)
+    use RelationSchema.index this
+    exact RelationSchema.fromIndex_index_eq this
+
+theorem renamer_inv_i.eq_renamer_inv_0 {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : 0 < (getRAs ts brs x).card) :
+  ∃i : Fin (getRAs ts brs x).card, renamer_inv ts brs x = renamer_inv_i i := by
+    use ⟨0, h⟩
+    rw [renamer_inv, renamer_inv_i, RelationSchema.fromIndex]
+    rw [List.headD_eq_head?_getD, Fin.cast_mk, List.get_eq_getElem]
+    rw [List.head?_eq_getElem?]
+    rw [@List.getD_getElem?]
+    split
+    . simp only
+    . simp_all only [RelationSchema.ordering_card, not_true_eq_false]
+
+theorem getRAs.card_gt_zero_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : a ∈ dbs rn) :
+  (getRAs ts brs (renamer ts brs a)).card > 0 := by
+    simp [getRAs]
+    apply Finset.filter_nonempty_iff.mpr
+    use a
+
+theorem getRAs.renamer_def (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (a : String) (h : getRAs ts brs a ≠ ∅) :
+  (getRAs ts brs a).image (λ ra => renamer ts brs ra) = {a} := by
     ext a'
     simp_rw [← Finset.mem_coe, Finset.coe_image, getRAs.def]
     simp [ne_eq, Finset.ext_iff, getRAs.mem_def] at h
@@ -136,7 +240,7 @@ theorem getRAs.renamer_def (ts : Fin (dbs rn).card → (fol dbs).Term (String �
       subst a_1
       use w
 
--- noncomputable def renamePairTuple (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : (String →. μ) → String →. μ :=
+-- def renamePairTuple (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : (String →. μ) → String →. μ :=
 --   λ t => λ a => ite (renamer ts brs ra = a) (t ra) (ite (ra = a) (.none) (t a))
 
 -- theorem renamePairTuple.eq_comp_def {t : String →. μ} (h : ¬(renamer ts brs ra) ∈ t.Dom): t ∘ renamePairFunc ra ts brs = renamePairTuple ra ts brs t := by
@@ -150,13 +254,13 @@ theorem getRAs.renamer_def (ts : Fin (dbs rn).card → (fol dbs).Term (String �
 --       simp_all only [PFun.mem_dom, not_exists]
 --     . simp_rw [h₁, ne_comm.mp h₁, h₂, ne_comm.mp h₂, reduceIte]
 
-theorem getRAs.renamePair_def (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (a : String) (h : getRAs ts brs u a ≠ ∅) :
-  (getRAs ts brs u a).image (λ ra => renamePairFunc ra ts brs u ra) = {a} := by
+theorem getRAs.renamePair_def (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (a : String) (h : getRAs ts brs a ≠ ∅) :
+  (getRAs ts brs a).image (λ ra => renamePairFunc ra ts brs ra) = {a} := by
     simp_rw [renamePairFunc, renameFunc.old_def]
     exact renamer_def ts brs a h
 
 theorem getRAs.biUnion_renamePairFunc_def (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) :
-  Finset.biUnion ((dbs rn).image (λ ra => renamePairFunc ra ts brs u ra)) (λ a => (getRAs ts brs u a)) = dbs rn := by
+  Finset.biUnion ((dbs rn).image (λ ra => renamePairFunc ra ts brs ra)) (λ a => (getRAs ts brs a)) = dbs rn := by
     ext a'
     simp_all only [Finset.mem_biUnion, Finset.mem_image, mem_def, exists_eq_right_right',
       and_iff_right_iff_imp]
