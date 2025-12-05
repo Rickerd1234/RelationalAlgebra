@@ -42,17 +42,17 @@ section FOLtoRA
 
 variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Fintype (adomAtts dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
 
-theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) :
+theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
   (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluateAdom dbi := by
     simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
     apply And.intro
     · exact fol_to_ra_query.schema_def folQ
-    · exact fol_to_ra_query.evalT folQ hμ hdisj hdef
+    · exact fol_to_ra_query.evalT folQ hμ hdisj hdef hne
 
-theorem fol_to_ra (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula )) (hdef : default ∉ folQ.schema) :
+theorem fol_to_ra (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
   ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
     use fol_to_ra_query folQ
     use fol_to_ra_query.isWellTyped_def folQ
-    exact fol_to_ra_eval folQ hμ hdisj hdef
+    exact fol_to_ra_eval folQ hμ hdisj hdef hne
 
 end FOLtoRA

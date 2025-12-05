@@ -858,13 +858,12 @@ theorem relToRA.isWellTyped_def [Nonempty ↑(adomRs dbs)] {ts : Fin (dbs rn).ca
     simp [relToRA, relJoinsMin.isWellTyped_def, adom.isWellTyped_def, adom.schema_def]
 
 theorem relToRA.evalT_def [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempty μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
-  (hrs : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) ⊆ rs) (hu : default ∉ rs) (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) :
+  (hrs : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) ⊆ rs) (hu : default ∉ rs) (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) (hne : dbi.schema rn ≠ ∅) :
     RA.Query.evaluateT dbi (relToRA ts rs brs) =
     {t | ∃h, RealizeDomSet (μ := μ) (Relations.boundedFormula (relations.R rn) ts) rs brs t h} := by
       simp_rw [RealizeDomSet, BoundedFormula.realize_rel]
       rw [← fol.Rel]
-      simp_rw [folStruc_apply_RelMap, ArityToTuple.def_dite]
-      simp only [relToRA, RA.Query.evaluateT, exists_and_right]
+      simp_rw [folStruc_apply_RelMap, ArityToTuple.def_dite, exists_and_right]
 
       have h₁ : ∀ (i : Fin (dbi.schema rn).card), TermtoAtt brs (ts i) ∈ rs := by
         intro i
@@ -889,11 +888,16 @@ theorem relToRA.evalT_def [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.sc
         apply Finset.image_subset_iff.mpr renamer_sub
 
       ext t
-      simp_all only [adom.complete_def, Set.mem_setOf_eq, relJoinsMin.evalT_def hdisj (by grind)]
+
       apply Iff.intro
       · intro a
 
-        have tDom : t.Dom = ↑rs := by sorry
+        have tDom : t.Dom = ↑rs := by
+          apply RA.Query.evaluate.validSchema _ (isWellTyped_def) t a
+
+        simp only [relToRA, RA.Query.evaluateT] at a
+        simp_all only [adom.complete_def, Set.mem_setOf_eq, relJoinsMin.evalT_def hdisj (by grind)]
+
 
         obtain ⟨w_1, h_1⟩ := a
         obtain ⟨left, right⟩ := h_1
@@ -931,8 +935,20 @@ theorem relToRA.evalT_def [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.sc
               revert v
               rw [← not_exists, ← PFun.mem_dom, (dbi.relations rn).validSchema _ left, DatabaseInstance.validSchema]
               exact hc
-        · sorry
+        · convert right_2
+          ext a v
+          apply Iff.intro
+          . intro h
+            have : a ∈ rs := by rw [← Finset.mem_coe, ← tDom, PFun.mem_dom]; use v
+            have ⟨v', hv'⟩ : ∃v, v ∈ w_3 a := by rw [← PFun.mem_dom, left_1]; apply this
+            simp at right_1
+            simp_all [(right_1 a).2.1 _ hv']
+          . intro h
+            have : a ∈ rs := by rw [← Finset.mem_coe, ← left_1, PFun.mem_dom]; use v
+            simp_all
       · intro a
+        simp only [relToRA, RA.Query.evaluateT]
+        simp_all only [adom.complete_def, Set.mem_setOf_eq, relJoinsMin.evalT_def hdisj (by grind)]
         obtain ⟨left, right⟩ := a
         obtain ⟨w_1, h_1⟩ := left
 
@@ -960,8 +976,7 @@ theorem relToRA.evalT_def [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.sc
               . simp [w_1, right]
                 use rn
                 apply And.intro
-                . simp [adomRs]
-                  sorry
+                . simp [adomRs, hne]
                 . use t ∘ renamer ts brs
               . exact joinSingleT.restrict t
           . simp [Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, w_1]
