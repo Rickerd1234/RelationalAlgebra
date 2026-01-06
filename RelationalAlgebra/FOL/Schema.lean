@@ -25,19 +25,6 @@ def BoundedFormula.varFinset [DecidableEq Attribute] : (f : (fol dbs).BoundedFor
   | .imp f₁ f₂ => castLERS (varFinset f₁) (by simp) ∪ castLERS (varFinset f₂) (by simp)
   | .all f' => castLERS (varFinset f') (by simp only [depth]; grind only)
 
--- def ex_dbs : String → Finset String
---   | "R1" => {"a", "b", "c"}
---   | "R2" => {"d", "e", "f"}
---   | "R3" => {"a", "b", "d"}
---   | _ => ∅
-
--- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.falsum (α := String) (n := 0) (L := fol ex_dbs))
--- #simp [BoundedFormula.varFinset, ex_dbs] BoundedFormula.varFinset (.rel (.R "R2") ([outVar "b", outVar "c", inVar 0].get) (α := String) (n := 1) (L := fol ex_dbs))
--- #simp [BoundedFormula.varFinset] BoundedFormula.varFinset (.equal (outVar "a") (inVar 0) (n := 1) (L := fol ex_dbs))
--- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.imp (.equal (outVar "a") (inVar 0)) (.equal (outVar "b") (inVar 1)) (n := 2) (L := fol ex_dbs))
--- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.all (.equal (outVar "a") (inVar 0)) (n := 0) (L := fol ex_dbs))
--- #simp [BoundedFormula.varFinset, castLERS] BoundedFormula.varFinset (.all (.imp (.all (.equal (outVar "a") (inVar 1))) (.all (.equal (outVar "b") (inVar 1)))) (n := 0) (L := fol ex_dbs))
-
 -- schema of query
 def BoundedQuery.schema {n : ℕ} (q : BoundedQuery dbs n) : Finset String :=
   q.toFormula.freeVarFinset

@@ -12,6 +12,11 @@ theorem ran_comp_sub (g : α → α) : PFun.ran (f ∘ g) ⊆ f.ran := by
   rw [PFun.ran, Function.comp_def, PFun.ran]
   grind
 
+@[simp]
+theorem res_dom {g : α → β} : (PFun.res g s).Dom = s := by
+  ext a
+  simp [PFun.res]
+
 /- If `f.Dom` is `Fintype`, then also `f.ran` must be `Fintype` -/
 variable [DecidableEq α] [DecidableEq β] [Fintype f.Dom]
 

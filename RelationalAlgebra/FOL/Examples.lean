@@ -1,4 +1,4 @@
-import RelationalAlgebra.RelationalModel
+import RelationalAlgebra.Examples
 import RelationalAlgebra.Util.Util
 import RelationalAlgebra.FOL.Evaluate
 
@@ -16,146 +16,93 @@ namespace FOL
 
 open FirstOrder RM
 
-def tup1 : Tuple
-  | 0 => some 11
-  | 1 => some 12
-  | _ => Part.none
-
-def tup2 : Tuple
-  | 0 => some 21
-  | 1 => some 22
-  | _ => Part.none
-
-def tup3 : Tuple
-  | 0 => some 31
-  | 1 => some 32
-  | _ => Part.none
-
-def relS : RelationSchema := {0, 1}
-
-def relI : RelationInstance := ⟨
-  relS,
-  {tup1, tup2, tup3},
-  by
-    simp [relS, tup1, tup2, tup3, PFun.Dom]
-    aesop
-⟩
-
-def dbI : DatabaseInstance := ⟨
-  λ x => match x with
-  | "R1" => relS
-  | _ => ∅,
-  λ x => match x with
-  | "R1" => relI
-  | _ => ∅r ∅,
-  by
-    intro rel
-    simp_all only [RelationInstance.empty]
-    split
-    next x => rfl
-    next x x_1 => simp_all only [imp_false]
-⟩
-
 open FOL Language
 
-def x : fol.Term (Attribute ⊕ Fin 0) := outVar "x"
-def y : fol.Term (Attribute ⊕ Fin 0) := outVar "y"
-def z : fol.Term (Attribute ⊕ Fin 1) := inVar 0
+abbrev exFol := (fol exDatabase.schema)
+
+def x : exFol.Term (String ⊕ Fin 0) := outVar "x"
+def y : exFol.Term (String ⊕ Fin 0) := outVar "y"
+def z : exFol.Term (String ⊕ Fin 1) := inVar 0
 
 -- Explore formula concepts
-def n_xy : fol.BoundedFormula Attribute 0 := ∼(x =' y) ⟹ ⊤
+def n_xy : exFol.BoundedFormula String 0 := ∼(x =' y)
 
-def ex_n_xy_or_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
+def ex_n_xy_or_yz : exFol.Formula String := .ex ((n_xy.liftAt 1 0) ⊔ (y.liftAt 1 0) =' z)
 
-def ex_n_xy_and_yz : fol.Formula Attribute := .ex ((n_xy.liftAt 1 0) ⊓ (y.liftAt 1 0) =' z)
+def ex_n_xy_and_yz : exFol.Formula String := .ex ((n_xy.liftAt 1 0) ⊓ (y.liftAt 1 0) =' z)
 
-def all_xz_or_yz : fol.Formula Attribute := .ex ((y.liftAt 1 0) =' z ⟹ ∼((x.liftAt 1 0) =' z))
+def all_xz_or_yz : exFol.Formula String := .ex ((y.liftAt 1 0) =' z ⟹ ∼((x.liftAt 1 0) =' z))
 
-def v : Attribute →. Value
-  | "x" => some 21
-  | "y" => some 22
-  | _ => Part.none
+@[simp]
+def v' : String → String
+  | "x" => "1"
+  | "y" => "Anna"
+  | _ => ""
 
-example [struc: fol.Structure (Part Value)] : ex_n_xy_or_yz.Realize v := by
-  simp only [Formula.Realize, ex_n_xy_or_yz, n_xy, x, y, z, v, BoundedFormula.realize_ex]
-  simp only [BoundedFormula.realize_sup, BoundedFormula.realize_liftAt_one_self,
-    BoundedFormula.realize_imp, BoundedFormula.realize_top, implies_true, true_or, exists_const]
+example [struc: exFol.Structure (String)] : ex_n_xy_or_yz.Realize v' := by
+  simp only [Formula.Realize, ex_n_xy_or_yz, n_xy, x, y, z, BoundedFormula.realize_ex]
+  simp [BoundedFormula.realize_sup, BoundedFormula.realize_liftAt_one_self, true_or, exists_const]
 
-example [struc: fol.Structure (Part Value)] : ex_n_xy_and_yz.Realize v := by
-  simp only [Formula.Realize, ex_n_xy_and_yz, n_xy, x, y, z, v, BoundedFormula.realize_ex]
-  use some 22
+example [struc: exFol.Structure (String)] : ex_n_xy_and_yz.Realize v' := by
+  simp only [Formula.Realize, ex_n_xy_and_yz, n_xy, x, y, z, BoundedFormula.realize_ex]
+  use "Anna"
   simp
   rfl
 
-example [struc: fol.Structure (Part Value)] : all_xz_or_yz.Realize v := by
-  simp only [Formula.Realize, all_xz_or_yz, x, y, z, v, outVar, inVar]
+example [struc: exFol.Structure (String)] : all_xz_or_yz.Realize v' := by
+  simp only [Formula.Realize, all_xz_or_yz, x, y, z, outVar, inVar]
   simp
-  use Part.none
-  simp [Term.liftAt, Fin.snoc, v]
+  use ""
+  simp [Term.liftAt, Fin.snoc]
 
 
+@[simp]
+def v := PFun.res v' {"x", "y"}
 
 -- Relation with variables
-def F : Query := (.R dbI "R1" [ouAttribute, outVar "y"].get)
+def F : Query exDatabase.schema := (.R "employee" [outVar "x", outVar "y"].get)
 
-example [struc: folStruc] : F.Realize dbI v := by
+example (h : a ∈ exDatabase.schema "employee") :
+  RelationSchema.index h < (exDatabase.schema "employee").card := by
+    simp
+    exact (RelationSchema.index h).isLt
+
+example [struc: folStruc exDatabase] : F.RealizeMin exDatabase v := by
   -- Unfold query
-  simp only [Query.Realize, BoundedQuery.Realize, F, BoundedQuery.toFormula, BoundedFormula.realize_rel]
+  simp only [Query.RealizeMin, BoundedQuery.Realize, F, BoundedQuery.toFormula, BoundedFormula.realize_rel]
 
--- Split goal into sat and active domain parts
-  apply And.intro
-  . simp [BoundedQuery.toFormula, outVar, BoundedFormula.realize_rel]
+  simp [BoundedQuery.schema, BoundedQuery.toFormula, Relations.boundedFormula]
 
-    -- @TODO: Generalize this proof
-    refine (folStruc.RelMap_R
-            ?_ "R1" ?_).mp ?_
-    simp_all [dbI, relI]
-    apply Or.inr
-    apply Or.inl
+  refine Exists.intro (Set.toFinset_inj.mp rfl) ?_
 
-    ext a x
-    simp_all [tup2, relS]
-    unfold v
+  -- @TODO: Generalize this proof
+  rw [← fol.Rel, folStruc_apply_RelMap exDatabase]
+  simp_all only [exDatabase, exRelationDepartment, exRelationEmployee, exRelationEmployeeDepartment,
+    String.reduceEq, implies_true, exDatabase.eq_1, exRelationDepartment.eq_1,
+    exRelationEmployee.eq_1, exRelationEmployeeDepartment.eq_1, ArityToTuple.def_dite,
+    Set.mem_insert_iff, Set.mem_singleton_iff]
+  apply Or.inl
+  ext a b
+  split
+  . rename_i h
+    have h' : a ∈ exDatabase.schema "employee" := by exact h
+    have h'' := RelationSchema.index?_isSome.mpr h'
+    have h''' := RelationSchema.index?_isSome_eq_iff.mp h''
+    simp_all
     sorry
 
-  · apply And.intro
-    · simp_all [dbI, v, PFun.ran, DatabaseInstance.domain, relI, tup1, tup2, tup3, relS]
-      intro a v h
-      split at h
-      next x =>
-        simp_all only [Part.mem_some_iff]
-        subst h
-        use "R1"
-        simp [tup2]
-        use 0
-        simp_all
-      next x =>
-        simp_all only [Part.mem_some_iff]
-        subst h
-        use "R1"
-        simp [tup2]
-        use 1
-        simp_all
-      simp_all only [imp_false, Part.not_mem_none]
-    · simp_all [dbI, PFun.ran, DatabaseInstance.domain, relI, relS]
+
+
+  . grind
 
 
 -- Relation with a free variable
-def inG : Attribute →. fol.Term (Variable ⊕ Fin 1)
-  | 0 => .some (outVar "x")
-  | 1 => .some (inVar 0)
+def inG : String →. exFol.Term (String ⊕ Fin 1)
+  | "0" => .some (outVar "x")
+  | "1" => .some (inVar 0)
   | _ => .none
 
-theorem inG_dom : inG.Dom = ({0, 1} : Finset Attribute) := by unfold inG; aesop
-
-def brtr_G : BoundedRelationTermRestriction 1 := ⟨⟨
-  inG,
-  "R1",
-  by simp_all only [inG_dom]; exact FinsetCoe.fintype ?_
-  ⟩,
-  dbI,
-  by simp_all [inG_dom, dbI, relS]
-⟩
+theorem inG_dom : inG.Dom = ({"0", "1"} : Finset String) := by unfold inG; aesop
 
 def G : Query := .ex (.R brtr_G)
 theorem v_sat_G [struc: folStruc] : G.Realize dbI v := by
@@ -233,27 +180,11 @@ theorem v_sat_G [struc: folStruc] : G.Realize dbI v := by
 
 
 -- Relation with two free variables
-def inH : Attribute →. fol.Term (Variable ⊕ Fin 2)
-  | 0 => .some (inVar 1)
-  | 1 => .some (inVar 0)
-  | _ => .none
+def tsH : Fin 2 → exFol.Term (String ⊕ Fin 2) :=
+  [(inVar 1), (inVar 0)].get
 
-theorem inH_dom : inH.Dom = ({0, 1} : Finset Attribute) := by unfold inH; aesop
-
-def rtr_H : RelationTermRestriction 2 := ⟨
-  inH,
-  "R1",
-  by simp_all only [inH_dom]; exact FinsetCoe.fintype ?_
-⟩
-
-def brtr_H : BoundedRelationTermRestriction 2 := ⟨
-  rtr_H,
-  dbI,
-  by simp_all [inH_dom, rtr_H, dbI, relS]
-⟩
-Attribute
-def H : Query := .ex (.ex (.R brtr_H))
-example [struc: folStruc] : H.Realize dbI v := by
+def H : Query exDatabase.schema := .ex (.ex (.R "employee" tsH))
+example [struc: folStruc exDatabase] : H.RealizeMin exDatabase v := by
   -- Unfold query
   simp [Query.Realize, BoundedQuery.Realize, BoundedQuery.toFormula, H]
 
