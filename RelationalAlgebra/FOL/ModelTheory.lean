@@ -12,7 +12,11 @@ namespace FOL
 
 open RM
 
--- (Partial) Tuple to complete function
+
+/-
+Partial function (Tuple) to complete function.
+Required to ensure that the structure has `μ` type, instead of `Part μ`
+-/
 section TupleToFun
 
 variable {t t' : α →. μ} {rs rs' : Finset α} [DecidableEq α] [Nonempty μ]
@@ -27,6 +31,7 @@ instance decidable_dom (h : t.Dom = rs) : ∀a, Decidable (t a).Dom := by
   simp_all [Part.dom_iff_mem, ← PFun.mem_dom]
   exact Finset.decidableMem a rs
 
+/-- Convert a partial function `t`, with `t.Dom = rs` into a total function -/
 @[simp]
 noncomputable def TupleToFun (h : t.Dom = rs) : α → μ :=
   by
@@ -65,13 +70,17 @@ theorem TupleToFun.tuple_eq_iff (h : t.Dom = rs) (ha : (t a).Dom) (hb : (t b).Do
 end TupleToFun
 
 
--- Define variable indexing types
+/-
+Define variable indexing types.
+This is required for the conversion from unnamed `ModelTheory` to named `RelationInstance`
+-/
 section ArityToTuple
 
 variable {μ : Type} {rs: Finset α} [DecidableEq α]
   [LE α] [DecidableRel (α := α) fun x1 x2 ↦ x1 ≤ x2] [IsTrans α fun x1 x2 ↦ x1 ≤ x2]
   [IsAntisymm α fun x1 x2 ↦ x1 ≤ x2] [IsTotal α fun x1 x2 ↦ x1 ≤ x2]
 
+/-- Convert a arity mapping `va` for a relation into a tuple function `t` -/
 def ArityToTuple (va : Fin rs.card → μ) : α →. μ :=
   λ att => dite (att ∈ rs) (λ h => va (RelationSchema.index h)) (λ _ => Part.none)
 
@@ -120,13 +129,18 @@ variable [DecidableEq α]
   [LE α] [DecidableRel (α := α) fun x1 x2 ↦ x1 ≤ x2] [IsTrans α fun x1 x2 ↦ x1 ≤ x2]
   [IsAntisymm α fun x1 x2 ↦ x1 ≤ x2] [IsTotal α fun x1 x2 ↦ x1 ≤ x2]
 
+/--
+The definition of the structure in ModelTheory, dependent on a `DatabaseInstance`.
+A relation `rn` and arity assignment `va` are satisfiable if and only if `ArityToTuple va ∈ (dbi.relations rn).tuples`.
+Meaning that the relation contains the tuple corresponding with the unnamed to named perspective conversion of `va`.
+ -/
 class folStruc (dbi : DatabaseInstance String α μ) extends (fol dbi.schema).Structure μ where
-  RelMap_R :      -- Add proof to RelMap for each Relation in the Language
-      (rn : String)          →                      -- Every relation (and every arity)
-      (va : Fin (dbi.schema rn).card → μ) →             -- Every value assignment (for this arity)
+  RelMap_R :
+      (rn : String) →                       -- Every relation (and every arity)
+      (va : Fin (dbi.schema rn).card → μ) → -- Every value assignment (for this arity)
 
-        RelMap (.R rn) va ↔                             -- Then the RelationMap contains the relation for this value assignment
-        (                                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
+        RelMap (.R rn) va ↔                 -- Then the RelationMap contains the relation for this value assignment
+        (                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
           ArityToTuple va ∈ (dbi.relations rn).tuples
         )
 

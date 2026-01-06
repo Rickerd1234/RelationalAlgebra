@@ -19,7 +19,10 @@ instance Attribute.instAntisymm : IsAntisymm String (.≤.) where
 instance Attribute.instTotal : IsTotal String (.≤.) where
   total := String.le_total
 
--- Add ordering to RelationSchema
+/--
+Define ordering for 'RelationSchema'.
+Required to convert between named Relational Model and unnamed `ModelTheory`
+-/
 def RelationSchema.ordering (rs : Finset α) : List α
   := rs.sort (.≤.)
 
@@ -76,6 +79,7 @@ theorem RelationSchema.ordering_card (rs : Finset α) : (ordering rs).length = r
 -- Add index? to RelationSchema
 variable [BEq α] {rs : Finset α}
 
+/-- Get the index of an attribute `att` in a specific schema `rs`, `.none` if not contained. -/
 def RelationSchema.index? (rs : Finset α) (att : α) : Option (Fin rs.card) :=
   ((ordering rs).finIdxOf? att).map (λ x : Fin ((ordering rs).length) => x.cast (RelationSchema.ordering_card rs))
 
@@ -92,7 +96,7 @@ theorem RelationSchema.index?_isSome_eq_iff : (index? rs att).isSome ↔ ∃i, i
 theorem RelationSchema.index?_none [LawfulBEq α] : index? rs att = .none ↔ att ∉ rs := by
   rw [index?, Option.map_eq_none_iff, List.finIdxOf?_eq_none_iff, ← ordering_mem]
 
--- Add index to RelationSchema
+/-- Get the index of an attribute `att` in a specific schema `rs`, given `att ∈ rs`. -/
 def RelationSchema.index [LawfulBEq α] (h : att ∈ rs) : Fin rs.card :=
   (RelationSchema.index? rs att).get (index?_isSome.mpr h)
 
@@ -105,7 +109,7 @@ theorem RelationSchema.index?_eq_index_if_mem [LawfulBEq α] (h : att ∈ rs) : 
 theorem RelationSchema.index_lt_card [LawfulBEq α] (h : att ∈ rs) : index h < rs.card := by
   simp only [Fin.is_lt]
 
--- Add fromIndex to RelationSchema
+/-- Get the attribute for a specific index (`i: Fin rs.card`) in a relation schema `rs`. -/
 def RelationSchema.fromIndex [LawfulBEq α] (i : Fin rs.card) : α := (ordering rs).get (i.cast (ordering_card rs).symm)
 
 -- Proof usefull properties for fromIndex

@@ -6,11 +6,13 @@ open FirstOrder Language RM
 
 variable {α : Type}
 
+/-- Helper definition used for a free variable, part of the 'output'. -/
 def outVar {n: ℕ} (v: α) : (fol dbs).Term (α ⊕ Fin n) := Term.var (Sum.inl v)
 
 @[simp]
 theorem outVar.def {n} (v : α) : (outVar v : (fol dbs).Term (α ⊕ Fin n)) = Term.var (Sum.inl v) := rfl
 
+/-- Helper definition used for a bound variable, not part of the 'output', bound to quantifier `∃` or `∀`. -/
 def inVar {n: ℕ} (i: Fin n) : (fol dbs).Term (α ⊕ Fin n) := Term.var (Sum.inr i)
 
 @[simp]

@@ -5,7 +5,7 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
--- Extend ModelTheory
+-- Extend ModelTheory with freeVarFinset for `BoundedFormula.exs`.
 @[simp]
 theorem BoundedFormula.exs.freeVarFinset {k} (φ : (fol dbs).BoundedFormula String k) :
   (φ.exs).freeVarFinset = φ.freeVarFinset := by
@@ -14,21 +14,11 @@ theorem BoundedFormula.exs.freeVarFinset {k} (φ : (fol dbs).BoundedFormula Stri
     . simp [BoundedFormula.exs]
       simp_all only [BoundedFormula.freeVarFinset, Finset.union_empty]
 
-def castLERS  [DecidableEq Attribute] (rs : Finset (Attribute ⊕ Fin n)) (h : n ≤ m) : Finset (Attribute ⊕ Fin m) :=
-  Finset.image (Sum.map id (Fin.castLE h)) rs
-
-@[simp]
-def BoundedFormula.varFinset [DecidableEq Attribute] : (f : (fol dbs).BoundedFormula Attribute n) → Finset (Attribute ⊕ (Fin (n + depth f)))
-  | .falsum => ∅
-  | .rel R ts => Finset.univ.biUnion λ i => (ts i).varFinset
-  | .equal t₁ t₂ => t₁.varFinset ∪ t₂.varFinset
-  | .imp f₁ f₂ => castLERS (varFinset f₁) (by simp) ∪ castLERS (varFinset f₂) (by simp)
-  | .all f' => castLERS (varFinset f') (by simp only [depth]; grind only)
-
--- schema of query
+/-- Schema of a query, all free variables in the query -/
 def BoundedQuery.schema {n : ℕ} (q : BoundedQuery dbs n) : Finset String :=
   q.toFormula.freeVarFinset
 
+/- Helper theorems for `BoundedQuery.schema` -/
 @[simp]
 theorem BoundedQuery.schema.R_def_mem {n : ℕ} {x : String} {dbs : String → Finset String} (t : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) :
   x ∈ (R rn t).schema ↔ ∃i : Fin (dbs rn).card, x ∈ (t i).varFinsetLeft := by

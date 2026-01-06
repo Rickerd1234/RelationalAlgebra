@@ -5,6 +5,7 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
+/-- `Term.relabel g` maintains injectivity of `g`. -/
 @[simp]
 theorem relabel.Injective_def {k n : ℕ} {g : (α ⊕ Fin k) → (α ⊕ Fin n)} (h : g.Injective) :
   Function.Injective (Term.relabel g : (fol dbs).Term (α ⊕ Fin k) → (fol dbs).Term (α ⊕ Fin n)) := by
@@ -29,6 +30,7 @@ theorem relabel.Injective_def {k n : ℕ} {g : (α ⊕ Fin k) → (α ⊕ Fin n)
         simp_all only [Sum.inr.injEq]
         exact (right val_1).2 val_2 h'
 
+/-- `BoundedFormula.relabelAux g _` maintains injectivity of `g`. -/
 @[simp]
 theorem relabel.Injective_relabelAux {k n : ℕ} {g : String → (String ⊕ Fin n)} (h : g.Injective) :
   Function.Injective (BoundedFormula.relabelAux g k) := by
@@ -103,6 +105,7 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : String → (String ⊕ Fin
       · intro b_1 a
         simp_all [BoundedFormula.relabelAux]
 
+/-- `(BoundedFormula.relabel g).schema` is equivalent to the partial image of `λ a => (g a).getLeft?`. -/
 theorem BoundedQuery.relabel_schema {n k} (g : String → String ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with

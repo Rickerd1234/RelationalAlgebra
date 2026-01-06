@@ -2,9 +2,11 @@ import RelationalAlgebra.FOL.Schema
 
 open FOL FirstOrder Language Term RM
 
+/- Relabeling of variables in a query, most of this code is based on `ModelTheory.BoundedFormula` relabeling logic. -/
+
 namespace FOL
 
-/-- Maps bounded formulas along a map of terms and a map of relations. -/
+/-- Maps bounded queries along a map of terms and a map of relations. -/
 def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, (fol dbs).Term (String ⊕ (Fin n)) → (fol dbs).Term (String ⊕ (Fin (g n))))
     (h : ∀ n, BoundedQuery dbs (g (n + 1)) → BoundedQuery dbs (g n + 1)) :
     ∀ {n}, BoundedQuery dbs n → BoundedQuery dbs (g n)
@@ -15,7 +17,7 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, (fol dbs).Term (Strin
   | _n, .or q1 q2       => .or (q1.mapTermRel ft h) (q2.mapTermRel ft h)
   | _n, .not q          => (q.mapTermRel ft h).not
 
-/-- Casts `L.BoundedFormula α m` as `L.BoundedFormula α n`, where `m ≤ n`. -/
+/-- Casts `BoundedQuery dbs m` as `BoundedQuery dbs n`, where `m ≤ n`. -/
 @[simp]
 def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery dbs m → BoundedQuery dbs n
   | _m, _n, h, .R rn vMap => .R rn (Term.relabel (Sum.map id (Fin.castLE h)) ∘ vMap)
@@ -25,6 +27,7 @@ def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery dbs m →
   | _m, _n, h, .or q₁ q₂ => (q₁.castLE h).or (q₂.castLE h)
   | _m, _n, h, .not q => (q.castLE h).not
 
+/- Helper theorems for `castLE` and `mapTermRel` -/
 @[simp]
 theorem BoundedQuery.castLE_formula {m n} (_h : m ≤ n) (φ : BoundedQuery dbs m) :
   (φ.castLE _h).toFormula = φ.toFormula.castLE _h := by
@@ -63,17 +66,19 @@ theorem BoundedQuery.mapTermRel_formula {g : ℕ → ℕ} (ft : ∀ n, (fol dbs)
     induction φ
     all_goals simp_all only [mapTermRel, BoundedQuery.toFormula, castLE_formula]; rfl
 
-/-- Raises all of the `Fin`-indexed variables of a formula greater than or equal to `m` by `n'`. -/
+
+/-- Raises all of the `Fin`-indexed variables of a query greater than or equal to `m` by `n'`. -/
 def BoundedQuery.liftAt : ∀ {n : ℕ} (n' _m : ℕ), BoundedQuery dbs n → BoundedQuery dbs (n + n') :=
   fun {_} n' m φ =>
   φ.mapTermRel (fun _ t => t.liftAt n' m) fun _ =>
     castLE (by rw [add_assoc, add_comm 1, add_assoc])
 
-/-- Relabels a bounded formula's variables along a particular function. -/
+/-- Relabels a bounded query's variables along a particular function. -/
 def BoundedQuery.relabel (g : String → String ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) : BoundedQuery dbs (n + k) :=
   φ.mapTermRel (fun _ t => t.relabel (BoundedFormula.relabelAux g _)) fun _ =>
     castLE (ge_of_eq (add_assoc _ _ _))
 
+/- Helper theorems for relabeling -/
 @[simp]
 theorem BoundedQuery.relabel.R_def (g : String → String ⊕ (Fin n)) :
   (R rn t).relabel g = R rn (fun i => (t i).relabel (BoundedFormula.relabelAux g _)) := by

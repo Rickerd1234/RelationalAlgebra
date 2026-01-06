@@ -3,6 +3,8 @@ import Mathlib.ModelTheory.Complexity
 
 open FOL FirstOrder Language Term RM
 
+
+/- Proofs how freeVarFinset/varFinsetLeft are defined on relabeled formula's -/
 namespace FOL
 
 @[simp]
@@ -161,6 +163,8 @@ theorem BoundedFormula.relabel_freeVarFinset {n k} (g : String → String ⊕ (F
     . aesop
     . simp_all only [BoundedFormula.relabel_all, Nat.add_eq, BoundedFormula.freeVarFinset]
 
+
+/- Proof that freeVarFinset is unchanged on `toPrenex` formula's -/
 open BoundedFormula
 
 @[simp]
@@ -237,6 +241,8 @@ theorem freeVarFinset_toPrenex (φ : (fol dbs).BoundedFormula String n) :
   | all _ h =>
     rw [freeVarFinset, toPrenex, freeVarFinset, h]
 
+
+/-- The depth of a formula, defined as the maximum number of 'bounded' variables occuring in the formula -/
 @[simp]
 def depth : BoundedFormula L Attribute n → ℕ
   | .falsum => 0

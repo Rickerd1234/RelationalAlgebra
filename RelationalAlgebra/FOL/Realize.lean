@@ -9,7 +9,10 @@ namespace FOL
 
 variable {μ : Type} {dbi : DatabaseInstance String String μ}
 
--- Formal realization definition
+/--
+Formal 'realization' definition, uses `BoundedFormula.Realize`.
+Essentially a satisfiability check for a given `BoundedQuery`, named variables assignment `String → μ` and bound variables assignment `Fin n → μ`.
+-/
 def BoundedQuery.Realize (dbi : DatabaseInstance String String μ) {n : ℕ} [folStruc dbi] (q : BoundedQuery dbi.schema n) : (String → μ) → (Fin n → μ) → Prop :=
   q.toFormula.Realize
 
@@ -30,6 +33,10 @@ theorem BoundedQuery.Realize.relabel_formula {dbi} [folStruc dbi] {m n : ℕ} {�
 section RealizeMin
 variable (dbi) (φ : Query dbi.schema) [folStruc dbi] (t : String →. μ) [Nonempty μ]
 
+/--
+Minimal 'realization' definition, uses `BoundedQuery.Realize` and the requirement that .
+Essentially a satisfiability check for a given `φ : BoundedQuery` and a tuple with the schema of the free variables (`φ.schema`) in the query.
+-/
 nonrec def Query.RealizeMin : Prop :=
   ∃(h : t.Dom = φ.schema), (φ.Realize dbi (TupleToFun h) default)
 

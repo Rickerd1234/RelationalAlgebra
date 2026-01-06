@@ -6,6 +6,7 @@ namespace FOL
 
 variable {μ : Type} {dbi : DatabaseInstance String String μ}
 
+/-- Proof that satisfiability for a `BoundedFormula` is equal if all (bound and free) variables have the same assignment. -/
 theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}
   (hiv : ∀i, iv₁ i = iv₂ i) (ht : ∀a ∈ q.freeVarFinset, t₁ a = t₂ a) :
     q.Realize t₁ iv₁ ↔ q.Realize t₂ iv₂ := by
@@ -53,6 +54,7 @@ theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).Bounde
           exact funext hiv
       | _ => simp_all [BoundedFormula.Realize]
 
+/-- Proof that satisfiability for a `BoundedQuery` is equal if all (bound and free) variables have the same assignment. -/
 theorem BoundedQuery.Realize.equiv [folStruc dbi] {q : BoundedQuery dbi.schema n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}
   (hiv : ∀i, iv₁ i = iv₂ i) (ht : ∀a ∈ q.schema, t₁ a = t₂ a) :
     q.Realize dbi t₁ iv₁ ↔ q.Realize dbi t₂ iv₂ := by
@@ -61,6 +63,11 @@ theorem BoundedQuery.Realize.equiv [folStruc dbi] {q : BoundedQuery dbi.schema n
 
 variable [Nonempty μ]
 
+/--
+Proof that satisfiability for a `BoundedQuery` is equal if all free variables in the query have the same assignment
+  and the bound variable assignment remains the same.
+Extra variables in the tuple do not impact satisifiability.
+-/
 @[simp]
 theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset String} {tup tup' : String →. μ} {q : BoundedQuery dbi.schema n}
   (h_sub : tup'.Dom ⊆ tup.Dom)
@@ -201,7 +208,11 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset String} {tu
 
     | _ => simp_all [Realize]
 
-
+/--
+Proof that satisfiability for a `BoundedQuery` is equal for a total function and restricted tuple
+  if the bound variable assignment remains the same.
+Extra variables in the total function do not impact satisifiability of a tuple.
+-/
 @[simp]
 theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : Finset String} {q : BoundedQuery dbi.schema n}
   (h_res : PFun.res w rs = tup)
