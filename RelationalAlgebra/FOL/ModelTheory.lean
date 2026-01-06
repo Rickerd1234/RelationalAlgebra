@@ -136,11 +136,11 @@ Meaning that the relation contains the tuple corresponding with the unnamed to n
  -/
 class folStruc (dbi : DatabaseInstance String α μ) extends (fol dbi.schema).Structure μ where
   RelMap_R :
-      (rn : String) →                       -- Every relation (and every arity)
-      (va : Fin (dbi.schema rn).card → μ) → -- Every value assignment (for this arity)
+      (rn : String) →
+      (va : Fin (dbi.schema rn).card → μ) →
 
-        RelMap (.R rn) va ↔                 -- Then the RelationMap contains the relation for this value assignment
-        (                                   -- @TODO, Update the comments  - Iff this value assignment corresponds with a tuple in the relation instance
+        RelMap (.R rn) va ↔
+        (
           ArityToTuple va ∈ (dbi.relations rn).tuples
         )
 
