@@ -2,6 +2,11 @@ import RelationalAlgebra.FOL.ModelTheoryExtensions
 import RelationalAlgebra.Equivalence.FOLtoRA.Adom
 import Mathlib.Data.Finset.Fin
 
+/-
+To convert between FOL and RA, we need to replace the bound `Fin n` variables with `String` variables for the RA queries.
+For this, we use the following utilities to generate a `Set` containing a specific number of non-overlapping `String` values.
+-/
+
 open RM
 
 /-- Generate a basic string of length `n`, repeating `"."` -/
@@ -27,7 +32,7 @@ theorem toDot.inj : (toDot).Injective := by
   exact h'
 
 
-/-- Set containing `n` unique strings -/
+/-- `Set` containing `n` unique strings -/
 def freshStringsS (n : ℕ) : Set String := {a | ∃i ∈ (Finset.range n), toDot i = a}
 
 instance freshStringsSFin : Fintype (freshStringsS n) := by
@@ -42,7 +47,7 @@ instance freshStringsSFin : Fintype (freshStringsS n) := by
       simp_all
       use ⟨a, ha⟩
 
-/-- Finset containing `n` unique strings -/
+/-- `Finset` containing `n` unique strings -/
 def freshStrings (n : ℕ) : Finset String := (freshStringsS n).toFinset
 
 theorem freshStringsS.range_def : Fintype.card (freshStringsS n) = (Finset.range n).card := by
@@ -68,7 +73,7 @@ theorem freshStrings.excl {rs : Finset String} (h : x ∈ (freshStrings (rs.card
 
 open FOL Language BoundedFormula
 
-/-- Finset containing `n` unique strings with an empty intersection with `rs` -/
+/-- `Finset` containing `n` unique strings with an empty intersection with `rs` -/
 @[simp]
 def FreshAttsAux (rs : Finset String) (n : ℕ) : Finset String :=
   (freshStrings (n + rs.card)) \ rs
@@ -83,7 +88,7 @@ theorem FreshAttsAux.card_def : ∃m, (FreshAttsAux rs n).card = n + m := by
   . rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]
     exact Finset.card_le_card Finset.subset_union_right
 
-/-- Finset containing strings such that each `Fin n` variable in a `BoundedFormula` could be replaced without collisions with the `String` variables -/
+/-- `Finset String` such that each bound `Fin n` variable in a `BoundedFormula` could be replaced without collisions with the free `String` variables -/
 @[simp]
 def FreshAtts [Fintype ↑(adomAtts dbs (α := String))] (f : (fol dbs).BoundedFormula String n) : Finset String :=
   FreshAttsAux (f.freeVarFinset ∪ (adomAtts dbs).toFinset ∪ {default}) (n + 1 + depth f)

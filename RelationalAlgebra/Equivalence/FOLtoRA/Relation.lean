@@ -6,42 +6,50 @@ import RelationalAlgebra.FOL.RealizeProperties
 import RelationalAlgebra.RA.EquivRules
 import RelationalAlgebra.Basic
 
+/-
+This file is responsible for the conversion of the Relation case, as well as all proofs for this case.
+This is the most complicated case of the conversion, since it has to mimic the behavior of assigning (duplicate) variables to attributes of a relation.
+Walkthrough using an example:
+- Relation 'R' with attributes 'a', 'b', 'c'
+- FOL 'relation': `R ('x' : String, 1 : Fin n, 'x' : String)`
+- Here we expect all tuples where 'a' = 'c', renamed 'a'/'c' to `'x'` and projected on `'x'`.
+- Note how the variable `'x'` is used for 2 attributes, meaning these should be equivalent.
+- Note how the `Fin n` attribute should get a temporary `String` attribute, to allow connecting it with a quantifier (and dropping it through projection) later.
+
+
+To achieve this, we use the following (repeated) steps to transform the relation correctly:
+1. For each attribute `α` in the relation ('a', 'b', 'c') we have the following subquery `σ (α = f α) ((ρ (α ↔ f α) R) ⋈ R)`
+- where `f α` is `'x'` for 'a' and 'c' and `FreeMap n brs 1` for 'b' (this is handled by the `renamer` and `TermtoAtt` in `Term.lean`).
+- where `α ↔ f α` represents the swapping function mapping `α` to `f α`, `f α` to `α` and `id` for all other values.
+- the result of this, is the equal to the original relation, with an extra attribute (`f α`), which has the same value as `α`,
+    so, 'a', 'b', 'c' `'x'` for the cases of 'a' and 'b'.
+- this is handled in parts:
+  - `σ (α = f α) _` is handled by `prunePair`
+  - `_ ⋈ R` is handled by `combinePair`
+  - `ρ _ R` is handled by `renamePair`
+  - `α ↔ f α` is handled by `renamePairFunc`
+2. All of these 'parts' are joined in `relJoins` with the original relation `R`, `⋈α ∈ R.schema, σ (α = f α) ((ρ (α ↔ f α) R) ⋈ R)`
+- this leads to the resulting relation where all original ('a', 'b', 'c') and renamed attributes (`'x'`, `FreeMap n brs 1`) are present, and duplicate entries of variables (`'x'`) are correctly applied as selection.
+3. Next, we project this to only include the variables that are part of the renaming (`'x'`, `FreeMap n brs 1`) in `relJoinsMin`
+- this leads to the resulting relation where only the renamed attributes (`'x'`, `FreeMap n brs 1`) are present, and duplicate entries of variables (`'x'`) are correctly applied as selection.
+4. Finally, we join with `adom rs` and project on `rs` in `relToRA`, this makes sure that this (sub)query has the exact schema that we expect in the resulting `toRA` conversion.
+
+These parts are defined in steps and accompanied by required proofs with regards to resulting schema, RA well-typedness and resulting tuples.
+-/
+
 open RM FOL FirstOrder Language
 
 variable {μ : Type}
 
+/--
+Swap attribute `ra` for `f ra`; `ρ (ra ↔ f ra) R`.
+`ra ↔ f ra` is implemented in `renamePairFunc`, `f` is implemented in `renamer`.
+-/
 def renamePair {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   .r (renamePairFunc ra ts brs) (.R rn)
 
 theorem renamePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
   (renamePair ra ts brs).schema dbs = (dbs rn).image (renamePairFunc ra ts brs) := rfl
-
-theorem renamePair.schema_update_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) (h' : renamer ts brs ra ∉ dbs rn) :
-  (renamePair ra ts brs).schema dbs = (insert (renamer ts brs ra) (dbs rn)).erase ra  := by
-    simp [renamePair.schema_def, renamePairFunc, Finset.ext_iff, renameFunc]
-    intro a
-    apply Iff.intro
-    . intro ⟨a', ha', h₁⟩
-      split_ifs at h₁ with h₂ h₃
-      . subst h₂ h₁
-        simp_all only [not_true_eq_false]
-      . subst h₃ h₁
-        apply And.intro
-        . exact h₂ ∘ Eq.symm
-        . exact Or.inl rfl
-      . simp_all only [not_false_eq_true, or_true, and_self]
-    . intro ⟨h₁, h₂⟩
-      cases h₂ with
-      | inl h₃ =>
-        use ra
-        simp [← h₃, h]
-      | inr h₃ =>
-        use a
-        apply And.intro h₃
-        simp_rw [h₁, reduceIte, ite_eq_right_iff]
-        intro h₄
-        subst h₄
-        exact False.elim (h' h₃)
 
 theorem renamePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
     RA.Query.isWellTyped dbs (renamePair ra ts brs) := by
@@ -54,9 +62,14 @@ theorem renamePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema)
         rfl
 
 
+/--
+Combine the 'swapped' relation and the original relation; `(ρ (ra ↔ f ra) R) ⋈ R`.
+`ρ (ra ↔ f ra) R` is implemented in `renamePair`.
+-/
 def combinePair {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   .j (renamePair ra ts brs) (.R rn)
 
+/-- Requires `ra ∈ R.schema` for the expected behavior of `renamePairFunc`. -/
 theorem combinePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
   (combinePair ra ts brs).schema dbs = dbs rn ∪ {renamePairFunc ra ts brs ra} := by
     simp [combinePair, renamePair.schema_def]
@@ -192,7 +205,10 @@ theorem combinePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema
                   . have := (htj a).2.2 hc₁ hc₂
                     simp [this]
 
-
+/--
+Make sure that `ra` and `f ra` are equal; `σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)`.
+`(ρ (ra ↔ f ra) R) ⋈ R` is implemented in `combinePair`.
+-/
 def prunePair {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   .s ra (renamer ts brs ra) (combinePair ra ts brs)
 
@@ -200,6 +216,7 @@ theorem prunePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String 
   (prunePair ra ts brs).schema dbs = (combinePair ra ts brs).schema dbs := by
     simp [prunePair]
 
+/-- Requires `ra ∈ R.schema` for the expected behavior of the schema of `combinePair`. -/
 theorem prunePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn):
     RA.Query.isWellTyped dbs (prunePair ra ts brs) := by
       simp [prunePair, combinePair.isWellTyped_def, combinePair.schema_def, h, renamePairFunc]
@@ -213,6 +230,11 @@ theorem prunePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).
         Set.mem_setOf_eq]
 
 
+/--
+Join each of the individually prepared combined relations (starting from the original relation `R`);
+`R ⋈ra ∈ ras, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)`.
+`σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)` is implemented in `prunePair`.
+-/
 def relJoins {dbs : String → Finset String} (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   ras.foldr (λ ra sq => .j (prunePair ra ts brs) sq) (.R rn)
 
@@ -240,24 +262,11 @@ theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (Str
         simp only [List.foldr_cons, RA.Query.isWellTyped, prunePair.isWellTyped_def hhd, true_and]
         apply ih htl
 
-theorem test {dbi : DatabaseInstance String String μ} (t' : String →. μ) :
-  t' ∘ renamePairFunc hd ts brs ∈ (dbi.relations rn).tuples ↔ t' ∈ (dbi.relations rn).tuples.image (λ t => t ∘ renamePairFunc hd ts brs) := by
-    simp_all
-    apply Iff.intro
-    · intro a_1
-      use t' ∘ renamePairFunc hd ts brs
-      apply And.intro a_1
-      funext a
-      simp [renamePairFunc, rename_func_cancel_self]
-    · intro a_1
-      obtain ⟨w, h⟩ := a_1
-      obtain ⟨left, right⟩ := h
-      subst right
-      convert left
-      funext
-      simp [renamePairFunc, rename_func_cancel_self]
 
-
+/-
+The next proof is poorly optimized, unfortunately due to deadlines, we do not spend more time on this.
+Hence we require the maxHeartbeats to be increased to verify the theorem.
+-/
 set_option maxHeartbeats 2000000
 
 theorem relJoins.evalT_def' {dbi : DatabaseInstance String String μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
@@ -749,6 +758,11 @@ theorem eq_comp_renamer {t : String →. μ} {dbi : DatabaseInstance String Stri
           rw [← Finset.mem_coe, ← tDom, PFun.mem_dom]
           use v
 
+/--
+Project the combined relation, keeping only the renamed attributes;
+`π {f ra | ra ∈ R.schema} (R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R))`.
+`R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)` is implemented in `relJoins`.
+-/
 def relJoinsMin {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query String String :=
   .p ((dbs rn).image (renamer ts brs)) (relJoins (RelationSchema.ordering (dbs rn)) ts brs)
 
@@ -845,8 +859,19 @@ theorem relJoinsMin.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (
     RA.Query.isWellTyped dbs (relJoinsMin ts brs) := by
       simp [relJoinsMin, relJoins.schema_def, relJoins.isWellTyped_def, renamePairFunc]
 
+
+/- The complete relation case definition & proof -/
 variable {dbs : String → Finset String} [Fintype (adomRs dbs)]
 
+/--
+Join with `adom rs` followed by projection on `rs`;
+`π rs ((π {f ra | ra ∈ R.schema} (R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R))) ⋈ adom rs)`.
+The result is the RA representation of the FOL relation, with schema `rs`.
+- The `adom rs` join adds a cartesian product for any attributes in `rs` but not in `{f ra | ra ∈ R.schema}`.
+- The `π rs` project drops any attributes not in `rs`.
+
+`π {f ra | ra ∈ R.schema} (R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R))` is implemented in `relJoinsMin`.
+-/
 noncomputable def relToRA (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (rs brs : Finset String) : RA.Query String String :=
     .p (rs) ((relJoinsMin ts brs).j (adom dbs rs))
 

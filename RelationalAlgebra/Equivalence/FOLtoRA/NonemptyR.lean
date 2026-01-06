@@ -2,10 +2,18 @@ import RelationalAlgebra.Equivalence.FOLtoRA.FRan
 import RelationalAlgebra.Equivalence.FOLtoRA.FreshAtts
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 
+/-
+The current FOLtoRA conversion does not support converting a relation with an empty schema.
+To complete our proof, we put in place the assumption of not dealing with any of these relations.
+Although this conversion could be done using `EmptyTupleFromRelation` from `Adom.lean`, it would require more setup and proof changes.
+However, due to deadlines we decided to leave this change and the corresponding proof as future work
+-/
+
 open FOL FirstOrder Language Term RM
 
 namespace FOL
 
+/-- Whether all relations in the formula have a nonempty schema. -/
 @[simp]
 def NonemptyR {dbs : String → Finset String} : (fol dbs).BoundedFormula String n → Prop
   | .falsum => True
@@ -15,6 +23,7 @@ def NonemptyR {dbs : String → Finset String} : (fol dbs).BoundedFormula String
   | .all f' => NonemptyR f'
 
 
+/- Helper theorems for the `NonemptyR` property. -/
 @[simp]
 theorem NonemptyR.castLE {m n} (φ : (fol dbs).BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
   NonemptyR (φ.castLE h') ↔ NonemptyR φ := by

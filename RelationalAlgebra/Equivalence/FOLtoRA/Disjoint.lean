@@ -2,10 +2,18 @@ import RelationalAlgebra.Equivalence.FOLtoRA.FRan
 import RelationalAlgebra.Equivalence.FOLtoRA.FreshAtts
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 
+/-
+To simplify the conversion and proof, we decided to allow for the assumption that the attributes used to represent the bound variables (`brs`)
+  is disjoint from the named attributes used in any of the relations and from any of the free variables used in the query.
+This assumption is a short-cut, given we use `FreshAtts` to generate `brs` which avoids these variables.
+However, due to deadlines we decided to leave this proof as future work.
+-/
+
 open FOL FirstOrder Language Term RM
 
 namespace FOL
 
+/-- Whether `brs : Finset String` has no intersection with any free variables in the formula. -/
 @[simp]
 def disjointSchemaL {dbs : String → Finset String} (brs : Finset String) : (fol dbs).BoundedFormula String n → Prop
   | .falsum => True
@@ -14,11 +22,13 @@ def disjointSchemaL {dbs : String → Finset String} (brs : Finset String) : (fo
   | .imp f₁ f₂ => disjointSchemaL brs f₁ ∧ disjointSchemaL brs f₂
   | .all f' => disjointSchemaL brs f'
 
+/-- `brs` does not intersect with any relation schema nor any free variables in the formula.  -/
 @[simp]
 def disjointSchema {dbs : String → Finset String} (brs : Finset String) (q : (fol dbs).BoundedFormula String n): Prop :=
   disjointSchemaL brs q ∧ ∀rn, brs ∩ dbs rn = ∅
 
 
+/- Helper theorems for the `disjointSchemaL` property. -/
 @[simp]
 theorem disjointSchemaL.castLE {m n} (φ : (fol dbs).BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
   disjointSchemaL brs (φ.castLE h') ↔ disjointSchemaL brs φ := by

@@ -4,12 +4,14 @@ import Mathlib.Data.Finset.Fin
 
 open RM
 
+/-- `Set` equal to the range of `f`. -/
 def FRanS (f : Fin n → String) : Set String := {a | ∃i, f i = a}
 
 instance FRanSFin {f : Fin n → String} : Fintype (FRanS f) := by
   apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image f)
   . simp [FRanS]
 
+/-- `Finset` equal to the range of `f`. -/
 def FRan (f : Fin n → String) : Finset String := (FRanS f).toFinset
 
 @[simp]
@@ -64,9 +66,15 @@ theorem FRan.default_eq_empty : FRan Fin.elim0 = ∅ := by simp [FRan, FRanS]
 @[simp]
 theorem FRan.mem_def : f i ∈ FRan f := by simp [FRan, FRanS]
 
+/--
+Mapping for bound variables `Fin n` to a deterministic `String` used as variable in the RA query.
+Requires `brs.card > n` to prevent falling back to `String.default`.
+-/
 def FreeMap (n : ℕ) (brs : Finset String) : Fin n → String :=
   λ i => (RelationSchema.ordering brs).getD i (default)
 
+
+/- A bunch of helper theorems to reason about the `FreeMap` and `FRan` defintions. -/
 theorem FreeMap.FRan_def (h : n ≤ brs.card) : FRan (FreeMap n brs) = ((RelationSchema.ordering brs).take n).toFinset := by
   simp [FRan, FRanS, FreeMap]
   ext a

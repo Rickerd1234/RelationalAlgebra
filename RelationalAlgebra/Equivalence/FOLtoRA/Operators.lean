@@ -8,6 +8,10 @@ import RelationalAlgebra.FOL.Evaluate
 import RelationalAlgebra.FOL.RealizeProperties
 import RelationalAlgebra.RA.EquivRules
 
+/-
+This file is responsible for all conversions except the Relation case, as well as all proofs for these cases.
+The Relation case is handled in `Relation.lean`.
+-/
 
 open RM FOL FirstOrder Language
 
@@ -19,17 +23,25 @@ variable {dbs : String → Finset String} [Fintype (adomRs dbs)]
 
 /--
 Convert a `BoundedFormula String n` to a `RA.Query String String`.
-Resulting query will lead to a schema equivalent to `rs`.
+The result is the RA representation of the FOL query, with schema `rs`.
+`adom rs` is a cartesian product of any value for each attribute in `rs`, which restricts any query to the active domain of the database.
+Requires the formula `f` to be in Prenex normal form to work as expected.
 Requires `brs` to be distinct from `f.freeVarFinset` and `n + depth f < brs.card` to work properly.
 Requires `f.freeVarFinset ⊆ rs` to work properly.
 -/
 noncomputable def toRA
   (f : (fol dbs).BoundedFormula String n) (rs brs : Finset String) : RA.Query String String :=
     match f with
+    -- `adom rs - adom rs`
     | .falsum => .d (adom dbs rs) (adom dbs rs)
+    -- `σ (f t₁ = f t₂) adom rs`
     | .equal t₁ t₂ => .s (TermtoAtt brs t₁) (TermtoAtt brs t₂) (adom dbs rs)
+    -- Handled in `Relation.lean`
     | .rel (.R rn) ts => relToRA ts rs brs
+    -- `adom rs - (toRA f₁ rs - toRA f₂ rs)`
     | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ rs brs) (toRA f₂ rs brs))
+    -- `adom rs - (π rs (adom rs' - toRA sf rs'))`
+    --  where `rs'` is `rs` combined with all variables used to rename bound variables (`FRan (FreeMap (n + 1) brs))`).
     | .all sf => (adom dbs rs).d (.p rs ((adom dbs (rs ∪ FRan (FreeMap (n + 1) brs))).d (toRA sf (rs ∪ FRan (FreeMap (n + 1) brs)) brs)))
 
 theorem toRA.schema_def :
@@ -42,7 +54,7 @@ theorem toRA.schema_def :
 
 end toRA
 
-/- Proof `toRA` evaluation for `Set` of tuples to be equivalent to `RealizeDomSet` -/
+/- Proof `toRA` evaluation for `Set` of tuples to be equivalent to `RealizeDomSet` for the distinct cases -/
 theorem toRA.falsum_def [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] :
     (toRA (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs t h} := by
