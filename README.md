@@ -16,13 +16,12 @@ The formalization is developed in [Lean 4](https://leanprover.github.io), using 
 
 ## ✅ Goals
 
-- 🕑 Formalize SPJR algebra.
-- 🕑 Formalize SPJRU algebra.
-- 🕑 Formalize complete relational algebra.
-- 🕑 Formalize equivalent fragments of FOL.
-- 🕑 Prove equivalence theorems between RA and FOL expressions.
+- ✅ Formalize SPJR algebra.
+- ✅ Formalize SPJRU algebra.
+- ✅ Formalize complete relational algebra.
+- ✅ Formalize equivalent fragments of FOL.
+- ✅ Prove equivalence theorems between RA and FOL expressions.
 - 🔄 Ensure reusable and well-documented Lean definitions.
-- 🧩 Contribute to or align with `mathlib4` standards.
 
 ## 🧠 Design Rationale
 
