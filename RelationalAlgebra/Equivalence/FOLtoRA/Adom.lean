@@ -1,11 +1,12 @@
 import RelationalAlgebra.RA.Query
 import RelationalAlgebra.FOL.Ordering
+import Mathlib.Data.Finset.Union
 
 open RM RA
 
 variable {α ρ μ : Type}
 
--- Utility for foldr
+/- Utilities for foldr -/
 @[simp]
 theorem RA.Query.foldr_join_schema [DecidableEq α] (xs : List β) (qb : β → RA.Query ρ α) (base : RA.Query ρ α) :
   (xs.foldr (λ a q => q.j (qb a)) base).schema dbs = (xs.foldr (λ a s => s ∪ ((qb a).schema dbs))) (base.schema dbs) := by
@@ -47,14 +48,29 @@ theorem RA.Query.foldr_union_evalT (xs : List β) (qb : β → RA.Query ρ α) (
           | inr h_2 => simp_all only [or_true, true_or]
 
 
--- Database instance value domain
+/-- All relations in the database schema that do not have an empty schema-/
 def adomRs (dbs : ρ → Finset α) : Set ρ :=
   {rn | dbs rn ≠ ∅}
 
+/-- All attributes in the database schema -/
 def adomAtts (dbs : ρ → Finset α) : Set α :=
   {a | ∃rn, a ∈ dbs rn}
 
+/-- Helper to demonstrate that Fintype adomRs → Fintype adomAtts -/
+theorem adomAtts.biUnion_adomRs : ra ∈ adomAtts dbs ↔ ∃rn ∈ adomRs dbs, ra ∈ dbs rn := by
+  simp [adomRs, adomAtts]
+  grind
 
+/-- Fintype adomRs → Fintype adomAtts -/
+instance {dbs : ρ → Finset α} [Fintype (adomRs dbs)] [DecidableEq α] : Fintype (adomAtts dbs) := by
+  have : adomAtts dbs = {ra | ∃rn ∈ adomRs dbs, ra ∈ dbs rn} := by
+    simp [Set.ext_iff, adomAtts.biUnion_adomRs]
+  rw [this]
+  apply Fintype.ofFinset ((adomRs dbs).toFinset.biUnion (λ r => dbs r))
+  simp only [Finset.mem_biUnion, Set.mem_toFinset, Set.mem_setOf_eq, implies_true]
+
+
+/-- Empty tuple for a relation -/
 def EmptyTupleFromRelation (rn : ρ) : RA.Query ρ α :=
   .p {} (.R rn)
 
@@ -69,6 +85,7 @@ theorem EmptyTupleFromRelation.evaluateT_def [DecidableEq α] :
     simp
 
 
+/-- Empty tuple for multiple relations -/
 def EmptyTupleFromRelations (rns : List ρ) (baseRn : ρ) : RA.Query ρ α :=
   rns.foldr (λ rn sq => .u (EmptyTupleFromRelation rn) sq) (.d (EmptyTupleFromRelation baseRn) (EmptyTupleFromRelation baseRn))
 
@@ -94,8 +111,8 @@ theorem EmptyTupleFromRelations.evaluateT_def [DecidableEq α] :
     simp [EmptyTupleFromRelations]
     induction rns with
     | nil =>
-      simp only [List.foldr_nil, Query.evaluateT.eq_7, diffT, Set.diff,
-        EmptyTupleFromRelation.evaluateT_def, exists_and_right, Set.mem_setOf_eq, and_not_self_iff]
+      simp only [List.foldr_nil, Query.evaluateT.eq_7, diffT,
+        EmptyTupleFromRelation.evaluateT_def, exists_and_right]
       ext t
       simp_all
     | cons hd tl ih =>
@@ -111,6 +128,7 @@ theorem EmptyTupleFromRelations.evaluateT_def [DecidableEq α] :
         simp_all only [and_true]
 
 
+/-- Tuples with attribute `a` containing all values of `ra` from relation `rn` -/
 def RelationAttributeToColumn [DecidableEq α] (rn : ρ) (ra a : α) : RA.Query ρ α :=
   .r (renameFunc ra a) (.p {ra} (.R rn))
 
@@ -154,14 +172,15 @@ theorem RelationAttributeToColumn.evalT_def [DecidableEq α] {dbi : DatabaseInst
     · intro a_1
       obtain ⟨w, h⟩ := a_1
       obtain ⟨left, right⟩ := h
-      simp_all only [ite_self, ↓reduceIte, renameFunc]
+      apply Set.mem_setOf.mpr
       use w
       apply And.intro left
       intro a
       apply And.intro
-      . exact fun h => right.1.symm
+      . simp [right]
       . intro h
         obtain ⟨right_1, right_2⟩ := right
+        simp only [Function.comp_apply, renameFunc]
         split
         next h' =>
           rw [Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, right_2]
@@ -172,7 +191,11 @@ theorem RelationAttributeToColumn.evalT_def [DecidableEq α] {dbi : DatabaseInst
           simp [h]
 
 
-def RelationAttributesToColumn [DecidableEq α] (rn : ρ) (ras : List α) (a : α) (baseRa : α) : RA.Query ρ α :=
+/--
+Tuples with attribute `a` containing all values of all attributes in `ras` from relation `rn`.
+Note: `baseRa` should be part of `ras`
+-/
+def RelationAttributesToColumn [DecidableEq α] (rn : ρ) (ras : List α) (a baseRa : α) : RA.Query ρ α :=
   ras.foldr (λ ra sq => .u sq ((RelationAttributeToColumn rn ra a))) (RelationAttributeToColumn rn baseRa a)
 
 theorem RelationAttributesToColumn.schema_def [DecidableEq α] {a : α} : (RelationAttributesToColumn rn ras a baseRa).schema dbs = {a} := by
@@ -196,7 +219,6 @@ theorem RelationAttributesToColumn.isWellTyped_def [DecidableEq α] {a : α}  (h
         · apply RelationAttributeToColumn.isWellTyped_def (by simp_all)
         · rw [← RelationAttributesToColumn];
           simp_all [schema_def, RelationAttributeToColumn.schema_def]
-
 
 theorem RelationAttributesToColumn.evaluateT_def [DecidableEq α] {a : α}  : (RelationAttributesToColumn rn ras a bRa).evaluateT dbi =
   {t | t ∈ (RelationAttributeToColumn rn bRa a).evaluateT dbi ∨
@@ -235,6 +257,10 @@ section adom_ordering
 
 variable [DecidableEq α] [LE α] [DecidableRel (α := α) (.≤.)] [IsTrans α (.≤.)] [IsAntisymm α (.≤.)] [IsTotal α (.≤.)] [Nonempty α]
 
+/--
+Tuples with attribute `a` containing all values from relation `rn`.
+Note: the schema of `rn` should not be empty
+-/
 noncomputable def RelationNameToColumn (dbs : ρ → Finset α) (rn : ρ) (a : α) : RA.Query ρ α :=
   RelationAttributesToColumn rn (RelationSchema.ordering (dbs rn)) a ((RelationSchema.ordering (dbs rn)).headD (Classical.arbitrary α))
 
@@ -292,6 +318,10 @@ theorem RelationNameToColumn.evalT_def {dbi : DatabaseInstance ρ α μ} (h : db
     . simp_all
 
 
+/--
+Tuples with attribute `a` containing all values from any relation in `rns` or `baseRn`.
+Note: the schema of all `rns` and `baseRn` should not be empty
+-/
 noncomputable def RelationNamesToColumn (dbs : ρ → Finset α) (rns : List ρ) (a : α) (baseRn : ρ) : RA.Query ρ α :=
   rns.foldr (λ rn sq => .u sq (RelationNameToColumn dbs rn a)) (RelationNameToColumn dbs baseRn a)
 
@@ -383,6 +413,10 @@ theorem RelationNamesToColumn.evalT_def {dbi : DatabaseInstance ρ α μ} (h : d
         . exact h' rn h''.1
 
 
+/--
+Tuples with attributes `as`, where each attribute maps to an arbitrary value from any relation in `rns` or `baseRn`.
+Note: the schema of all `rns` and `baseRn` should not be empty
+-/
 noncomputable def RelationNamesToColumns (dbs : ρ → Finset α) (rns : List ρ) (as : List α) (baseRn : ρ) : RA.Query ρ α :=
   as.foldr (λ a sq => .j sq (RelationNamesToColumn dbs rns a baseRn)) (EmptyTupleFromRelations rns baseRn)
 
@@ -421,7 +455,6 @@ theorem RelationNamesToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : 
         simp_all only [ne_eq, Query.foldr_join_evalT, joinT, List.coe_toFinset]
         apply Iff.intro
         · intro a
-          -- sorry
           simp_all only [joinSingleT, PFun.mem_dom, forall_exists_index, Set.mem_union, not_or, not_exists, and_imp]
           obtain ⟨w, h_1⟩ := a
           obtain ⟨left, right⟩ := h_1
@@ -574,8 +607,12 @@ theorem RelationNamesToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : 
                     have ⟨v, hv⟩ := dom_tl a hc
                     exact a_1 v hc hv
 
+
 variable [Nonempty ρ]  {dbs : ρ → Finset α}
 
+/--
+Tuples with attributes `rs`, where each attribute maps to an arbitrary value in the database.
+-/
 noncomputable def adom (dbs : ρ → Finset α) (rs : Finset α) [Fintype (adomRs dbs)] : RA.Query ρ α :=
   RelationNamesToColumns dbs (adomRs dbs).toFinset.toList (RelationSchema.ordering rs) ((adomRs dbs).toFinset.toList.headD (Classical.arbitrary ρ))
 
@@ -667,6 +704,8 @@ theorem adom.complete_def {dbi : DatabaseInstance ρ α μ} [Fintype (adomRs dbi
 
 end adom_ordering
 
+
+/-- Helper theorems for the adom definition-/
 theorem adom.exists_tuple_from_ran {dbi : DatabaseInstance ρ α μ} {t : α →. μ}
   (h : t.Dom ≠ ∅) (h' : t.ran ⊆ dbi.domain) : ∃rn ∈ adomRs dbi.schema, ∃t', t' ∈ (dbi.relations rn).tuples := by
     simp_rw [adomRs, Set.mem_setOf_eq, ← Finset.nonempty_iff_ne_empty, Finset.nonempty_def]

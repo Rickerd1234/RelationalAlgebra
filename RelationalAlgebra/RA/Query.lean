@@ -4,6 +4,7 @@ open RM
 
 namespace RA
 
+/-- Type definition for Relational Algebra Queries -/
 inductive Query (ρ α : Type) : Type
   | R: ρ → Query ρ α
   | s: α → α → Query ρ α → Query ρ α
@@ -13,9 +14,8 @@ inductive Query (ρ α : Type) : Type
   | u: Query ρ α → Query ρ α → Query ρ α
   | d: Query ρ α → Query ρ α → Query ρ α
 
-def Query.empty (rn : ρ) : RA.Query ρ α := .d (.R rn) (.R rn)
 
-
+/-- Recursive schema definition -/
 @[simp]
 def Query.schema [DecidableEq α] : (q : Query ρ α) → (dbs : ρ → Finset α) → Finset α
   | .R rn => λ dbs => dbs rn
@@ -26,11 +26,8 @@ def Query.schema [DecidableEq α] : (q : Query ρ α) → (dbs : ρ → Finset �
   | .u sq1 _ => sq1.schema
   | .d sq1 _ => sq1.schema
 
-@[simp]
-theorem Query.schema.empty_def [DecidableEq α] :
-  (Query.empty rn : Query ρ α).schema dbi = dbi rn := by simp only [empty, schema]
 
-
+/-- Recursive well-typed property -/
 @[simp]
 def Query.isWellTyped [DecidableEq α] (dbs : ρ → Finset α) (q : Query ρ α) : Prop :=
   match q with
@@ -42,10 +39,8 @@ def Query.isWellTyped [DecidableEq α] (dbs : ρ → Finset α) (q : Query ρ α
   | .u sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
   | .d sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
 
-@[simp]
-theorem Query.isWellTyped.empty_def [DecidableEq α] :
-  (Query.empty rn : Query ρ α).isWellTyped dbs := by simp only [empty, isWellTyped, schema, and_self]
 
+/-- Recursive tuple evaluation -/
 @[simp]
 def Query.evaluateT (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) : Set (α →. μ) :=
   match q with
@@ -57,11 +52,7 @@ def Query.evaluateT (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) : Set (�
   | .u sq1 sq2 => unionT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
   | .d sq1 sq2 => diffT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
 
-@[simp]
-theorem Query.evaluateT.empty_def :
-  (Query.empty rn).evaluateT dbi = {} := by simp [empty, diffT, Set.diff]
-
-
+/-- Proof that each well-typed query will result in tuples with the correct schema -/
 theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
   induction q with
   | R rn =>
@@ -86,7 +77,7 @@ theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isW
   | r f sq ih =>
     intro t h_t
     apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, (by simp_all)⟩ h.2
-    simp_all only [evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq]
+    simp_all only [evaluateT, renameT, Set.mem_setOf_eq]
   | u sq1 sq2 ih =>
     intro _ ht
     simp [isWellTyped, evaluateT, unionT, schema] at *
@@ -98,6 +89,7 @@ theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isW
     cases ht
     all_goals simp_all only
 
+/-- Query evaluation for `RelationInstance` -/
 def Query.evaluate [DecidableEq α] (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) (h : q.isWellTyped dbi.schema) : RelationInstance α μ :=
   ⟨
     q.schema dbi.schema,
@@ -106,6 +98,7 @@ def Query.evaluate [DecidableEq α] (dbi : DatabaseInstance ρ α μ) (q : Query
   ⟩
 
 
+/- Some helper theorems -/
 @[simp]
 theorem PFun.restrict.def_eq {α β} {t : α →. β} {s : Set α} (h : s ⊆ t.Dom) (h' : s = t.Dom) :
   t.restrict h = t := by
@@ -117,6 +110,7 @@ theorem Query.evaluateT.mem_restrict [DecidableEq α] {q : Query ρ α} (z : ↑
     t.restrict z ∈ q.evaluateT dbi := by
       have z' := (q.evaluate dbi h).validSchema t h'; have z'' := PFun.restrict.def_eq z z'.symm; simp_all only
 
+/-- Proof that the range, for all tuples in a well-typed Query evaluation, is a subset of the database domain -/
 theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : DatabaseInstance ρ α μ} {q : Query ρ α} (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → t.ran ⊆ dbi.domain
   := by
     induction q with
@@ -159,7 +153,7 @@ theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : Databas
       exact fun ⦃a⦄ a_1 ↦ this (z' a_1)
 
     | r f sq ih =>
-      simp_all only [isWellTyped, evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq,
+      simp_all only [isWellTyped, evaluateT, renameT, Set.mem_setOf_eq,
         forall_const]
       intro t ht
 
@@ -180,4 +174,4 @@ theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : Databas
       | inr ht₂ => exact ih₂ t ht₂
 
     | d q nq ih nih =>
-      simp_all only [isWellTyped, evaluateT, diffT, Set.diff, Set.mem_setOf_eq, implies_true]
+      simp_all only [isWellTyped, evaluateT, diffT, Set.mem_diff, implies_true]

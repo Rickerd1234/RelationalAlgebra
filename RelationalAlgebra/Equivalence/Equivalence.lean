@@ -10,10 +10,12 @@ import RelationalAlgebra.Equivalence.FOLtoRA.EvaluateAdom
 
 open RM
 
+/-! ### RA → FOL Equivalence -/
 section RAtoFOL
 
 variable {dbi : DatabaseInstance _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] (raQ : RA.Query String String) (h : RA.Query.isWellTyped dbi.schema raQ)
 
+/-- Query evaluation equivalence for a set of tuples -/
 theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
   (ra_to_fol_query dbi.schema raQ).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
     induction raQ with
@@ -25,12 +27,14 @@ theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
     | u q₁ q₂ ih₁ ih₂ => exact ra_to_fol_evalT.u_def_eq h (ih₁ h.1) (ih₂ h.2.1)
     | d q nq ih nih => exact ra_to_fol_evalT.d_def_eq h (ih h.1) (nih h.2.1)
 
+/-- Query evaluation equivalence for `RelationInstance` -/
 theorem ra_to_fol_eval :
   (ra_to_fol_query dbi.schema raQ).evaluate dbi = raQ.evaluate dbi h := by
     simp [RA.Query.evaluate, FOL.Query.evaluate]
     simp_all [ra_to_fol_query_schema]
     exact ra_to_fol_evalT raQ h
 
+/-- Query expressivity equivalence -/
 theorem ra_to_fol :
   ∃folQ : FOL.Query dbi.schema, folQ.evaluate dbi = raQ.evaluate dbi h := by
     use ra_to_fol_query dbi.schema raQ
@@ -38,10 +42,12 @@ theorem ra_to_fol :
 
 end RAtoFOL
 
+/-! ### FOL → RA Equivalence -/
 section FOLtoRA
 
-variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Fintype (adomAtts dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
+variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
 
+/-- Query evaluation equivalence for `RelationInstance` -/
 theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
   (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluateAdom dbi := by
     simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
@@ -49,6 +55,7 @@ theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchem
     · exact fol_to_ra_query.schema_def folQ
     · exact fol_to_ra_query.evalT folQ hμ hdisj hdef hne
 
+/-- Query expressivity equivalence -/
 theorem fol_to_ra (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
   ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
     use fol_to_ra_query folQ

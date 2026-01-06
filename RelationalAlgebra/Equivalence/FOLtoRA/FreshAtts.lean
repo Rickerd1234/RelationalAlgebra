@@ -4,6 +4,7 @@ import Mathlib.Data.Finset.Fin
 
 open RM
 
+/-- Generate a basic string of length `n`, repeating `"."` -/
 @[simp]
 def toDot (n : ℕ) : String := n.fold (λ _ _ p ↦ p ++ ".") ""
 
@@ -26,6 +27,7 @@ theorem toDot.inj : (toDot).Injective := by
   exact h'
 
 
+/-- Set containing `n` unique strings -/
 def freshStringsS (n : ℕ) : Set String := {a | ∃i ∈ (Finset.range n), toDot i = a}
 
 instance freshStringsSFin : Fintype (freshStringsS n) := by
@@ -40,6 +42,7 @@ instance freshStringsSFin : Fintype (freshStringsS n) := by
       simp_all
       use ⟨a, ha⟩
 
+/-- Finset containing `n` unique strings -/
 def freshStrings (n : ℕ) : Finset String := (freshStringsS n).toFinset
 
 theorem freshStringsS.range_def : Fintype.card (freshStringsS n) = (Finset.range n).card := by
@@ -65,6 +68,7 @@ theorem freshStrings.excl {rs : Finset String} (h : x ∈ (freshStrings (rs.card
 
 open FOL Language BoundedFormula
 
+/-- Finset containing `n` unique strings with an empty intersection with `rs` -/
 @[simp]
 def FreshAttsAux (rs : Finset String) (n : ℕ) : Finset String :=
   (freshStrings (n + rs.card)) \ rs
@@ -79,6 +83,7 @@ theorem FreshAttsAux.card_def : ∃m, (FreshAttsAux rs n).card = n + m := by
   . rw [Finset.card_inter, tsub_le_iff_right, add_le_add_iff_left]
     exact Finset.card_le_card Finset.subset_union_right
 
+/-- Finset containing strings such that each `Fin n` variable in a `BoundedFormula` could be replaced without collisions with the `String` variables -/
 @[simp]
 def FreshAtts [Fintype ↑(adomAtts dbs (α := String))] (f : (fol dbs).BoundedFormula String n) : Finset String :=
   FreshAttsAux (f.freeVarFinset ∪ (adomAtts dbs).toFinset ∪ {default}) (n + 1 + depth f)
@@ -107,18 +112,3 @@ theorem FreshAtts.card_gt_def [Fintype ↑(adomAtts dbs (α := String))] {f : (f
   have ⟨k, hk⟩ := FreshAtts.card_def (f := f)
   rw [hk]
   grind
-
-
-theorem FreshString.get_proof : 0 < (RelationSchema.ordering (freshStrings (rs.card + 1) \ rs)).length := by
-  rw [RelationSchema.ordering_card, Finset.card_pos]
-  apply Finset.sdiff_nonempty_of_card_lt_card
-  rw [freshStrings.card_def]
-  exact lt_add_one rs.card
-
-def FreshString (rs : Finset String) : String :=
-  (RelationSchema.ordering (freshStrings (rs.card + 1) \ rs))[0]'FreshString.get_proof
-
-theorem FreshString.notMem_rs : FreshString rs ∉ rs := by
-  apply freshStrings.excl
-  simp_rw [FreshString, ← RelationSchema.ordering_mem]
-  exact List.getElem_mem get_proof

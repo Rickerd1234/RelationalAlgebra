@@ -7,7 +7,7 @@ theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
     ∀t, (ra_to_fol_query dbi.schema (.r f q)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.r f q) := by
       simp only [RA.Query.isWellTyped, ra_to_fol_query, FOL.Query.RealizeMin.and_def,
         FOL.BoundedQuery.relabel_schema, Function.comp_apply, Sum.getLeft?_inl, Part.coe_some,
-        Finset.pimage_some, Finset.coe_image, RA.Query.evaluateT, renameT, exists_eq_right',
+        Finset.pimage_some, Finset.coe_image, RA.Query.evaluateT, renameT,
         Set.mem_setOf_eq, and_imp] at ⊢ h
       intro t h_dom h_rel
       apply ih
@@ -48,7 +48,7 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
 
       simp only [ra_to_fol_query]
       simp_all only [ra_to_fol_query_schema, FOL.Query.RealizeMin.and_def, RA.Query.isWellTyped,
-        RA.Query.evaluateT, renameT, exists_eq_right', Set.mem_setOf_eq]
+        RA.Query.evaluateT, renameT, Set.mem_setOf_eq]
       obtain ⟨left, right⟩ := h
       simp_all only [FOL.BoundedQuery.Realize.relabel_formula,
         Nat.add_zero, FirstOrder.Language.BoundedFormula.realize_relabel, Fin.castAdd_zero,

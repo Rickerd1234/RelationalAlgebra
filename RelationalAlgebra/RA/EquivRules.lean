@@ -2,7 +2,7 @@ import RelationalAlgebra.RA.RelationalAlgebra
 
 open RM
 
-
+/-- Each tuple is the join of itself and a restricted version of itself -/
 @[simp]
 theorem joinSingleT.restrict (t : α →. μ) {h : rs ⊆ t.Dom} :
   joinSingleT t (t.restrict h) t := by
@@ -19,7 +19,7 @@ theorem joinSingleT.restrict (t : α →. μ) {h : rs ⊆ t.Dom} :
       ext a_1 : 1
       simp_all only [Part.notMem_none]
 
--- Projection over union
+/-- Projection distributes over union -/
 @[simp ←]
 theorem projectionT_unionT {rs : Finset α} (ts1 ts2 : Set (α →. μ)) :
   projectionT (unionT ts1 ts2) rs = unionT (projectionT ts1 rs) (projectionT ts2 rs) := by
