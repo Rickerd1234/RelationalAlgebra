@@ -1,14 +1,29 @@
-import RelationalAlgebra.RelationalAlgebra
+import RelationalAlgebra.RA.RelationalAlgebra
 
 open RM
 
--- Projection over union
+/-- Each tuple is the join of itself and a restricted version of itself -/
+@[simp]
+theorem joinSingleT.restrict (t : α →. μ) {h : rs ⊆ t.Dom} :
+  joinSingleT t (t.restrict h) t := by
+    simp_all only [joinSingleT, Set.mem_union]
+    intro a
+    simp_all only [PFun.mem_dom, PFun.mem_restrict, exists_and_left, and_imp, forall_exists_index, implies_true,
+      not_or, not_and, not_exists, true_and]
+    apply And.intro
+    · intro a_1 x h_1
+      ext a_2 : 1
+      simp_all only [PFun.mem_restrict, true_and]
+    · intro a_1 a_2
+      simp_all only [not_false_eq_true, implies_true]
+      ext a_1 : 1
+      simp_all only [Part.notMem_none]
+
+/-- Projection distributes over union -/
 @[simp ←]
-theorem projection_union {s' : RelationSchema} (inst1 inst2 : RelationInstance) (h_pr : s' ⊆ inst1.schema) (h_un : inst1.schema = inst2.schema):
-  projection (union inst1 inst2 h_un) s' h_pr = union (projection inst1 s' h_pr) (projection inst2 s' (by rw [←h_un]; exact h_pr)) rfl := by
-    unfold projection union
-    simp_all only [Set.mem_union, RelationInstance.mk.injEq, true_and]
-    simp_all only
+theorem projectionT_unionT {rs : Finset α} (ts1 ts2 : Set (α →. μ)) :
+  projectionT (unionT ts1 ts2) rs = unionT (projectionT ts1 rs) (projectionT ts2 rs) := by
+    simp_all only [projectionT, unionT, Set.mem_union]
     ext x : 1
     simp_all only [Set.mem_setOf_eq, Set.mem_union]
     apply Iff.intro
