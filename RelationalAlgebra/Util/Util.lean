@@ -4,7 +4,7 @@ namespace RM
 
 section empty
 
--- Utility to create empty RelationInstances
+/-- Utility to create empty RelationInstances -/
 @[simp]
 abbrev RelationInstance.empty (schema : Finset α) : RelationInstance α μ := ⟨
   schema,
@@ -19,7 +19,7 @@ end empty
 
 section rename
 
--- Function for renaming a single attribute
+/-- Function for renaming a single attribute -/
 def renameFunc [DecidableEq α] (old new : α) : α → α :=
   (λ a'' => if (a'' = new) then old else if (a'' = old) then new else a'')
 
@@ -32,7 +32,7 @@ theorem renameFunc.new_def [DecidableEq α] {old new : α}  : renameFunc old new
 @[simp]
 theorem renameFunc.other_def [DecidableEq α] {old new a : α} (h : a ≠ old) (h : a ≠ new) : renameFunc old new a = a := by simp_all [renameFunc]
 
--- Theorem proving that renameFunc is surjective
+/-- `renameFunc` is surjective -/
 theorem rename_func_surjective [DecidableEq α] (old new : α) : (renameFunc old new).Surjective := by
   simp only [renameFunc, Function.Surjective]
   intro a''
@@ -73,7 +73,7 @@ theorem rename_func_surjective [DecidableEq α] (old new : α) : (renameFunc old
         subst h_4
         simp_all only [not_false_eq_true, not_true_eq_false]
 
--- Theorem proving that renameFunc is bijective
+/-- `renameFunc` is injective -/
 theorem rename_func_injective [DecidableEq α] (old new : α) : (renameFunc old new).Injective := by
   simp only [renameFunc, Function.Injective]
   intro a''
@@ -100,9 +100,11 @@ theorem rename_func_injective [DecidableEq α] (old new : α) : (renameFunc old 
       simp_all only [ite_eq_left_iff, Classical.not_imp, ite_false, ite_eq_right_iff, imp_false,
         Decidable.not_not, not_false_eq_true, and_true, IsEmpty.forall_iff]
 
+/-- `renameFunc` is bijective -/
 theorem rename_func_bijective [DecidableEq α] (old new : α) : (renameFunc old new).Bijective := by
   apply And.intro (rename_func_injective old new) (rename_func_surjective old new)
 
+/-- `invFun (renameFunc a b) = renameFunc a b` -/
 theorem rename_func_invFun [Nonempty α] [DecidableEq α] (old new : α) : Function.invFun (renameFunc old new) = (renameFunc old new) := by
   ext a
   apply rename_func_injective old new

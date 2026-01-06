@@ -2,6 +2,7 @@ import RelationalAlgebra.RelationalModel
 
 open RM
 
+/- Very basic theorems connecting schema's and partial function domains -/
 theorem t_ex_v_if_mem_schema {dbi : DatabaseInstance String String μ} (h : t ∈ (dbi.relations rn).tuples) (ha : a ∈ dbi.schema rn) :
   ∃v, v ∈ t a := by
     simp [← PFun.mem_dom, (dbi.relations rn).validSchema _ h, DatabaseInstance.validSchema, ha]

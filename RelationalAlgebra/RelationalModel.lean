@@ -7,14 +7,28 @@ namespace RM
 -- Define the Relational Model
 section RelationalModel
 
+/-
+  `α` represents attributes
+  `ρ` represents relation (names)
+  `μ` represents value
+-/
 variable {α ρ μ : Type}
 
-
+/--
+A `RelationInstance` is a combination of a 'relation schema' and a `Set` of 'tuples'.
+Where each tuple respects the schema,
+  meaning that the attribute `a : α` has a matching value `v : μ`, if and only if `a ∈ schema`
+-/
 structure RelationInstance (α μ : Type) where
     schema : Finset α
     tuples : Set (α →. μ)
     validSchema : ∀ t : (α →. μ), t ∈ tuples → t.Dom = schema
 
+/--
+A `DatabaseInstance` is a combination of a 'database schema' : `ρ → Finset α` and a `ρ → RelationInstance` mapping.
+Where each `RelationInstance` respects the database schema,
+  meaning that the relation schema `as : Finset α` of each `RelationInstance` matches the one defined by the database schema
+-/
 structure DatabaseInstance (ρ α μ : Type) where
     schema : ρ → Finset α
     relations : ρ → RelationInstance α μ
@@ -32,7 +46,7 @@ theorem RelationInstance.validSchema.ext {inst : RelationInstance α μ} (h : t 
 theorem DatabaseInstance.validSchema.ext {dbi : DatabaseInstance ρ α μ} (rn : ρ) :
   a ∈ (dbi.relations rn).schema ↔ a ∈ dbi.schema rn := Finset.ext_iff.mp (dbi.validSchema rn) a
 
--- All values in the database
+/-- All values in the database -/
 def DatabaseInstance.domain (dbi : DatabaseInstance ρ α μ) : Set μ :=
     {v | ∃rn att, Part.some v ∈ (dbi.relations rn).tuples.image (λ tup => tup att)}
 
