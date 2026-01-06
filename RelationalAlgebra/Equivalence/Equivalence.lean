@@ -11,6 +11,11 @@ import RelationalAlgebra.Equivalence.FOLtoRA.EvaluateAdom
 open RM
 
 /-! ### RA → FOL Equivalence -/
+/-
+Requires:
+- the RA query to be well-typed
+- value type `μ` to be nonempty
+-/
 section RAtoFOL
 
 variable {dbi : DatabaseInstance _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] (raQ : RA.Query String String) (h : RA.Query.isWellTyped dbi.schema raQ)
@@ -43,6 +48,16 @@ theorem ra_to_fol :
 end RAtoFOL
 
 /-! ### FOL → RA Equivalence -/
+/-
+Requires:
+- value type `μ` to be nonempty
+- the database to have a finite number of relations with nonempty schema's
+- the database to have at least one relation with nonempty schema
+- all values of type `μ` to be in the database domain
+- the `FreshAtts (toPrenex folQ) (folQ.toFormula)` to be disjoint from any relation schema and the free variables in the query
+- for the empty string `""` to not be included in the free variables of the query
+- that all relations used in the query do not have an empty schema
+-/
 section FOLtoRA
 
 variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
