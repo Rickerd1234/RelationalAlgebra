@@ -2,6 +2,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
 variable {dbi a b p q} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
+/-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Selection operation. -/
 theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih: ∀t, (ra_to_fol_query dbi.schema q).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (ra_to_fol_query dbi.schema (.s a b q)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
@@ -27,6 +28,7 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q)
         simp [Part.getOrElse, *] at a_3
         simp_all [Part.ext_iff, Part.mem_eq]
 
+/-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Selection operation. -/
 theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query dbi.schema q).RealizeMin dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.s a b q) → (ra_to_fol_query dbi.schema (.s a b q)).RealizeMin dbi t := by
@@ -48,6 +50,7 @@ theorem ra_to_fol_evalT.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q
           FirstOrder.Language.Term.realize_var, Sum.elim_inl]
         exact FOL.TupleToFun.tuple_eq_ext h_RA_eval.2
 
+/-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Selection operation. -/
 theorem ra_to_fol_evalT.s_def_eq (h : RA.Query.isWellTyped dbi.schema (.s a b q))
   (ih: (ra_to_fol_query dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
     (ra_to_fol_query dbi.schema (.s a b q)).evaluateT dbi = RA.Query.evaluateT dbi (.s a b q) := by

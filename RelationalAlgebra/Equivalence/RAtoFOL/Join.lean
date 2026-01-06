@@ -3,6 +3,7 @@ import RelationalAlgebra.FOL.RealizeProperties
 
 variable {dbi q₁ q₂} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
+/-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁: ∀t, (ra_to_fol_query dbi.schema q₁).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₁)
   (ih₂: ∀t, (ra_to_fol_query dbi.schema q₂).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
@@ -79,6 +80,7 @@ theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q
                 apply Part.dom_iff_mem.mpr
                 use v
 
+/-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
 theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (ra_to_fol_query dbi.schema q₁).RealizeMin dbi t)
   (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (ra_to_fol_query dbi.schema q₂).RealizeMin dbi t) :
@@ -162,6 +164,7 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
         . simp [ra_to_fol_query_schema right, z.1]
         . simp [t_Dom, ra_to_fol_query_schema left, ra_to_fol_query_schema right]
 
+/-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
 theorem ra_to_fol_evalT.j_def_eq (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁ : (ra_to_fol_query dbi.schema q₁).evaluateT dbi = RA.Query.evaluateT dbi q₁)
   (ih₂ : (ra_to_fol_query dbi.schema q₂).evaluateT dbi = RA.Query.evaluateT dbi q₂) :

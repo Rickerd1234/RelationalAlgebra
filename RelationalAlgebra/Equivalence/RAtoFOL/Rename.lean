@@ -2,6 +2,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
 variable {dbi f q} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
+/-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
 theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: ∀t, (ra_to_fol_query dbi.schema q).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (ra_to_fol_query dbi.schema (.r f q)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.r f q) := by
@@ -39,6 +40,7 @@ theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
           . simp_all [Part.getOrElse_of_dom]
           . simp_all [Part.getOrElse_of_not_dom]
 
+/-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
 theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih : ∀t ∈ RA.Query.evaluateT dbi q, (ra_to_fol_query dbi.schema q).RealizeMin dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.r f q) → (ra_to_fol_query dbi.schema (.r f q)).RealizeMin dbi t := by
@@ -63,6 +65,7 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
         . simp_all [Part.getOrElse_of_not_dom]
       . exact RA.Query.evaluate.validSchema q left (Sum.elim t default ∘ Sum.inl ∘ f) h_RA_eval
 
+/-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
 theorem ra_to_fol_evalT.r_def_eq (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: (ra_to_fol_query dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
     (ra_to_fol_query dbi.schema (.r f q)).evaluateT dbi = RA.Query.evaluateT dbi (.r f q) := by

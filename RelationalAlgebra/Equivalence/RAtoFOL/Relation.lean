@@ -2,6 +2,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
 variable {dbi rn} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
+/-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
 theorem ra_to_fol_evalT.R_def.mp :
     ∀t, (ra_to_fol_query dbi.schema (.R rn)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
       intro t
@@ -17,6 +18,7 @@ theorem ra_to_fol_evalT.R_def.mp :
       convert a_1
       apply (FOL.ArityToTuple.def_fromIndex h).symm
 
+/-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
 theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
   ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (ra_to_fol_query dbi.schema (.R rn)).RealizeMin dbi t := by
     intro t h_RA_eval
@@ -32,6 +34,7 @@ theorem ra_to_fol_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) 
     rw [FOL.ArityToTuple.def_fromIndex]
     . exact h_RA_eval
 
+/-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
 theorem ra_to_fol_evalT.R_def_eq (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
     (ra_to_fol_query dbi.schema (.R rn)).evaluateT dbi = RA.Query.evaluateT dbi (.R rn) := by
       ext t

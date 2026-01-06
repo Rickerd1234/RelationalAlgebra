@@ -2,10 +2,17 @@ import RelationalAlgebra.RA.Query
 import RelationalAlgebra.FOL.Evaluate
 import RelationalAlgebra.FOL.RelabelProperties
 
+/- Helper functions and definitions for Projection, most complex case on this conversion. -/
+
 open RM
 
 variable {μ : Type}
 
+/-- Relabel function for an attribute using the 'drop set' (`folQ.schema \ rs : Finset String` containing the variables to be dropped).
+  Relabel the free FOL variables consistently:
+  - Projected variable (`x ∈ rs`) → `x`.
+  - Dropped variable (`x ∉ rs`, so `h : x ∈ dropSet`) → `RelationSchema.index h`.
+-/
 def projectAttribute (dropSet : Finset String) (a' : String) : String ⊕ Fin (dropSet.card) :=
   dite (a' ∈ dropSet) (λ h' => Sum.inr (RelationSchema.index h')) (λ _ => Sum.inl a')
 
@@ -35,6 +42,12 @@ theorem projectAttribute_mem {a' : String} (h : a' ∈ dropSet) :
     rw [projectAttribute.def]
     simp_all only [↓reduceDIte, Sum.inr.injEq, exists_eq']
 
+/-- Project an entire query using a 'drop set' (`folQ.schema \ rs : Finset String` containing the variables to be dropped).
+  1. Relabel the free FOL variables consistently:
+  - Projected variable (`x ∈ rs`) → `x`.
+  - Dropped variable (`x ∉ rs`, so `h : x ∈ dropSet`) → `RelationSchema.index h`.
+  2. Bind all fresh bound (`Fin n`) variables to an existential quantifier.
+-/
 def projectQuery (folQ : FOL.Query dbs) (rs : Finset String) : FOL.Query dbs :=
   (folQ.relabel (projectAttribute (folQ.schema \ rs))).exs
 
@@ -65,6 +78,7 @@ theorem projectQuery.q_schema_def (folQ : FOL.Query dbs) : projectQuery folQ fol
   . simp
   . simp
 
+/-- `projectQuery` results to the right schema (`rs`), given that `rs ⊆ folQ.schema`-/
 @[simp]
 theorem projectQuery.schema_def (folQ : FOL.Query dbs) (rs : Finset String) (h : rs ⊆ folQ.schema) : (projectQuery folQ rs).schema = rs := by
   ext a

@@ -2,6 +2,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
 variable {dbi rs q} [FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
 
+/-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Projection operation. -/
 theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
   (ih: (ra_to_fol_query dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
     (ra_to_fol_query dbi.schema (.p rs q)).evaluateT dbi = RA.Query.evaluateT dbi (.p rs q) := by

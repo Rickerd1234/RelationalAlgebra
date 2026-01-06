@@ -3,6 +3,7 @@ import RelationalAlgebra.FOL.RelabelProperties
 
 open RM
 
+/-- Function to handle conversion of all Relational Algebra query cases. -/
 def ra_to_fol_query (dbs : String → Finset String) : RA.Query String String → FOL.Query dbs
   | .R rn => .R rn (FOL.outVar ∘ RelationSchema.fromIndex)
   | .s a b sq => .and (ra_to_fol_query dbs sq) (.tEq (FOL.outVar a) (FOL.outVar b))
@@ -12,7 +13,8 @@ def ra_to_fol_query (dbs : String → Finset String) : RA.Query String String �
   | .u sq₁ sq₂ => .or (ra_to_fol_query dbs sq₁) (ra_to_fol_query dbs sq₂)
   | .d sq nq => .and (ra_to_fol_query dbs sq) (.not (ra_to_fol_query dbs nq))
 
-theorem ra_to_fol_query_schema.def (dbs : String → Finset String) (raQ : RA.Query String String) (h : raQ.isWellTyped dbs) :
+/-- Theorem to show that the conversion maintains the schema. -/
+theorem ra_to_fol_query_schema {dbs : String → Finset String} {raQ : RA.Query String String} (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query dbs raQ).schema = raQ.schema dbs := by
     induction raQ with
     | R rn =>
@@ -38,7 +40,3 @@ theorem ra_to_fol_query_schema.def (dbs : String → Finset String) (raQ : RA.Qu
     | s => simp_all [ra_to_fol_query]
 
     | _ => simp_all [ra_to_fol_query]
-
-theorem ra_to_fol_query_schema (h : raQ.isWellTyped dbs) :
-  (ra_to_fol_query dbs raQ).schema = raQ.schema dbs := by
-    refine ra_to_fol_query_schema.def dbs raQ h
