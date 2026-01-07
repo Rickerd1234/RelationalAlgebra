@@ -1,5 +1,5 @@
 import RelationalAlgebra.Examples
-import RelationalAlgebra.Util.Util
+import RelationalAlgebra.Util.RenameFunc
 import RelationalAlgebra.FOL.Evaluate
 
 -- Operations for BoundedFormula

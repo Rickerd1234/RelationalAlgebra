@@ -20,25 +20,6 @@ theorem RelationInstance.eq : ∀ {a b : RelationInstance α μ}, (a.schema = b.
 theorem RelationInstance.dom_eq_schema {r : RelationInstance α μ} {h : t ∈ r.tuples} : t.Dom = r.schema :=
   by rw [RelationInstance.validSchema r t h]
 
--- `PFun.Dom t a` derived from `v ∈ t a`
-@[simp]
-theorem value_mem_tuple_attr(h : v ∈ t a) : PFun.Dom t a := by
-  rw [PFun.dom_eq]
-  exact Exists.intro v h
-
--- `PFun.Dom t a` derived from `a ∈ inst.schema ∧ t ∈ inst.tuples`
-@[simp]
-theorem tuple_valid_schema {inst : RelationInstance α μ} (ha : a ∈ inst.schema) (ht : t ∈ inst.tuples) : PFun.Dom t a := by
-  rw [← inst.schema.mem_coe, ← inst.validSchema t ht] at *
-  rw [PFun.mem_dom] at ha
-  exact Part.dom_iff_mem.mpr ha
-
--- `¬PFun.Dom t a` derived from `a ∉ inst.schema ∧ t ∈ inst.tuples`
-@[simp]
-theorem not_tuple_valid_schema {inst : RelationInstance α μ} (ha : a ∉ inst.schema) (ht : t ∈ inst.tuples) : ¬PFun.Dom t a := by
-  rw [← inst.schema.mem_coe, ← inst.validSchema t ht] at ha
-  exact ha
-
 section invFun
 
 variable [Nonempty α] {a : α} {b : β} {f : α → β}

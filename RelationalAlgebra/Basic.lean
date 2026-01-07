@@ -20,3 +20,22 @@ theorem schema_mem_if_exists_v {dbi : DatabaseInstance String String μ} (h : t 
   a ∈ dbi.schema rn := by
     rw [← DatabaseInstance.validSchema, ← Finset.mem_coe, ← (dbi.relations rn).validSchema _ h, PFun.mem_dom]
     use v
+
+-- `PFun.Dom t a` derived from `v ∈ t a`
+@[simp]
+theorem value_mem_tuple_attr(h : v ∈ t a) : PFun.Dom t a := by
+  rw [PFun.dom_eq]
+  exact Exists.intro v h
+
+-- `PFun.Dom t a` derived from `a ∈ inst.schema ∧ t ∈ inst.tuples`
+@[simp]
+theorem tuple_valid_schema {inst : RelationInstance α μ} (ha : a ∈ inst.schema) (ht : t ∈ inst.tuples) : PFun.Dom t a := by
+  rw [← inst.schema.mem_coe, ← inst.validSchema t ht] at *
+  rw [PFun.mem_dom] at ha
+  exact Part.dom_iff_mem.mpr ha
+
+-- `¬PFun.Dom t a` derived from `a ∉ inst.schema ∧ t ∈ inst.tuples`
+@[simp]
+theorem not_tuple_valid_schema {inst : RelationInstance α μ} (ha : a ∉ inst.schema) (ht : t ∈ inst.tuples) : ¬PFun.Dom t a := by
+  rw [← inst.schema.mem_coe, ← inst.validSchema t ht] at ha
+  exact ha

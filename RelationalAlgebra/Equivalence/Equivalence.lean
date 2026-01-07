@@ -5,7 +5,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Join
 import RelationalAlgebra.Equivalence.RAtoFOL.Rename
 import RelationalAlgebra.Equivalence.RAtoFOL.Union
 import RelationalAlgebra.Equivalence.RAtoFOL.Diff
-import RelationalAlgebra.Equivalence.FOLtoRA.Conversion
+import RelationalAlgebra.Equivalence.FOLtoRA.Prenex
 import RelationalAlgebra.Equivalence.FOLtoRA.EvaluateAdom
 
 open RM

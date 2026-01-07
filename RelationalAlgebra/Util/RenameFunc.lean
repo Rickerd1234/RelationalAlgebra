@@ -2,21 +2,6 @@ import RelationalAlgebra.RelationalModel
 
 namespace RM
 
-section empty
-
-/-- Utility to create empty RelationInstances -/
-@[simp]
-abbrev RelationInstance.empty (schema : Finset α) : RelationInstance α μ := ⟨
-  schema,
-  ∅,
-  by simp only [Set.mem_empty_iff_false, IsEmpty.forall_iff, implies_true]
-⟩
-
-prefix:100 "∅r " => RelationInstance.empty
-
-end empty
-
-
 section rename
 
 /-- Function for renaming a single attribute -/

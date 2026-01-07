@@ -1,5 +1,5 @@
 import RelationalAlgebra.RelationalModel
-import RelationalAlgebra.Util.Util
+import RelationalAlgebra.Util.RenameFunc
 import RelationalAlgebra.Util.Equiv
 
 import Mathlib.Data.Finset.Image

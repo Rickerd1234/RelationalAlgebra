@@ -2,7 +2,7 @@ import RelationalAlgebra.Equivalence.FOLtoRA.FRan
 import RelationalAlgebra.FOL.ModelTheory
 import RelationalAlgebra.FOL.Ordering
 import RelationalAlgebra.FOL.Variable
-import RelationalAlgebra.Util.Util
+import RelationalAlgebra.Util.RenameFunc
 
 open RM FOL FirstOrder Language
 
