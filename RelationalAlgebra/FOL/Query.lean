@@ -5,7 +5,12 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-/-- Syntax for a `BoundedQuery` given a database schema `dbs` and bound `n : ℕ`. Similar to `ModelTheory.BoundedFormula`. -/
+/--
+Syntax for a `BoundedQuery` given a database schema `dbs` and bound `n : ℕ`.
+Similar to `ModelTheory.BoundedFormula`.
+Note: Future work could remove this BoundedQuery intermediate layer,
+      given the similarities with BoundedFormula in both syntax and semantics.
+-/
 inductive BoundedQuery (dbs : String → Finset String) : ℕ → Type
   | R {n} : (rn : String) → (Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) → BoundedQuery dbs n
   | and {n} (q1 q2 : BoundedQuery dbs n): BoundedQuery dbs n
@@ -22,7 +27,7 @@ def BoundedQuery.exs : ∀ {n}, BoundedQuery dbs n → Query dbs
   | 0, φ => φ
   | _n + 1, φ => φ.ex.exs
 
-/-- `BoundedQuery` conversion to `BoundeFormula`. -/
+/-- `BoundedQuery` conversion to `BoundedFormula`. -/
 @[simp]
 def BoundedQuery.toFormula : (q : BoundedQuery dbs n) → (fol dbs).BoundedFormula String n
   | .R name vMap => Relations.boundedFormula (fol.Rel name) vMap
