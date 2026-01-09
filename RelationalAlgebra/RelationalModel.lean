@@ -9,8 +9,8 @@ section RelationalModel
 
 /-
   `α` represents attributes
-  `ρ` represents relation (names)
-  `μ` represents value
+  `ρ` represents relation names
+  `μ` represents values
 -/
 variable {α ρ μ : Type}
 
