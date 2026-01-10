@@ -608,7 +608,7 @@ theorem RelationNamesToColumns.evalT_def {dbi : DatabaseInstance ρ α μ} (h : 
                     exact a_1 v hc hv
 
 
-variable [Nonempty ρ]  {dbs : ρ → Finset α}
+variable [Nonempty ρ] {dbs : ρ → Finset α}
 
 /--
 Tuples with attributes `rs`, where each attribute maps to an arbitrary value in the database.

@@ -1,7 +1,7 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 import RelationalAlgebra.FOL.RealizeProperties
 
-variable {dbi q₁ q₂} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
+variable {q₁ q₂} {dbi : RM.DatabaseInstance ρ String μ} [struc : FOL.folStruc dbi] [Nonempty μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))

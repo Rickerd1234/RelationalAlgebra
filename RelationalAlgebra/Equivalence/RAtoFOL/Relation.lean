@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi rn} [struc : FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
+variable {rn} {dbi : RM.DatabaseInstance ρ String μ} [struc : FOL.folStruc dbi] [Nonempty μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
 theorem ra_to_fol_evalT.R_def.mp :

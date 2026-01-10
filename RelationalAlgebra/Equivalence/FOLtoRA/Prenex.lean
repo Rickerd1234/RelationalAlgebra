@@ -11,7 +11,7 @@ import RelationalAlgebra.RA.EquivRules
 
 open RM FOL FirstOrder Language
 
-variable {μ : Type}
+variable {μ ρ : Type} {dbs : ρ → Finset String} {dbi : DatabaseInstance ρ String μ}
 
 /-- Combines `FOL.BoundedQuery.toFormula` and `BoundedFormula.toPrenex` -/
 @[simp]
@@ -24,7 +24,7 @@ theorem toPrenex.freeVarFinset_def {q : FOL.Query dbs} : (toPrenex q).freeVarFin
 
 
 /- Proof that `toRA` is well typed for the distinct prenex form cases -/
-theorem toRA.isWellTyped_def_IsAtomic {q : (fol dbs).BoundedFormula String n}
+theorem toRA.isWellTyped_def_IsAtomic [Nonempty ρ] {q : (fol dbs).BoundedFormula String n}
   (hq : q.IsAtomic) (h' : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
     (toRA q rs brs).isWellTyped dbs := by
@@ -72,7 +72,7 @@ theorem toRA.isWellTyped_def_IsAtomic {q : (fol dbs).BoundedFormula String n}
         cases R with
         | R rn => simp [Relations.boundedFormula, toRA, relToRA.isWellTyped_def]
 
-theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] {q : (fol dbs).BoundedFormula String n}
+theorem toRA.isWellTyped_def_IsQF [Nonempty ρ] [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] {q : (fol dbs).BoundedFormula String n}
   (hq : q.IsQF) (h' : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) :
     (toRA q rs brs).isWellTyped dbs := by
       induction hq with
@@ -87,7 +87,7 @@ theorem toRA.isWellTyped_def_IsQF [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)]
         have : q₂.freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs := Finset.union_subset_right h'
         simp_all [adom.isWellTyped_def, adom.schema_def, toRA.schema_def]
 
-theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
+theorem toRA.isWellTyped_def_IsPrenex [Nonempty ρ] {q : (fol dbs).BoundedFormula String n}
   (hq : q.IsPrenex) (h' : q.freeVarFinset ⊆ rs) (h'' : q.freeVarFinset ∩ brs = ∅) (hn : n + depth q < brs.card)
   [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
     (toRA q (rs ∪ FRan (FreeMap n brs)) brs).isWellTyped dbs := by
@@ -116,7 +116,7 @@ theorem toRA.isWellTyped_def_IsPrenex {q : (fol dbs).BoundedFormula String n}
         exact Finset.union_subset_union_right (FreeMap.FRan_sub_add_one (by grind))
 
 /- Proof that `toRA` evaluation is equivalent to the `Set` of tuples satisfying `RealizeDomSet` for the distinct prenex form cases -/
-theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
+theorem toRA.evalT_def_IsAtomic [Nonempty ρ] [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n}
   (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card)
   (hdisj : disjointSchema brs q) (hdef : default ∉ rs) (hne : NonemptyR q) :
     (toRA q rs brs).evaluateT dbi =
@@ -149,7 +149,7 @@ theorem toRA.evalT_def_IsAtomic [Nonempty μ] [Nonempty ↑(adomRs dbi.schema)] 
           . apply (hdisj.2)
             exact FreeMap.mem_def (by grind)
 
-theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n}
+theorem toRA.evalT_def_IsQF [Nonempty ρ] [Nonempty μ] [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n}
   (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)]
   (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card) (hdisj : disjointSchema brs q) (hdef : default ∉ rs) (hne : NonemptyR q) :
     (toRA q rs brs).evaluateT dbi =
@@ -165,7 +165,7 @@ theorem toRA.evalT_def_IsQF [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol db
           (ih₁ (Finset.union_subset_iff.mpr ⟨h.1.1, h.2⟩) (by simp at hn; grind) (by simp at hdisj; exact ⟨hdisj.1.1, hdisj.2⟩) (hne.1))
           (ih₂ (Finset.union_subset_iff.mpr ⟨h.1.2, h.2⟩) (by simp at hn; grind) (by simp at hdisj; exact ⟨hdisj.1.2, hdisj.2⟩) (hne.2))
 
-theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fol dbi.schema).BoundedFormula String n} [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)]
+theorem toRA.evalT_def_IsPrenex [Nonempty ρ] [Nonempty μ] [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n} [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)]
   (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsPrenex) (h' : brs ∩ q.freeVarFinset = ∅) (hn : n + depth q < brs.card) (hdisj : disjointSchema brs q) (hdef : default ∉ q.freeVarFinset ∪ brs) (hne : NonemptyR q) :
     (toRA q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
@@ -215,18 +215,18 @@ theorem toRA.evalT_def_IsPrenex [Nonempty μ] [folStruc dbi (μ := μ)] {q : (fo
             . simp
             . grind
 
-/-- Complete conversion definition, `FOL.Query dbs → RA.Query String String` -/
+/-- Complete conversion definition, `FOL.Query dbs → RA.Query ρ String` -/
 @[simp]
-noncomputable def fol_to_ra_query (q : FOL.Query dbs) [Fintype (adomRs dbs)] : RA.Query String String :=
+noncomputable def fol_to_ra_query [Nonempty ρ] (q : FOL.Query dbs) [Fintype (adomRs dbs)] : RA.Query ρ String :=
   toRA (toPrenex q) q.schema (FreshAtts (toPrenex q))
 
 /-- Conversion schema equivalence proof -/
 @[simp]
-theorem fol_to_ra_query.schema_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
+theorem fol_to_ra_query.schema_def [Nonempty ρ] (q : FOL.Query dbs) [Fintype (adomRs dbs)] : (fol_to_ra_query q).schema dbs = q.schema := by
   rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, toRA.schema_def]
 
 /-- Conversion well-typed query proof -/
-theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
+theorem fol_to_ra_query.isWellTyped_def [Nonempty ρ] (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)] :
   (fol_to_ra_query q).isWellTyped dbs := by
     have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan (FreeMap 0 (FreshAtts (toPrenex q))) = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan, FRanS]
     rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, ← this]
@@ -239,7 +239,7 @@ theorem fol_to_ra_query.isWellTyped_def (q : FOL.Query dbs) [Fintype (adomRs dbs
       grind only
 
 /-- Conversion evaluation `Set` tuples equivalence proof (all tuples are restricted to `DatabaseInstance.domain`) -/
-theorem fol_to_ra_query.evalT [folStruc dbi (μ := μ)] [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] [Nonempty μ]
+theorem fol_to_ra_query.evalT [folStruc dbi] [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)] [Nonempty μ] [Nonempty ρ]
   (q : FOL.Query dbi.schema) (hμ : ∀v, v ∈ dbi.domain) (hdisj : disjointSchema (FreshAtts (toPrenex q)) q.toFormula) (hdef : default ∉ q.schema) (hne : NonemptyR q.toFormula) :
     RA.Query.evaluateT dbi (fol_to_ra_query q) = FOL.Query.evaluateT dbi q ∩ {t | t.ran ⊆ dbi.domain} := by
       rw [FOL.Query.evaluateT, Set.ext_iff]

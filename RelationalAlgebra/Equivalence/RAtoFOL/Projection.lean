@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {dbi rs q} [FOL.folStruc dbi (α := String) (μ := μ)] [Nonempty μ]
+variable {rs q} {dbi : RM.DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Nonempty μ]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Projection operation. -/
 theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))

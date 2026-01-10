@@ -6,6 +6,8 @@ import RelationalAlgebra.Util.RenameFunc
 
 open RM FOL FirstOrder Language
 
+variable {ρ : Type} {dbs : ρ → Finset String}
+
 /--
 Deterministically convert a FOL variable (`(fol dbs).Term (String ⊕ Fin n)`) to an attribute (`String`).
 `brs` should be disjoint from the `String` FOL variables
@@ -50,19 +52,19 @@ def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (String ⊕ Fin n)} {brs : Fins
 Map an attribute `ra` (part of the schema for relation `rn`) to the corresponding 'variable' used in the FOL variable assignment `ts`
 Note: `ra` should be in schema `dbs rn`
 -/
-def renamer {dbs : String → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (ra : String) : String :=
+def renamer (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) (ra : String) : String :=
   ((RelationSchema.index? (dbs rn) ra).map (TermtoAtt brs ∘ ts)).getD (default)
 
-theorem renamer.notMem_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∉ dbs rn) :
+theorem renamer.notMem_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∉ dbs rn) :
   renamer ts brs ra = default := by
     rw [renamer, RelationSchema.index?_none.mpr h, Option.map_none, Option.getD_none]
 
-theorem renamer.mem_def {dbs : String → Finset String} {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
+theorem renamer.mem_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
   renamer ts brs ra = (TermtoAtt brs ∘ ts) (RelationSchema.index h) := by
     have ⟨k, hk⟩ := RelationSchema.index?_isSome_eq_iff.mp (RelationSchema.index?_isSome.mpr h)
     rw [RelationSchema.index]
     simp_rw [renamer, hk, Option.map_some, Option.getD_some, Option.get]
 
 /-- Rename function which swaps the original `ra` for `renamer ts brs ra` and vice versa -/
-def renamePairFunc {dbs : String → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : String → String :=
+def renamePairFunc (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : String → String :=
   renameFunc ra (renamer ts brs ra)

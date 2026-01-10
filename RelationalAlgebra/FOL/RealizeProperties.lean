@@ -4,7 +4,7 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-variable {μ : Type} {dbi : DatabaseInstance String String μ}
+variable {ρ μ : Type} {dbi : DatabaseInstance ρ String μ}
 
 /-- Proof that satisfiability for a `BoundedFormula` is equal if all (bound and free) variables have the same assignment. -/
 theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}

@@ -6,6 +6,8 @@ open FOL FirstOrder Language Term RM
 
 namespace FOL
 
+variable {ρ : Type} {dbs : ρ → Finset String}
+
 /-- Maps bounded queries along a map of terms and a map of relations. -/
 def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, (fol dbs).Term (String ⊕ (Fin n)) → (fol dbs).Term (String ⊕ (Fin (g n))))
     (h : ∀ n, BoundedQuery dbs (g (n + 1)) → BoundedQuery dbs (g n + 1)) :

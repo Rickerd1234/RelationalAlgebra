@@ -15,7 +15,7 @@ namespace FOL
 
 /-- Whether all relations in the formula have a nonempty schema. -/
 @[simp]
-def NonemptyR {dbs : String → Finset String} : (fol dbs).BoundedFormula String n → Prop
+def NonemptyR {dbs : ρ → Finset String} : (fol dbs).BoundedFormula String n → Prop
   | .falsum => True
   | .rel R _ => match R with | .R rn => (dbs rn) ≠ ∅
   | .equal _ _ => True

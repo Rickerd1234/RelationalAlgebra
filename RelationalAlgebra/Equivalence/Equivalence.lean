@@ -18,7 +18,7 @@ Requires:
 -/
 section RAtoFOL
 
-variable {dbi : DatabaseInstance _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] (raQ : RA.Query String String) (h : RA.Query.isWellTyped dbi.schema raQ)
+variable {dbi : DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Nonempty μ] (raQ : RA.Query ρ String) (h : RA.Query.isWellTyped dbi.schema raQ)
 
 /-- Query evaluation equivalence for a set of tuples -/
 theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
@@ -60,7 +60,7 @@ Requires:
 -/
 section FOLtoRA
 
-variable {dbi _ _ _} [FOL.folStruc dbi (μ := μ)] [Nonempty μ] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
+variable [Nonempty ρ] [Nonempty μ] {dbi : DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
 
 /-- Query evaluation equivalence for `RelationInstance` -/
 theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :

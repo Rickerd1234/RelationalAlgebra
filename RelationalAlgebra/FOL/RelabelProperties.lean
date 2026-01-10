@@ -5,6 +5,8 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
+variable {ρ α : Type} {dbs : ρ → Finset α}
+
 /-- `Term.relabel g` maintains injectivity of `g`. -/
 @[simp]
 theorem relabel.Injective_def {k n : ℕ} {g : (α ⊕ Fin k) → (α ⊕ Fin n)} (h : g.Injective) :
@@ -106,7 +108,7 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : String → (String ⊕ Fin
         simp_all [BoundedFormula.relabelAux]
 
 /-- `(BoundedFormula.relabel g).schema` is equivalent to the partial image of `λ a => (g a).getLeft?`. -/
-theorem BoundedQuery.relabel_schema {n k} (g : String → String ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel_schema {n k} {dbs : ρ → Finset String} (g : String → String ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
     | _ => aesop

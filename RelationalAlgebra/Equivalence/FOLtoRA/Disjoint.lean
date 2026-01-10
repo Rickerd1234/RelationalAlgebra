@@ -15,7 +15,7 @@ namespace FOL
 
 /-- Whether `brs : Finset String` has no intersection with any free variables in the formula. -/
 @[simp]
-def disjointSchemaL {dbs : String → Finset String} (brs : Finset String) : (fol dbs).BoundedFormula String n → Prop
+def disjointSchemaL {dbs : ρ → Finset String} (brs : Finset String) : (fol dbs).BoundedFormula String n → Prop
   | .falsum => True
   | .rel R ts => match R with | .R rn => (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (dbs rn) = ∅
   | .equal _ _ => True
@@ -24,7 +24,7 @@ def disjointSchemaL {dbs : String → Finset String} (brs : Finset String) : (fo
 
 /-- `brs` does not intersect with any relation schema nor any free variables in the formula.  -/
 @[simp]
-def disjointSchema {dbs : String → Finset String} (brs : Finset String) (q : (fol dbs).BoundedFormula String n): Prop :=
+def disjointSchema {dbs : ρ → Finset String} (brs : Finset String) (q : (fol dbs).BoundedFormula String n): Prop :=
   disjointSchemaL brs q ∧ ∀rn, brs ∩ dbs rn = ∅
 
 

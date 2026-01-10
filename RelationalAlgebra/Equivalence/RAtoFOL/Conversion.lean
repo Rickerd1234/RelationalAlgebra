@@ -4,7 +4,7 @@ import RelationalAlgebra.FOL.RelabelProperties
 open RM
 
 /-- Function to handle conversion of all Relational Algebra query cases. -/
-def ra_to_fol_query (dbs : String → Finset String) : RA.Query String String → FOL.Query dbs
+def ra_to_fol_query (dbs : ρ → Finset String) : RA.Query ρ String → FOL.Query dbs
   | .R rn => .R rn (FOL.outVar ∘ RelationSchema.fromIndex)
   | .s a b sq => .and (ra_to_fol_query dbs sq) (.tEq (FOL.outVar a) (FOL.outVar b))
   | .p rs sq => projectQuery (ra_to_fol_query dbs sq) rs
@@ -14,7 +14,7 @@ def ra_to_fol_query (dbs : String → Finset String) : RA.Query String String �
   | .d sq nq => .and (ra_to_fol_query dbs sq) (.not (ra_to_fol_query dbs nq))
 
 /-- Theorem to show that the conversion maintains the schema. -/
-theorem ra_to_fol_query_schema {dbs : String → Finset String} {raQ : RA.Query String String} (h : raQ.isWellTyped dbs) :
+theorem ra_to_fol_query_schema {dbs : ρ → Finset String} {raQ : RA.Query ρ String} (h : raQ.isWellTyped dbs) :
   (ra_to_fol_query dbs raQ).schema = raQ.schema dbs := by
     induction raQ with
     | R rn =>

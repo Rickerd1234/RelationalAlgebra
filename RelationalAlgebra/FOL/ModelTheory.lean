@@ -105,19 +105,20 @@ section language
 
 open FirstOrder
 
+variable {ρ μ α : Type}
 
 /-- The type of Relations in FOL -/
-inductive relations (dbs : String → Finset α) : ℕ → Type
-  | R : (rn : String) → relations dbs (dbs rn).card
+inductive relations (dbs : ρ → Finset α) : ℕ → Type
+  | R : (rn : ρ) → relations dbs (dbs rn).card
 
 /-- The language of fol contains the relations -/
-def Language.fol (dbs : String → Finset α) : Language :=
+def Language.fol (dbs : ρ → Finset α) : Language :=
   { Functions := fun _ => Empty
     Relations := relations dbs }
   deriving Language.IsRelational
 
 @[simp]
-def fol.Rel {dbs: String → Finset α} (rn: String) : (Language.fol dbs).Relations (dbs rn).card :=
+def fol.Rel {dbs: ρ → Finset α} (rn: ρ) : (Language.fol dbs).Relations (dbs rn).card :=
   relations.R rn
 
 
@@ -134,9 +135,9 @@ The definition of the structure in ModelTheory, dependent on a `DatabaseInstance
 A relation `rn` and arity assignment `va` are satisfiable if and only if `ArityToTuple va ∈ (dbi.relations rn).tuples`.
 Meaning that the relation contains the tuple corresponding with the unnamed to named perspective conversion of `va`.
  -/
-class folStruc (dbi : DatabaseInstance String α μ) extends (fol dbi.schema).Structure μ where
+class folStruc (dbi : DatabaseInstance ρ α μ) extends (fol dbi.schema).Structure μ where
   RelMap_R :
-      (rn : String) →
+      (rn : ρ) →
       (va : Fin (dbi.schema rn).card → μ) →
 
         RelMap (.R rn) va ↔
@@ -145,7 +146,7 @@ class folStruc (dbi : DatabaseInstance String α μ) extends (fol dbi.schema).St
         )
 
 @[simp]
-theorem folStruc_apply_RelMap (dbi : DatabaseInstance String String μ) [folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
+theorem folStruc_apply_RelMap (dbi : DatabaseInstance ρ String μ) [folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
   Structure.RelMap (fol.Rel rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
     := (folStruc.RelMap_R rn va)
 
