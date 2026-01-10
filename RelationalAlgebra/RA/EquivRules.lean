@@ -2,23 +2,6 @@ import RelationalAlgebra.RA.RelationalAlgebra
 
 open RM
 
-/-- Each tuple is the join of itself and a restricted version of itself -/
-@[simp]
-theorem joinSingleT.restrict (t : α →. μ) {h : rs ⊆ t.Dom} :
-  joinSingleT t (t.restrict h) t := by
-    simp_all only [joinSingleT, Set.mem_union]
-    intro a
-    simp_all only [PFun.mem_dom, PFun.mem_restrict, exists_and_left, and_imp, forall_exists_index, implies_true,
-      not_or, not_and, not_exists, true_and]
-    apply And.intro
-    · intro a_1 x h_1
-      ext a_2 : 1
-      simp_all only [PFun.mem_restrict, true_and]
-    · intro a_1 a_2
-      simp_all only [not_false_eq_true, implies_true]
-      ext a_1 : 1
-      simp_all only [Part.notMem_none]
-
 /-- Projection distributes over union -/
 @[simp ←]
 theorem projectionT_unionT {rs : Finset α} (ts1 ts2 : Set (α →. μ)) :
