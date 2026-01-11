@@ -8,7 +8,7 @@ def ra_to_fol_query (dbs : ρ → Finset String) : RA.Query ρ String → FOL.Qu
   | .R rn => .R rn (FOL.outVar ∘ RelationSchema.fromIndex)
   | .s a b sq => .and (ra_to_fol_query dbs sq) (.tEq (FOL.outVar a) (FOL.outVar b))
   | .p rs sq => projectQuery (ra_to_fol_query dbs sq) rs
-  | .j sq1 sq2 => .and (ra_to_fol_query dbs sq1) (ra_to_fol_query dbs sq2)
+  | .j sq₁ sq₂ => .and (ra_to_fol_query dbs sq₁) (ra_to_fol_query dbs sq₂)
   | .r f sq => (ra_to_fol_query dbs sq).relabel (Sum.inl ∘ f)
   | .u sq₁ sq₂ => .or (ra_to_fol_query dbs sq₁) (ra_to_fol_query dbs sq₂)
   | .d sq nq => .and (ra_to_fol_query dbs sq) (.not (ra_to_fol_query dbs nq))

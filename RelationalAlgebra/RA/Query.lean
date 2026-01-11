@@ -21,10 +21,10 @@ def Query.schema [DecidableEq α] : (q : Query ρ α) → (dbs : ρ → Finset �
   | .R rn => λ dbs => dbs rn
   | .s _ _ sq => sq.schema
   | .p rs _ => λ _ => rs
-  | .j sq1 sq2 => λ dbs => sq1.schema dbs ∪ sq2.schema dbs
+  | .j sq₁ sq₂ => λ dbs => sq₁.schema dbs ∪ sq₂.schema dbs
   | .r f sq => λ dbs => (sq.schema dbs).image f
-  | .u sq1 _ => sq1.schema
-  | .d sq1 _ => sq1.schema
+  | .u sq₁ _ => sq₁.schema
+  | .d sq₁ _ => sq₁.schema
 
 
 /-- Recursive well-typed property -/
@@ -36,8 +36,8 @@ def Query.isWellTyped [DecidableEq α] (dbs : ρ → Finset α) (q : Query ρ α
   | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
   | .j sq₁ sq₂ => sq₁.isWellTyped dbs ∧ sq₂.isWellTyped dbs
   | .r f sq => sq.isWellTyped dbs ∧ f.Bijective
-  | .u sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
-  | .d sq1 sq2 => sq1.isWellTyped dbs ∧ sq2.isWellTyped dbs ∧ sq1.schema dbs = sq2.schema dbs
+  | .u sq₁ sq₂ => sq₁.isWellTyped dbs ∧ sq₂.isWellTyped dbs ∧ sq₁.schema dbs = sq₂.schema dbs
+  | .d sq₁ sq₂ => sq₁.isWellTyped dbs ∧ sq₂.isWellTyped dbs ∧ sq₁.schema dbs = sq₂.schema dbs
 
 
 /-- Recursive tuple evaluation -/
@@ -49,8 +49,8 @@ def Query.evaluateT (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) : Set (�
   | .p rs sq => projectionT (sq.evaluateT dbi) rs
   | .j sq₁ sq₂ => joinT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
   | .r f sq => renameT (sq.evaluateT dbi) f
-  | .u sq1 sq2 => unionT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
-  | .d sq1 sq2 => diffT (sq1.evaluateT dbi) (sq2.evaluateT dbi)
+  | .u sq₁ sq₂ => unionT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
+  | .d sq₁ sq₂ => diffT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
 
 /-- Proof that each well-typed query will result in tuples with the correct schema -/
 theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
@@ -67,23 +67,23 @@ theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isW
     simp_all [isWellTyped, evaluateT, projectionT, schema]
     apply projectionDom ⟨sq.schema dbi.schema, evaluateT dbi sq, ih⟩ ?_ h.2
     . simp_all only [projectionT, Set.mem_setOf_eq]
-  | j sq1 sq2 ih1 ih2 =>
+  | j sq₁ sq₂ ih₁ ih₂ =>
     intro t h_t
     simp_all only [isWellTyped, forall_const]
     apply joinDom
-      ⟨sq1.schema dbi.schema, evaluateT dbi sq1, ih1⟩
-      ⟨sq2.schema dbi.schema, evaluateT dbi sq2, ih2⟩
+      ⟨sq₁.schema dbi.schema, evaluateT dbi sq₁, ih₁⟩
+      ⟨sq₂.schema dbi.schema, evaluateT dbi sq₂, ih₂⟩
       h_t
   | r f sq ih =>
     intro t h_t
     apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, (by simp_all)⟩ h.2.2
     simp_all only [evaluateT, renameT, Set.mem_setOf_eq]
-  | u sq1 sq2 ih =>
+  | u sq₁ sq₂ ih =>
     intro _ ht
     simp [isWellTyped, evaluateT, unionT, schema] at *
     cases ht
     all_goals simp_all only
-  | d sq1 sq2 ih =>
+  | d sq₁ sq₂ ih =>
     intro _ ht
     simp [isWellTyped, evaluateT, diffT, schema] at *
     cases ht
