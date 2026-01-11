@@ -22,7 +22,7 @@ def Query.schema [DecidableEq α] : (q : Query ρ α) → (dbs : ρ → Finset �
   | .s _ _ sq => sq.schema
   | .p rs _ => λ _ => rs
   | .j sq1 sq2 => λ dbs => sq1.schema dbs ∪ sq2.schema dbs
-  | .r f sq => λ dbs => renameSchema (sq.schema dbs) f
+  | .r f sq => λ dbs => (sq.schema dbs).image f
   | .u sq1 _ => sq1.schema
   | .d sq1 _ => sq1.schema
 
@@ -31,7 +31,7 @@ def Query.schema [DecidableEq α] : (q : Query ρ α) → (dbs : ρ → Finset �
 @[simp]
 def Query.isWellTyped [DecidableEq α] (dbs : ρ → Finset α) (q : Query ρ α) : Prop :=
   match q with
-  | .R _ => (True)
+  | .R _ => True
   | .s a b sq => sq.isWellTyped dbs ∧ a ∈ sq.schema dbs ∧ b ∈ sq.schema dbs
   | .p rs sq => sq.isWellTyped dbs ∧ rs ⊆ sq.schema dbs
   | .j sq₁ sq₂ => sq₁.isWellTyped dbs ∧ sq₂.isWellTyped dbs
@@ -76,7 +76,7 @@ theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isW
       h_t
   | r f sq ih =>
     intro t h_t
-    apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, (by simp_all)⟩ h.2
+    apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, (by simp_all)⟩ h.2.2
     simp_all only [evaluateT, renameT, Set.mem_setOf_eq]
   | u sq1 sq2 ih =>
     intro _ ht
@@ -162,7 +162,11 @@ theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : Databas
         simp [PFun.ran]
         intro v a ha
         use (f.invFun a)
-        simp_all only [f_inv_id]
+        simp_all only [Function.Bijective, Function.Surjective]
+        obtain ⟨left, right⟩ := h
+        obtain ⟨left_1, right⟩ := right
+        rw [Function.invFun_eq (right a)]
+        exact ha
 
       exact fun ⦃a⦄ a_1 ↦ z (z' a_1)
 

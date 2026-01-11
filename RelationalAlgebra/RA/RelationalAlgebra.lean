@@ -82,23 +82,15 @@ end union
 -- Rename
 section rename
 
-@[simp]
-def renameSchema (schema : Finset α) (f : α → α) [DecidableEq α] : Finset α := schema.image f
-
-@[simp]
-theorem rename_schema_id (schema : Finset α) [DecidableEq α] : renameSchema schema id = schema := by
-    unfold renameSchema
-    simp_all only [Finset.image_id]
-
 /-- Rename on `S : Set` of tuples using function `f`. Result: tuples `t'` where `t' ∘ f ∈ S`  -/
 @[simp]
 def renameT (inTuples : Set (α →. μ)) (f : α → α) : Set (α →. μ) :=
   { t' | t' ∘ f ∈ inTuples }
 
-theorem renameDom {f t} (inst : RelationInstance α μ) (f_bij : f.Bijective) (h : t ∈ renameT inst.tuples f) [DecidableEq α]:
-  PFun.Dom t = renameSchema inst.schema f := by
+theorem renameDom {f t} (inst : RelationInstance α μ) (f_sur : f.Surjective) (h : t ∈ renameT inst.tuples f) [DecidableEq α]:
+  PFun.Dom t = inst.schema.image f := by
     ext a
-    simp_all only [renameSchema, Set.mem_setOf_eq, PFun.mem_dom, Finset.coe_image, Set.mem_image,
+    simp_all only [Set.mem_setOf_eq, PFun.mem_dom, Finset.coe_image, Set.mem_image,
       Finset.mem_coe, renameT]
     apply Iff.intro
     -- value in new tuple → α in new schema
@@ -106,7 +98,7 @@ theorem renameDom {f t} (inst : RelationInstance α μ) (f_bij : f.Bijective) (h
       simp [← Finset.mem_coe]
       rw [← inst.validSchema (t ∘ f)]
       . simp_all only [PFun.mem_dom, Function.comp_apply]
-        have ⟨a', ha'⟩ := f_bij.right a
+        have ⟨a', ha'⟩ := f_sur a
         rw [← ha'] at w_ta ⊢
         exact Exists.intro a' (And.intro (Exists.intro w w_ta) rfl)
       . exact h
@@ -117,9 +109,9 @@ theorem renameDom {f t} (inst : RelationInstance α μ) (f_bij : f.Bijective) (h
       rw [← inst.validSchema (t ∘ f) h] at w_in_schema
       exact Part.dom_iff_mem.mp w_in_schema
 
-/-- Rename on `R : RelationInstance` (`φ f R`). Requires `f.Bijective` to maintain proper schema. -/
-def rename (inst : RelationInstance α μ) (f : α → α) (f_sur : f.Bijective) [DecidableEq α] : RelationInstance α μ := ⟨
-    renameSchema inst.schema f,
+/-- Rename on `R : RelationInstance` (`φ f R`). Requires `f.Surjective` to maintain proper schema. -/
+def rename (inst : RelationInstance α μ) (f : α → α) (f_sur : f.Surjective) [DecidableEq α] : RelationInstance α μ := ⟨
+    inst.schema.image f,
     renameT inst.tuples f,
     fun _ ht => renameDom inst f_sur ht
   ⟩
