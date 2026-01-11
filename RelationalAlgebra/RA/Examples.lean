@@ -181,7 +181,7 @@ theorem hQueryDifference : exQueryUnion.isWellTyped exDatabase.schema := by
 #simp [Query.evaluate, Query.schema] (exQueryDifference.schema exDatabase.schema)
 
 example : ¬∃t, t ∈ (exQueryDifference.evaluate exDatabase hQueryDifference).tuples := by
-  simp only [Query.evaluate, Query.evaluateT, diffT, exDatabase, exQueryDifference]
+  simp only [Query.evaluate, Query.evaluateT, differenceT, exDatabase, exQueryDifference]
   simp only [String.reduceEq, imp_self]
 
   simp

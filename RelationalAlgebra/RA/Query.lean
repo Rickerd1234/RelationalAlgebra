@@ -50,51 +50,52 @@ def Query.evaluateT (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) : Set (�
   | .j sq₁ sq₂ => joinT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
   | .r f sq => renameT (sq.evaluateT dbi) f
   | .u sq₁ sq₂ => unionT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
-  | .d sq₁ sq₂ => diffT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
+  | .d sq₁ sq₂ => differenceT (sq₁.evaluateT dbi) (sq₂.evaluateT dbi)
 
 /-- Proof that each well-typed query will result in tuples with the correct schema -/
-theorem Query.evaluate.validSchema [DecidableEq α] (q : Query ρ α) (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
-  induction q with
-  | R rn =>
-    intro t h_t
-    simp_all only [isWellTyped, evaluateT, schema, ← DatabaseInstance.validSchema]
-    exact (dbi.relations rn).validSchema t h_t
-  | s a b sq ih =>
-    simp_all only [isWellTyped, evaluateT, selectionT, schema]
-    simp_all only [forall_const, Set.mem_setOf_eq, implies_true]
-  | p rs sq ih =>
-    intro t h_t
-    simp_all [isWellTyped, evaluateT, projectionT, schema]
-    apply projectionDom ⟨sq.schema dbi.schema, evaluateT dbi sq, ih⟩ ?_ h.2
-    . simp_all only [projectionT, Set.mem_setOf_eq]
-  | j sq₁ sq₂ ih₁ ih₂ =>
-    intro t h_t
-    simp_all only [isWellTyped, forall_const]
-    apply joinDom
-      ⟨sq₁.schema dbi.schema, evaluateT dbi sq₁, ih₁⟩
-      ⟨sq₂.schema dbi.schema, evaluateT dbi sq₂, ih₂⟩
-      h_t
-  | r f sq ih =>
-    intro t h_t
-    apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, (by simp_all)⟩ h.2.2
-    simp_all only [evaluateT, renameT, Set.mem_setOf_eq]
-  | u sq₁ sq₂ ih =>
-    intro _ ht
-    simp [isWellTyped, evaluateT, unionT, schema] at *
-    cases ht
-    all_goals simp_all only
-  | d sq₁ sq₂ ih =>
-    intro _ ht
-    simp [isWellTyped, evaluateT, diffT, schema] at *
-    cases ht
-    all_goals simp_all only
+theorem Query.evaluate.validSchema {dbi : DatabaseInstance ρ α μ} [DecidableEq α] (q : Query ρ α) (h : q.isWellTyped dbi.schema) :
+  ∀t, t ∈ q.evaluateT dbi → PFun.Dom t = ↑(q.schema dbi.schema) := by
+    induction q with
+    | R rn =>
+      intro t h_t
+      simp_all only [isWellTyped, evaluateT, schema, ← DatabaseInstance.validSchema]
+      exact (dbi.relations rn).validSchema t h_t
+    | s a b sq ih =>
+      simp_all only [isWellTyped, evaluateT, selectionT, schema]
+      simp_all only [forall_const, Set.mem_setOf_eq, implies_true]
+    | p rs sq ih =>
+      intro t h_t
+      simp_all [isWellTyped, evaluateT, projectionT, schema]
+      apply projectionDom ⟨sq.schema dbi.schema, evaluateT dbi sq, ih⟩ ?_ h.2
+      . simp_all only [projectionT, Set.mem_setOf_eq]
+    | j sq₁ sq₂ ih₁ ih₂ =>
+      intro t h_t
+      simp_all only [isWellTyped, forall_const]
+      apply joinDom
+        ⟨sq₁.schema dbi.schema, evaluateT dbi sq₁, ih₁⟩
+        ⟨sq₂.schema dbi.schema, evaluateT dbi sq₂, ih₂⟩
+        h_t
+    | r f sq ih =>
+      intro t h_t
+      apply renameDom ⟨sq.schema dbi.schema, evaluateT dbi sq, (by simp_all)⟩ h.2.2
+      simp_all only [evaluateT, renameT, Set.mem_setOf_eq]
+    | u sq₁ sq₂ ih =>
+      intro _ ht
+      simp [isWellTyped, evaluateT, unionT, schema] at *
+      cases ht
+      all_goals simp_all only
+    | d sq₁ sq₂ ih =>
+      intro _ ht
+      simp [isWellTyped, evaluateT, differenceT, schema] at *
+      cases ht
+      all_goals simp_all only
 
 /-- Query evaluation for `RelationInstance` -/
 def Query.evaluate [DecidableEq α] (dbi : DatabaseInstance ρ α μ) (q : Query ρ α) (h : q.isWellTyped dbi.schema) : RelationInstance α μ :=
   ⟨
     q.schema dbi.schema,
     q.evaluateT dbi,
-    by exact fun t a ↦ evaluate.validSchema q h t a
+    evaluate.validSchema q h
   ⟩
 
 
@@ -178,4 +179,4 @@ theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : Databas
       | inr ht₂ => exact ih₂ t ht₂
 
     | d q nq ih nih =>
-      simp_all only [isWellTyped, evaluateT, diffT, Set.mem_diff, implies_true]
+      simp_all only [isWellTyped, evaluateT, differenceT, Set.mem_diff, implies_true]

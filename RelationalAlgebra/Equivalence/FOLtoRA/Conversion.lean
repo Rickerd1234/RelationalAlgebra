@@ -61,7 +61,7 @@ theorem toRA.falsum_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.sch
     (toRA (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs).evaluateT dbi =
       {t | ∃h, RealizeDomSet (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs t h} := by
         have : (RA.Query.evaluateT dbi (adom dbi.schema rs)) \ (RA.Query.evaluateT dbi (adom dbi.schema rs)) = ∅ := Set.diff_self
-        simp_rw [toRA, RA.Query.evaluateT, diffT, this]
+        simp_rw [toRA, RA.Query.evaluateT, differenceT, this]
         simp [RealizeDomSet, BoundedFormula.Realize]
 
 theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (α := String) (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)} {t : String →. μ} {rs : Finset String}
@@ -146,7 +146,7 @@ theorem toRA.imp_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema
   (ih₂ : (toRA (dbs := dbi.schema) q₂ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₂ rs brs t h}) :
     (toRA (q₁.imp q₂) rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q₁.imp q₂) rs brs t h} := by
       ext t
-      simp only [toRA, RA.Query.evaluateT, diffT, adom.complete_def, Set.mem_diff, Set.mem_setOf_eq,
+      simp only [toRA, RA.Query.evaluateT, differenceT, adom.complete_def, Set.mem_diff, Set.mem_setOf_eq,
         not_and, not_not, RealizeDomSet, BoundedFormula.realize_imp, exists_and_right]
       simp_all only [nonempty_subtype, RealizeDomSet, Finset.coe_inj, exists_and_right,
         Set.mem_setOf_eq, and_true, and_imp, forall_exists_index, exists_true_left,
@@ -168,7 +168,7 @@ theorem toRA.all_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema
   (hμ : ∀v : μ, v ∈ dbi.domain) (hn : n + depth (∀'q) < brs.card) (h : (FreeMap (n + 1) brs) (Fin.last n) ∉ q.freeVarFinset)
   (ih : (toRA q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs).evaluateT dbi = {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs t h}) :
     (toRA q.all (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q.all) (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
-      simp only [toRA, RA.Query.evaluateT, Finset.union_assoc, diffT]
+      simp only [toRA, RA.Query.evaluateT, Finset.union_assoc, differenceT]
       rw [FreeMap.FRan_union_add_one (by grind), ih]
 
       ext t

@@ -111,7 +111,7 @@ theorem EmptyTupleFromRelations.evaluateT_def [DecidableEq α] :
     simp [EmptyTupleFromRelations]
     induction rns with
     | nil =>
-      simp only [List.foldr_nil, Query.evaluateT.eq_7, diffT,
+      simp only [List.foldr_nil, Query.evaluateT.eq_7, differenceT,
         EmptyTupleFromRelation.evaluateT_def, exists_and_right]
       ext t
       simp_all

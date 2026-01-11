@@ -20,29 +20,27 @@ variable {α μ : Type}
 def selectionT (inTuples : Set (α →. μ)) (x y : α) : Set (α →. μ) :=
   {t | t ∈ inTuples ∧ t x = t y}
 
-theorem selectionDom {x y t} {inst : RelationInstance α μ} (h : t ∈ selectionT inst.tuples x y) :
-  PFun.Dom t = inst.schema := by
-    simp_all only [selectionT, Set.mem_setOf_eq]
-    all_goals exact inst.validSchema t h.1
-
 /-- Selection on `R : RelationInstance` (`σ (x = y) R`) -/
 def selection (inst : RelationInstance α μ) (x y : α) : RelationInstance α μ :=
 ⟨
   inst.schema,
   selectionT inst.tuples x y,
-  fun _ ht ↦ selectionDom ht
+  by
+    intro t h
+    simp_all only [selectionT, Set.mem_setOf_eq]
+    exact inst.validSchema t h.1
 ⟩
 
 /-- Difference on `S₁ S₂ : Set` of tuples. Result: tuples `t` where `t ∈ S₁ ∧ t ∉ S₂`  -/
 @[simp]
-def diffT (inTuplesA inTuplesB : Set (α →. μ)) : Set (α →. μ) :=
+def differenceT (inTuplesA inTuplesB : Set (α →. μ)) : Set (α →. μ) :=
   inTuplesA \ inTuplesB
 
 /-- Difference on `R₁ R₂ : RelationInstance` (`R₁ - R₂`) -/
-def diff (inst inst' : RelationInstance α μ) : RelationInstance α μ :=
+def difference (inst inst' : RelationInstance α μ) : RelationInstance α μ :=
 ⟨
   inst.schema,
-  diffT inst.tuples inst'.tuples,
+  differenceT inst.tuples inst'.tuples,
   by
     intro t a
     exact inst.validSchema t a.1
