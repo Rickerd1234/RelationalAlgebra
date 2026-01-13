@@ -115,11 +115,6 @@ def Language.fol (dbs : ρ → Finset α) : Language :=
     Relations := relations dbs }
   deriving Language.IsRelational
 
-@[simp]
-def fol.Rel {dbs: ρ → Finset α} (rn: ρ) : (Language.fol dbs).Relations (dbs rn).card :=
-  relations.R rn
-
-
 open Language
 
 section struc
@@ -142,8 +137,8 @@ class folStruc (dbi : DatabaseInstance ρ α μ) extends (fol dbi.schema).Struct
         )
 
 @[simp]
-theorem folStruc_apply_RelMap (dbi : DatabaseInstance ρ α μ) [folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
-  Structure.RelMap (fol.Rel rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
+theorem folStruc_apply_RelMap (dbi : DatabaseInstance ρ α μ) [s : folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
+  s.RelMap (.R rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
     := (folStruc.RelMap_R rn va)
 
 @[simp]

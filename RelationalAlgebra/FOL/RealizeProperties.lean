@@ -16,7 +16,7 @@ theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).Bounde
         next rn =>
           simp at ht
           rw [BoundedFormula.Realize, BoundedFormula.Realize]
-          rw [← fol.Rel, folStruc_apply_RelMap, folStruc_apply_RelMap]
+          rw [folStruc_apply_RelMap, folStruc_apply_RelMap]
           have : (fun i ↦ realize (Sum.elim t₁ iv₁) (ts i)) = (fun i ↦ realize (Sum.elim t₂ iv₂) (ts i)) := by
             ext i
             have ⟨k, hk⟩ := Term.cases (ts i)
@@ -78,7 +78,7 @@ theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset α} {tup tu
   : q.Realize dbi (TupleToFun h'.symm) iv ↔ q.Realize dbi (TupleToFun h.symm) iv := by
     induction q with
     | R rn vMap =>
-      simp only [Realize, toFormula, fol.Rel, BoundedFormula.realize_rel, folStruc.RelMap_R,
+      simp only [Realize, toFormula, BoundedFormula.realize_rel, folStruc.RelMap_R,
         ArityToTuple.def_dite]
       rw [@iff_eq_eq]
       apply congr rfl
@@ -225,7 +225,7 @@ theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : Finset α} {q : Bound
 
     induction q with
     | R rn ts =>
-        simp_all only [toFormula, fol.Rel, BoundedFormula.realize_rel]
+        simp_all only [toFormula, BoundedFormula.realize_rel]
         simp only [folStruc.RelMap_R, iff_eq_eq]
         apply congr rfl
         ext a v

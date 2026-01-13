@@ -887,7 +887,6 @@ theorem relToRA.evalT_def {dbi : DatabaseInstance ρ α μ} [Nonempty (adomRs db
     RA.Query.evaluateT dbi (relToRA ts rs brs) =
     {t | ∃h, RealizeDomSet (μ := μ) (Relations.boundedFormula (relations.R rn) ts) rs brs t h} := by
       simp_rw [RealizeDomSet, BoundedFormula.realize_rel]
-      rw [← fol.Rel]
       simp_rw [folStruc_apply_RelMap, ArityToTuple.def_dite, exists_and_right]
 
       have h₁ : ∀ (i : Fin (dbi.schema rn).card), TermtoAtt brs (ts i) ∈ rs := by

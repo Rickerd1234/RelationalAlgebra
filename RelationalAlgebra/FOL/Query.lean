@@ -34,7 +34,7 @@ def BoundedQuery.exs : ∀ {n}, BoundedQuery dbs n → Query dbs
 /-- `BoundedQuery` conversion to `BoundedFormula`. -/
 @[simp]
 def BoundedQuery.toFormula : (q : BoundedQuery dbs n) → (fol dbs).BoundedFormula α n
-  | .R name vMap => Relations.boundedFormula (fol.Rel name) vMap
+  | .R name vMap => Relations.boundedFormula (.R name) vMap
   | .tEq t₁ t₂ => .equal t₁ t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula

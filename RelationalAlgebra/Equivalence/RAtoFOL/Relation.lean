@@ -7,12 +7,11 @@ theorem ra_to_fol_evalT.R_def.mp :
     ∀t, (ra_to_fol_query dbi.schema (.R rn)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
       intro t
       simp_all only [FOL.Query.RealizeMin, FOL.BoundedQuery.Realize, ra_to_fol_query,
-        FOL.BoundedQuery.toFormula.eq_1, FOL.fol.Rel,
-        FirstOrder.Language.BoundedFormula.realize_rel, Function.comp_apply, FOL.outVar.def,
-        FirstOrder.Language.Term.realize_var, Sum.elim_inl, FOL.BoundedQuery.schema.R_def,
-        FirstOrder.Language.Term.varFinsetLeft.eq_1, Finset.mem_singleton,
-        RM.RelationSchema.Dom_sub_fromIndex, Finset.toFinset_coe, RA.Query.evaluateT,
-        forall_exists_index]
+        FOL.BoundedQuery.toFormula.eq_1, FirstOrder.Language.BoundedFormula.realize_rel,
+        Function.comp_apply, FOL.outVar.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
+        FOL.BoundedQuery.schema.R_def, FirstOrder.Language.Term.varFinsetLeft.eq_1,
+        Finset.mem_singleton, RM.RelationSchema.Dom_sub_fromIndex, Finset.toFinset_coe,
+        RA.Query.evaluateT, forall_exists_index]
       intro h a_1
       rw [@FOL.folStruc.RelMap_R] at a_1
       convert a_1
