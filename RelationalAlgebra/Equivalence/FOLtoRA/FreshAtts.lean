@@ -3,7 +3,7 @@ import RelationalAlgebra.Equivalence.FOLtoRA.Adom
 import Mathlib.Data.Finset.Fin
 
 /-
-To convert between FOL and RA, we need to replace the bound `Fin n` variables with `String` variables for the RA queries.
+To convert between FOL and RA, when the attribute type is `String`, we need to replace the bound `Fin n` variables with `String` variables for the RA queries.
 For this, we use the following utilities to generate a `Set` containing a specific number of non-overlapping `String` values.
 -/
 

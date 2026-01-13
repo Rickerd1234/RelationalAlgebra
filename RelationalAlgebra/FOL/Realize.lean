@@ -17,8 +17,8 @@ def BoundedQuery.Realize (dbi : DatabaseInstance ρ α μ) {n : ℕ} [folStruc d
   q.toFormula.Realize
 
 @[simp]
-theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbi.schema n) {t: α → μ}
-  : (exs q).Realize dbi t (default : Fin 0 → μ) ↔ ∃iv : Fin n → μ, q.Realize dbi t iv := by
+theorem BoundedQuery.Realize.exs_def [folStruc dbi] {n : ℕ} (q : BoundedQuery dbi.schema n) {t: α → μ} {iv : Fin 0 → μ}
+  : (exs q).Realize dbi t iv ↔ ∃iv : Fin n → μ, q.Realize dbi t iv := by
     simp_all only [Realize, toFormula_exs, Formula.boundedFormula_realize_eq_realize]
     exact BoundedFormula.realize_exs
 
@@ -31,7 +31,7 @@ theorem BoundedQuery.Realize.relabel_formula {dbi : DatabaseInstance ρ α μ} [
 
 -- Realize a query, without any additional attributes in the 'tuple'
 section RealizeMin
-variable (dbi) (φ : Query dbi.schema) [folStruc dbi] (t : α →. μ) [Nonempty μ]
+variable (dbi) (φ : Query dbi.schema) [folStruc dbi] (t : α →. μ) [Inhabited μ]
 
 /--
 Minimal 'realization' definition, uses `BoundedQuery.Realize` and the requirement that .

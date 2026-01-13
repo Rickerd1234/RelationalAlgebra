@@ -10,15 +10,16 @@ import RelationalAlgebra.Equivalence.FOLtoRA.EvaluateAdom
 
 open RM
 
-/-! ### RA → FOL Equivalence -/
-/-
+/-!
+### RA → FOL Equivalence
+
 Requires:
 - the RA query to be well-typed
-- value type `μ` to be nonempty
+- value type `μ` to be inhabited (have a `default` value)
 -/
 section RAtoFOL
 
-variable {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Nonempty μ]
+variable {ρ α μ : Type} {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Inhabited μ]
   (raQ : RA.Query ρ α) (h : RA.Query.isWellTyped dbi.schema raQ)
 
 /-- Query evaluation equivalence for a set of tuples -/
@@ -48,34 +49,54 @@ theorem ra_to_fol :
 
 end RAtoFOL
 
-/-! ### FOL → RA Equivalence -/
-/-
+/-!
+### FOL → RA Equivalence
+
 Requires:
-- value type `μ` to be nonempty
-- the database to have a finite number of relations with nonempty schema's
-- the database to have at least one relation with nonempty schema
-- all values of type `μ` to be in the database domain
-- the `FreshAtts (toPrenex folQ) (folQ.toFormula)` to be disjoint from any relation schema and the free variables in the query
-- for the empty string `""` to not be included in the free variables of the query
-- that all relations used in the query do not have an empty schema
+**Type / order structure**
+- Attribute type `α` and relation symbol type `ρ` are inhabited (required for computable definitions)
+- `α` and `ρ` carry a decidable linear order (`[LinearOrder α]`, `[LinearOrder ρ]`)
+  (used for computability of folds and conversion between named and unnamed perspective)
+- Value domain type `μ` is inhabited (required for computable `TupleToFun` conversion)
+
+**Database instance assumptions**
+- A database instance `dbi : DatabaseInstance ρ α μ`
+- The relations with nonempty relation schemas `adomRs dbi.schema` is finite and nonempty
+  (required for computability of adom)
+- All values of type `μ` lie in the database domain (`∀ v, v ∈ dbi.domain`)
+
+**Query and bookkeeping assumptions**
+- A first-order logic query `folQ : FOL.Query dbi.schema`
+- A finite set of fresh attributes `brs : Finset α`
+- `brs` is disjoint from the query schema
+- `brs` is large enough to supply sufficient fresh variables (after prenex normalization)
+- The value `default : α` is not contained in `brs`
+- `default` does not appear in the free variables of the query
+- `brs` is disjoint from all relation schemas and all relation schemas are disjoint from the free variables used for that relation
+- All relations referenced by the query have nonempty schemas (`FOL.NonemptyR folQ.toFormula`)
 -/
 section FOLtoRA
 
-variable [Nonempty ρ] [Nonempty μ] {dbi : DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)] (folQ : FOL.Query dbi.schema)
+variable {ρ α μ : Type} [Inhabited α] [Inhabited ρ] [LinearOrder α] [LinearOrder ρ] [Inhabited μ]
+  {dbi : DatabaseInstance ρ α μ} [FOL.folStruc dbi] [Fintype (adomRs dbi.schema)] [Nonempty (adomRs dbi.schema)]
+  (folQ : FOL.Query dbi.schema)
+  (brs : Finset α)
 
 /-- Query evaluation equivalence for `RelationInstance` -/
-theorem fol_to_ra_eval (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
-  (fol_to_ra_query folQ).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ) = folQ.evaluateAdom dbi := by
-    simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
-    apply And.intro
-    · exact fol_to_ra_query.schema_def folQ
-    · exact fol_to_ra_query.evalT folQ hμ hdisj hdef hne
+theorem fol_to_ra_eval (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + FOL.depth (toPrenex folQ) < brs.card) (brs_def : default ∉ brs)
+  (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
+    (fol_to_ra_query folQ brs).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ brs_disj brs_depth) = folQ.evaluateAdom dbi := by
+      simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
+      apply And.intro
+      · exact fol_to_ra_query.schema_def folQ
+      · exact fol_to_ra_query.evalT folQ hμ hdisj hdef hne brs_disj brs_depth brs_def
 
 /-- Query expressivity equivalence -/
-theorem fol_to_ra (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema (FreshAtts (toPrenex folQ)) (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
-  ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
-    use fol_to_ra_query folQ
-    use fol_to_ra_query.isWellTyped_def folQ
-    exact fol_to_ra_eval folQ hμ hdisj hdef hne
+theorem fol_to_ra (brs : Finset α) (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + FOL.depth (toPrenex folQ) < brs.card) (brs_def : default ∉ brs)
+  (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
+    ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
+      use fol_to_ra_query folQ brs
+      use fol_to_ra_query.isWellTyped_def folQ brs_disj brs_depth
+      exact fol_to_ra_eval folQ brs brs_disj brs_depth brs_def hμ hdisj hdef hne
 
 end FOLtoRA

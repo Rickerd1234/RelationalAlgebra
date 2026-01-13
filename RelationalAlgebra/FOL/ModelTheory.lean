@@ -19,7 +19,7 @@ Required to ensure that the structure has `μ` type, instead of `Part μ`
 -/
 section TupleToFun
 
-variable {t t' : α →. μ} {rs rs' : Finset α} [DecidableEq α] [Nonempty μ]
+variable {t t' : α →. μ} {rs rs' : Finset α} [DecidableEq α] [Inhabited μ]
 
 @[simp]
 instance fintype_dom (h : t.Dom = rs) : Fintype ↑t.Dom := by
@@ -33,10 +33,10 @@ instance decidable_dom (h : t.Dom = rs) : ∀a, Decidable (t a).Dom := by
 
 /-- Convert a partial function `t`, with `t.Dom = rs` into a total function -/
 @[simp]
-noncomputable def TupleToFun (h : t.Dom = rs) : α → μ :=
+def TupleToFun (h : t.Dom = rs) : α → μ :=
   by
     haveI := decidable_dom h
-    exact λ a => (t a).getOrElse (Classical.arbitrary μ)
+    exact λ a => (t a).getOrElse default
 
 @[simp]
 theorem TupleToFun.tuple_eq (h : t.Dom = rs) (h' : t'.Dom = rs') (h'' : t = t') :
@@ -87,7 +87,7 @@ theorem ArityToTuple.def_dite (va : Fin rs.card → μ) :
   ArityToTuple va = λ att => dite (att ∈ rs) (λ h => .some (va (RelationSchema.index h))) (λ _ => Part.none) := by
     rfl
 
-theorem ArityToTuple.def_fromIndex [Nonempty μ] {t : α →. μ} (h : t.Dom = ↑rs) :
+theorem ArityToTuple.def_fromIndex [Inhabited μ] {t : α →. μ} (h : t.Dom = ↑rs) :
   ArityToTuple (fun i : Fin rs.card ↦ (TupleToFun h (RelationSchema.fromIndex i))) = t := by
     simp
     ext a v

@@ -11,10 +11,10 @@ This file is responsible for the conversion of the Relation case, as well as all
 This is the most complicated case of the conversion, since it has to mimic the behavior of assigning (duplicate) variables to attributes of a relation.
 Walkthrough using an example:
 - Relation 'R' with attributes 'a', 'b', 'c'
-- FOL 'relation': `R ('x' : String, 1 : Fin n, 'x' : String)`
+- FOL 'relation': `R ('x' : α, 1 : Fin n, 'x' : α)`
 - Here we expect all tuples where 'a' = 'c', renamed 'a'/'c' to `'x'` and projected on `'x'`.
 - Note how the variable `'x'` is used for 2 attributes, meaning these should be equivalent.
-- Note how the `Fin n` attribute should get a temporary `String` attribute, to allow connecting it with a quantifier (and dropping it through projection) later.
+- Note how the `Fin n` attribute should get a temporary `α` attribute, to allow connecting it with a quantifier (and dropping it through projection) later.
 
 
 To achieve this, we use the following (repeated) steps to transform the relation correctly:
@@ -39,23 +39,23 @@ These parts are defined in steps and accompanied by required proofs with regards
 
 open RM FOL FirstOrder Language
 
-variable {μ ρ : Type}
+variable {ρ α μ : Type} [Inhabited α] [LinearOrder α]
 
 /--
 Swap attribute `ra` for `f ra`; `ρ (ra ↔ f ra) R`.
 `ra ↔ f ra` is implemented in `renamePairFunc`, `f` is implemented in `renamer`.
 -/
-def renamePair {dbs : ρ → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query ρ String :=
+def renamePair {dbs : ρ → Finset α} (ra : α) (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) : RA.Query ρ α :=
   .r (renamePairFunc ra ts brs) (.R rn)
 
-theorem renamePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem renamePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
   (renamePair ra ts brs).schema dbs = (dbs rn).image (renamePairFunc ra ts brs) := rfl
 
-theorem renamePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem renamePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
     RA.Query.isWellTyped dbs (renamePair ra ts brs) := by
       simp [renamePair, renamePairFunc, rename_func_bijective]
 
-theorem renamePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
+theorem renamePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)} :
     RA.Query.evaluateT dbi (renamePair ra ts brs) =
       {t | t ∘ (renamePairFunc ra ts brs) ∈ (dbi.relations rn).tuples} := by
         simp [renamePair]
@@ -66,11 +66,11 @@ theorem renamePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema)
 Combine the 'swapped' relation and the original relation; `(ρ (ra ↔ f ra) R) ⋈ R`.
 `ρ (ra ↔ f ra) R` is implemented in `renamePair`.
 -/
-def combinePair {dbs : ρ → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query ρ String :=
+def combinePair {dbs : ρ → Finset α} (ra : α) (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) : RA.Query ρ α :=
   .j (renamePair ra ts brs) (.R rn)
 
 /-- Requires `ra ∈ R.schema` for the expected behavior of `renamePairFunc`. -/
-theorem combinePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn) :
+theorem combinePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} (h : ra ∈ dbs rn) :
   (combinePair ra ts brs).schema dbs = dbs rn ∪ {renamePairFunc ra ts brs ra} := by
     simp [combinePair, renamePair.schema_def]
     ext a
@@ -102,13 +102,13 @@ theorem combinePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (Strin
         . simp_all
         . apply Or.inr h_2
 
-theorem combinePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem combinePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
     RA.Query.isWellTyped dbs (combinePair ra ts brs) := by
       simp [combinePair, renamePair.isWellTyped_def]
 
-theorem combinePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
+theorem combinePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)} :
   RA.Query.evaluateT dbi (combinePair ra ts brs) =
-    {t : String →. μ | ∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs) ∈ (dbi.relations rn).tuples ∧
+    {t : α →. μ | ∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs) ∈ (dbi.relations rn).tuples ∧
           ∀a, (a ∈ t₁.Dom → t a = t₁ a) ∧ (a ∈ PFun.Dom t₂ → t a = t₂ a) ∧ (a ∉ t₁.Dom ∪ PFun.Dom t₂ → t a = .none)
     } := by
       simp_all only [combinePair, RA.Query.evaluateT, joinT, joinSingleT,
@@ -209,21 +209,21 @@ theorem combinePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema
 Make sure that `ra` and `f ra` are equal; `σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)`.
 `(ρ (ra ↔ f ra) R) ⋈ R` is implemented in `combinePair`.
 -/
-def prunePair {dbs : ρ → Finset String} (ra : String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query ρ String :=
+def prunePair {dbs : ρ → Finset α} (ra : α) (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) : RA.Query ρ α :=
   .s ra (renamer ts brs ra) (combinePair ra ts brs)
 
-theorem prunePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem prunePair.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
   (prunePair ra ts brs).schema dbs = (combinePair ra ts brs).schema dbs := by
     simp [prunePair]
 
 /-- Requires `ra ∈ R.schema` for the expected behavior of the schema of `combinePair`. -/
-theorem prunePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ra ∈ dbs rn):
+theorem prunePair.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} (h : ra ∈ dbs rn):
     RA.Query.isWellTyped dbs (prunePair ra ts brs) := by
       simp [prunePair, combinePair.isWellTyped_def, combinePair.schema_def, h, renamePairFunc]
 
-theorem prunePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)} :
+theorem prunePair.evalT_def {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)} :
   RA.Query.evaluateT dbi (prunePair ra ts brs) =
-    {t : String →. μ | (∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs) ∈ (dbi.relations rn).tuples ∧
+    {t : α →. μ | (∃t₁ ∈ (dbi.relations rn).tuples, ∃t₂, t₂ ∘ (renamePairFunc ra ts brs) ∈ (dbi.relations rn).tuples ∧
           ∀a, (a ∈ t₁.Dom → t a = t₁ a) ∧ (a ∈ PFun.Dom t₂ → t a = t₂ a) ∧ (a ∉ t₁.Dom ∪ PFun.Dom t₂ → t a = .none)) ∧ (t ra = t (renamer ts brs ra))
     } := by
       simp only [prunePair, RA.Query.evaluateT.eq_2, selectionT, combinePair.evalT_def,
@@ -235,10 +235,10 @@ Join each of the individually prepared combined relations (starting from the ori
 `R ⋈ra ∈ ras, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)`.
 `σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)` is implemented in `prunePair`.
 -/
-def relJoins {dbs : ρ → Finset String} (ras : List String) (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query ρ String :=
+def relJoins {dbs : ρ → Finset α} (ras : List α) (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) : RA.Query ρ α :=
   ras.foldr (λ ra sq => .j (prunePair ra ts brs) sq) (.R rn)
 
-theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h : ras.toFinset ⊆ dbs rn) :
+theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} (h : ras.toFinset ⊆ dbs rn) :
   (relJoins ras ts brs).schema dbs = (ras.toFinset.image (λ ra => renamePairFunc ra ts brs ra)) ∪ (dbs rn) := by
     simp [relJoins]
     induction ras with
@@ -251,7 +251,7 @@ theorem relJoins.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String �
       simp_all only [Finset.union_singleton, Finset.insert_union]
       grind
 
-theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} (h: ras.toFinset ⊆ dbs rn) :
+theorem relJoins.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} (h: ras.toFinset ⊆ dbs rn) :
     RA.Query.isWellTyped dbs (relJoins ras ts brs) := by
       simp [relJoins]
       induction ras with
@@ -269,10 +269,10 @@ Hence we require the maxHeartbeats to be increased to verify the theorem.
 -/
 set_option maxHeartbeats 2000000
 
-theorem relJoins.evalT_def' {dbi : DatabaseInstance ρ String μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
+theorem relJoins.evalT_def' {dbi : DatabaseInstance ρ α μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)}
   (h : ras.toFinset ⊆ dbi.schema rn) (hdisj : dbi.schema rn ∩ ras.toFinset.image (renamer ts brs) = ∅) (hnodup : ras.Nodup) :
     RA.Query.evaluateT dbi (relJoins ras ts brs) =
-    {t | ∃t' : String →. μ, t' ∈ (dbi.relations rn).tuples ∧
+    {t | ∃t' : α →. μ, t' ∈ (dbi.relations rn).tuples ∧
       (
         ∀ra ∈ dbi.schema rn,
           t' ra = t ra ∧
@@ -699,7 +699,7 @@ theorem relJoins.evalT_def' {dbi : DatabaseInstance ρ String μ} {ts : Fin (dbi
                     simp_all only [not_exists, not_and, Part.notMem_none, not_true_eq_false, implies_true,
                       not_false_eq_true, and_self]
 
-theorem eq_comp_renamer {t : String →. μ} {dbi : DatabaseInstance ρ String μ} {rs : Finset String} [folStruc dbi] [Nonempty μ] {tDom : t.Dom = ↑rs} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
+theorem eq_comp_renamer {t : α →. μ} {dbi : DatabaseInstance ρ α μ} {rs : Finset α} [folStruc dbi] [Inhabited μ] {tDom : t.Dom = ↑rs} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)}
   (h₁ : ∀i, TermtoAtt brs (ts i) ∈ rs) (h₂ : default ∉ rs)
   :
     (fun att ↦ dite (att ∈ dbi.schema rn)
@@ -763,13 +763,13 @@ Project the combined relation, keeping only the renamed attributes;
 `π {f ra | ra ∈ R.schema} (R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R))`.
 `R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R)` is implemented in `relJoins`.
 -/
-def relJoinsMin {dbs : ρ → Finset String} (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (brs : Finset String) : RA.Query ρ String :=
+def relJoinsMin {dbs : ρ → Finset α} (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) : RA.Query ρ α :=
   .p ((dbs rn).image (renamer ts brs)) (relJoins (RelationSchema.ordering (dbs rn)) ts brs)
 
-theorem relJoinsMin.evalT_def {dbi : DatabaseInstance ρ String μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
+theorem relJoinsMin.evalT_def {dbi : DatabaseInstance ρ α μ} {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)}
   (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) (hu : default ∉ (dbi.schema rn).image (renamer ts brs)) :
     RA.Query.evaluateT dbi (relJoinsMin ts brs) =
-    {t | ∃t' : String →. μ, t' ∈ (dbi.relations rn).tuples ∧ (∀ra ∈ dbi.schema rn, t' ra = t (renamePairFunc ra ts brs ra)) ∧ (∀a ∉ (dbi.schema rn).image (renamer ts brs), t a = .none)} := by
+    {t | ∃t' : α →. μ, t' ∈ (dbi.relations rn).tuples ∧ (∀ra ∈ dbi.schema rn, t' ra = t (renamePairFunc ra ts brs ra)) ∧ (∀a ∉ (dbi.schema rn).image (renamer ts brs), t a = .none)} := by
       ext t
       rw [relJoinsMin, RA.Query.evaluateT]
       rw [relJoins.evalT_def' (by simp) (by simp [hdisj]) (by simp)]
@@ -852,16 +852,16 @@ theorem relJoinsMin.evalT_def {dbi : DatabaseInstance ρ String μ} {ts : Fin (d
             intro a_2
             exact Part.eq_none_iff'.mpr a_2
 
-theorem relJoinsMin.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem relJoinsMin.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
   (relJoinsMin ts brs).schema dbs = (dbs rn).image (renamer ts brs) := rfl
 
-theorem relJoinsMin.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem relJoinsMin.isWellTyped_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
     RA.Query.isWellTyped dbs (relJoinsMin ts brs) := by
       simp [relJoinsMin, relJoins.schema_def, relJoins.isWellTyped_def, renamePairFunc]
 
 
 /- The complete relation case definition & proof -/
-variable {dbs : ρ → Finset String} [Fintype (adomRs dbs)] [Nonempty ρ]
+variable {dbs : ρ → Finset α} [Fintype (adomRs dbs)] [Inhabited ρ] [LinearOrder ρ]
 
 /--
 Join with `adom rs` followed by projection on `rs`;
@@ -872,17 +872,17 @@ The result is the RA representation of the FOL relation, with schema `rs`.
 
 `π {f ra | ra ∈ R.schema} (R ⋈ra ∈ R.schema, σ (ra = f ra) ((ρ (ra ↔ f ra) R) ⋈ R))` is implemented in `relJoinsMin`.
 -/
-noncomputable def relToRA (ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) (rs brs : Finset String) : RA.Query ρ String :=
+def relToRA (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (rs brs : Finset α) : RA.Query ρ α :=
     .p (rs) ((relJoinsMin ts brs).j (adom dbs rs))
 
-theorem relToRA.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem relToRA.schema_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
   (relToRA ts rs brs).schema dbs = rs := rfl
 
-theorem relToRA.isWellTyped_def [Nonempty ↑(adomRs dbs)] {ts : Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)} :
+theorem relToRA.isWellTyped_def [Nonempty ↑(adomRs dbs)] {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} :
   RA.Query.isWellTyped dbs (relToRA ts rs brs) := by
     simp [relToRA, relJoinsMin.isWellTyped_def, adom.isWellTyped_def, adom.schema_def]
 
-theorem relToRA.evalT_def {dbi : DatabaseInstance ρ String μ} [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.schema)] [folStruc dbi] [Nonempty μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (String ⊕ Fin n)}
+theorem relToRA.evalT_def {dbi : DatabaseInstance ρ α μ} [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.schema)] [folStruc dbi] [Inhabited μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)}
   (hrs : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) ⊆ rs) (hu : default ∉ rs) (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) (hne : dbi.schema rn ≠ ∅) :
     RA.Query.evaluateT dbi (relToRA ts rs brs) =
     {t | ∃h, RealizeDomSet (μ := μ) (Relations.boundedFormula (relations.R rn) ts) rs brs t h} := by

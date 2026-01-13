@@ -13,9 +13,11 @@ open FOL FirstOrder Language Term RM
 
 namespace FOL
 
+variable {ρ α : Type} {dbs : ρ → Finset α}
+
 /-- Whether all relations in the formula have a nonempty schema. -/
 @[simp]
-def NonemptyR {dbs : ρ → Finset String} : (fol dbs).BoundedFormula String n → Prop
+def NonemptyR : (fol dbs).BoundedFormula α n → Prop
   | .falsum => True
   | .rel R _ => match R with | .R rn => (dbs rn) ≠ ∅
   | .equal _ _ => True
@@ -25,7 +27,7 @@ def NonemptyR {dbs : ρ → Finset String} : (fol dbs).BoundedFormula String n �
 
 /- Helper theorems for the `NonemptyR` property. -/
 @[simp]
-theorem NonemptyR.castLE {m n} (φ : (fol dbs).BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
+theorem NonemptyR.castLE {m n} (φ : (fol dbs).BoundedFormula α m) (h : m = n) {h' : m ≤ n} :
   NonemptyR (φ.castLE h') ↔ NonemptyR φ := by
     induction φ with
     | all f ih =>
@@ -39,7 +41,7 @@ theorem NonemptyR.castLE {m n} (φ : (fol dbs).BoundedFormula String m) (h : m =
     | _ => simp_all
 
 @[simp]
-theorem NonemptyR.liftAt {n n'} (φ : (fol dbs).BoundedFormula String n) (hmn : m + n' ≤ n + 1) :
+theorem NonemptyR.liftAt {n n'} (φ : (fol dbs).BoundedFormula α n) (hmn : m + n' ≤ n + 1) :
   NonemptyR (φ.liftAt n' m) ↔ NonemptyR φ := by
     rw [BoundedFormula.liftAt]
     induction φ with
@@ -54,7 +56,7 @@ theorem NonemptyR.liftAt {n n'} (φ : (fol dbs).BoundedFormula String n) (hmn : 
         simp_all only
     | _ => simp_all [BoundedFormula.mapTermRel, Term.liftAt]; try grind
 
-theorem NonemptyR.toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula String n} (hφ : φ.IsQF) (hψ : ψ.IsPrenex) :
+theorem NonemptyR.toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula α n} (hφ : φ.IsQF) (hψ : ψ.IsPrenex) :
     NonemptyR (φ.toPrenexImpRight ψ) ↔ NonemptyR (φ.imp ψ) := by
   induction hψ with
   | of_isQF hψ => rw [hψ.toPrenexImpRight]
@@ -73,7 +75,7 @@ theorem NonemptyR.toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula String n} (
     rw [NonemptyR.liftAt _ (by grind)]
     exact BoundedFormula.IsQF.liftAt hφ
 
-theorem NonemptyR.toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} (hφ : φ.IsPrenex) (hψ : ψ.IsPrenex) :
+theorem NonemptyR.toPrenexImp {φ ψ : (fol dbs).BoundedFormula α n} (hφ : φ.IsPrenex) (hψ : ψ.IsPrenex) :
     NonemptyR (φ.toPrenexImp ψ) ↔ NonemptyR (φ.imp ψ) := by
   revert ψ
   induction hφ with
@@ -101,7 +103,7 @@ theorem NonemptyR.toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} (hφ :
     exact this
 
 @[simp]
-theorem NonemptyR.toPrenex (φ : (fol dbs).BoundedFormula String n) :
+theorem NonemptyR.toPrenex (φ : (fol dbs).BoundedFormula α n) :
     NonemptyR φ.toPrenex ↔ NonemptyR φ := by
   induction φ with
   | falsum => rfl

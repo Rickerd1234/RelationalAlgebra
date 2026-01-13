@@ -61,7 +61,7 @@ theorem BoundedQuery.Realize.equiv [folStruc dbi] {q : BoundedQuery dbi.schema n
       rw [Realize]
       exact BoundedFormula.Realize.equiv hiv ht
 
-variable [Nonempty μ]
+variable [Inhabited μ]
 
 /--
 Proof that satisfiability for a `BoundedQuery` is equal if all free variables in the query have the same assignment

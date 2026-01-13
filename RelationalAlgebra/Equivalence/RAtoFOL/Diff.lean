@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {q nq} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Nonempty μ]
+variable {q nq} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Inhabited μ]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Difference operation. -/
 theorem ra_to_fol_evalT.d_def_eq (h : RA.Query.isWellTyped dbi.schema (.d q nq))

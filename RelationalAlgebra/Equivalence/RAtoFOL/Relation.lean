@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {rn} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Nonempty μ]
+variable {rn} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Inhabited μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
 theorem ra_to_fol_evalT.R_def.mp :

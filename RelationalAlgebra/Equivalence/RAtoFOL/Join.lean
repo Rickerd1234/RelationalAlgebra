@@ -1,7 +1,7 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 import RelationalAlgebra.FOL.RealizeProperties
 
-variable {q₁ q₂} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Nonempty μ]
+variable {q₁ q₂} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Inhabited μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
 theorem ra_to_fol_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
@@ -125,7 +125,8 @@ theorem ra_to_fol_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ 
           · intro a_1
             apply And.intro
             · use v
-            · simp_all [(right_1 a).1 v a_1]
+            · rw [(right_1 a).1 v a_1]
+              exact a_1
 
         rw [← FOL.BoundedQuery.Realize]
         rw [← FOL.BoundedQuery.Realize.enlarge h_sub ht' (by simp [ra_to_fol_query_schema left, w_Dom])]

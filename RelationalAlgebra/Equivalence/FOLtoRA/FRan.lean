@@ -1,22 +1,25 @@
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 import RelationalAlgebra.FOL.Ordering
 import Mathlib.Data.Finset.Fin
-import Mathlib.Data.String.Basic
 
 open RM
 
-/-- `Set` equal to the range of `f`. -/
-def FRanS (f : Fin n → String) : Set String := {a | ∃i, f i = a}
+section FRan
 
-instance FRanSFin {f : Fin n → String} : Fintype (FRanS f) := by
+variable {α : Type} [DecidableEq α]
+
+/-- `Set` equal to the range of `f`. -/
+def FRanS (f : Fin n → α) : Set α := {a | ∃i, f i = a}
+
+instance FRanSFin {f : Fin n → α} : Fintype (FRanS f) := by
   apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image f)
   . simp [FRanS]
 
 /-- `Finset` equal to the range of `f`. -/
-def FRan (f : Fin n → String) : Finset String := (FRanS f).toFinset
+def FRan (f : Fin n → α) : Finset α := (FRanS f).toFinset
 
 @[simp]
-def FRan.card_def {f : Fin n → String} (hf : f.Injective) : (FRan f).card = n := by
+def FRan.card_def {f : Fin n → α} (hf : f.Injective) : (FRan f).card = n := by
   induction n
   . simp [FRan, FRanS]
   . rename_i n' ih
@@ -59,19 +62,25 @@ def FRan.card_def {f : Fin n → String} (hf : f.Injective) : (FRan f).card = n 
           exact Function.Injective.comp hf (Fin.succ_injective n')
 
 @[simp]
-def FRan.default := FRan Fin.elim0
+def FRan.default := FRan Fin.elim0 (α := α)
 
 @[simp]
-theorem FRan.default_eq_empty : FRan Fin.elim0 = ∅ := by simp [FRan, FRanS]
+theorem FRan.default_eq_empty : FRan Fin.elim0 (α := α) = ∅ := by simp [FRan, FRanS]
 
 @[simp]
-theorem FRan.mem_def : f i ∈ FRan f := by simp [FRan, FRanS]
+theorem FRan.mem_def {f : Fin n → α}: f i ∈ FRan f := by simp [FRan, FRanS]
+
+end FRan
+
+section FreeMap
+
+variable [LinearOrder α] [Inhabited α] {brs : Finset α}
 
 /--
-Mapping for bound variables `Fin n` to a deterministic `String` used as variable in the RA query.
-Requires `brs.card > n` to prevent falling back to `String.default`.
+Mapping for bound variables `Fin n` to a deterministic `α` used as variable in the RA query.
+Requires `brs.card > n` to prevent falling back to `α.default`.
 -/
-def FreeMap (n : ℕ) (brs : Finset String) : Fin n → String :=
+def FreeMap (n : ℕ) (brs : Finset α) : Fin n → α :=
   λ i => (RelationSchema.ordering brs).getD i (default)
 
 
@@ -108,7 +117,7 @@ theorem FreeMap.FRan_def (h : n ≤ brs.card) : FRan (FreeMap n brs) = ((Relatio
     have : w < brs.card := by grind
     simp [this]
 
-theorem List.take_sorted (l : List String) : List.Sorted (.≤.) l → List.Sorted (.≤.) (List.take n l) := by
+theorem List.take_sorted [LinearOrder α'] (l : List α') : List.Sorted (.≤.) l → List.Sorted (.≤.) (List.take n l) := by
   intro h
   induction l generalizing n
   . simp
@@ -125,7 +134,7 @@ theorem List.take_sorted (l : List String) : List.Sorted (.≤.) l → List.Sort
         simp_all
       · simp
 
-theorem List.take_nodup (l : List String) : List.Nodup l → List.Nodup (List.take n l) := by
+theorem List.take_nodup (l : List α') : List.Nodup l → List.Nodup (List.take n l) := by
   intro h
   induction l generalizing n
   . simp
@@ -149,7 +158,7 @@ theorem FreeMap.FRan_ordering_def (h : n ≤ brs.card) : RelationSchema.ordering
   . exact List.take_nodup (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) brs) (Finset.sort_nodup (fun x1 x2 ↦ x1 ≤ x2) brs)
   . exact List.take_sorted (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) brs) (Finset.sort_sorted (fun x1 x2 ↦ x1 ≤ x2) brs)
 
-theorem FreeMap.add_one_def : FreeMap (n + 1) brs j.castSucc = FreeMap n brs j := by
+theorem FreeMap.add_one_def {brs : Finset α} : FreeMap (n + 1) brs j.castSucc = FreeMap n brs j := by
   rfl
 
 @[simp]
@@ -181,7 +190,7 @@ theorem FreeMap.notMem_notMem_FRan (h : n ≤ brs.card) : x ∉ brs → x ∉ FR
 theorem FreeMap.FRan_union_add_one (h : n + 1 ≤ brs.card) : FRan (FreeMap n brs) ∪ FRan (FreeMap (n + 1) brs) = FRan (FreeMap (n + 1) brs) := by
   simp [h]
 
-theorem FreeMap.mem_def' : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = default := by
+theorem FreeMap.mem_def' {brs : Finset α} : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = default := by
   induction n with
   | zero => exact Fin.elim0 i
   | succ n' ih =>
@@ -197,25 +206,26 @@ theorem FreeMap.mem_def' : FreeMap n brs i ∈ brs ∨ FreeMap n brs i = default
         grind
       next h => simp
 
-theorem FreeMap.mem_def (h : ↑i < brs.card) : FreeMap n brs i ∈ brs := by
+theorem FreeMap.mem_def {brs : Finset α} {i : Fin n} (h : ↑i < brs.card) : FreeMap n brs i ∈ brs := by
   rw [← RelationSchema.ordering_mem]
   rw [FreeMap]
   rw [@List.mem_iff_getElem]
   use ↑i
   simp_all
 
-theorem FreeMap.fromIndex_brs_def {i : Fin n} (h : n ≤ brs.card) : FreeMap n brs i = RelationSchema.fromIndex (i.castLE h) := by
-  induction n with
-  | zero => exact Fin.elim0 i
-  | succ n' ih =>
-    simp [FreeMap]
-    induction i using Fin.lastCases with
-    | cast j => simp; apply ih;
-    | last =>
-      simp only [RelationSchema.fromIndex, Fin.cast_castLE, List.get_eq_getElem, Fin.coe_castLE, Fin.val_last]
-      rw [@List.getD_getElem?]
-      simp only [RelationSchema.ordering_card]
-      grind only
+theorem FreeMap.fromIndex_brs_def {brs : Finset α} {i : Fin n} (h : n ≤ brs.card) :
+  FreeMap n brs i = RelationSchema.fromIndex (i.castLE h) := by
+    induction n with
+    | zero => exact Fin.elim0 i
+    | succ n' ih =>
+      simp [FreeMap]
+      induction i using Fin.lastCases with
+      | cast j => simp; apply ih;
+      | last =>
+        simp only [RelationSchema.fromIndex, Fin.cast_castLE, List.get_eq_getElem, Fin.coe_castLE, Fin.val_last]
+        rw [@List.getD_getElem?]
+        simp only [RelationSchema.ordering_card]
+        grind only
 
 theorem FreeMap.mem_FRan_add_one_cases (h : n + 1 ≤ brs.card) : x ∈ FRan (FreeMap (n + 1) brs) ↔ (x ∈ FRan (FreeMap n brs) ∨ x = FreeMap (n + 1) brs (Fin.last n)) := by
   apply Iff.intro
@@ -241,7 +251,7 @@ theorem FreeMap.mem_FRan_add_one_cases (h : n + 1 ≤ brs.card) : x ∈ FRan (Fr
       subst h'
       simp only [FRan.mem_def]
 
-theorem FreeMap.inj_n (h : n ≤ brs.card) : (FreeMap n brs).Injective := by
+theorem FreeMap.inj_n  {brs : Finset α} (h : n ≤ brs.card) : (FreeMap n brs).Injective := by
   simp [Function.Injective]
   intro a₁ a₂ h'
   rw [FreeMap.fromIndex_brs_def h, FreeMap.fromIndex_brs_def h] at h'
@@ -251,13 +261,13 @@ theorem FreeMap.inj_n (h : n ≤ brs.card) : (FreeMap n brs).Injective := by
 theorem FreeMap.FRan_card_def (h : n ≤ brs.card) : (FRan (FreeMap n brs)).card = n :=
   FRan.card_def (inj_n h)
 
-theorem FreeMap.get_def : (FreeMap n brs) i = (RelationSchema.ordering brs)[i]'h := by
-  simp only [FreeMap, RelationSchema.ordering, String.default_eq,
-    List.getD_eq_getElem?_getD, Fin.getElem_fin]
-  rw [@List.getD_getElem?]
-  split
-  . simp
-  . rw [← RelationSchema.ordering] at *; grind
+theorem FreeMap.get_def {brs : Finset α} {i : Fin n} {h : ↑i < (RelationSchema.ordering brs).length} :
+  (FreeMap n brs) i = (RelationSchema.ordering brs)[i]'h := by
+    simp only [FreeMap, RelationSchema.ordering, List.getD_eq_getElem?_getD, Fin.getElem_fin]
+    rw [@List.getD_getElem?]
+    split
+    . simp
+    . rw [← RelationSchema.ordering] at *; grind
 
 theorem FreeMap.self_fromIndex_def (h' : n ≤ brs.card) :
   FreeMap (FRan (FreeMap n brs)).card brs (RelationSchema.index (RelationSchema.fromIndex_mem i)) = RelationSchema.fromIndex i := by
@@ -283,7 +293,7 @@ theorem FreeMap.self_def_cast (h : a ∈ FRan (FreeMap n brs)) (h' : n ≤ brs.c
     subst hk
     exact self_fromIndex_def h'
 
-theorem FreeMap.reverse_def {i : Fin n} (h : n ≤ brs.card) : FreeMap n brs i = a ↔ (RelationSchema.fromIndex (i.castLE h)) = a := by
+theorem FreeMap.reverse_def {brs : Finset α} {i : Fin n} (h : n ≤ brs.card) : FreeMap n brs i = a ↔ (RelationSchema.fromIndex (i.castLE h)) = a := by
   rw [fromIndex_brs_def h]
 
 theorem FRan.notMem_FreeMap_lift (h : n + 1 ≤ brs.card) : FreeMap (n + 1) brs (Fin.last n) ∉ FRan (FreeMap n brs) := by

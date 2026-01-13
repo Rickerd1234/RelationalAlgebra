@@ -19,18 +19,18 @@ variable {μ : Type}
 
 section toRA
 
-variable {ρ : Type} [Nonempty ρ] {dbs : ρ → Finset String} [Fintype (adomRs dbs)]
+variable {ρ α : Type} [LinearOrder α] [Inhabited α] [Inhabited ρ] [LinearOrder ρ] {dbs : ρ → Finset α} [Fintype (adomRs dbs)]
 
 /--
-Convert a `BoundedFormula String n` to a `RA.Query ρ String`.
+Convert a `BoundedFormula α n` to a `RA.Query ρ α`.
 The result is the RA representation of the FOL query, with schema `rs`.
 `adom rs` is a cartesian product of any value for each attribute in `rs`, which restricts any query to the active domain of the database.
 Requires the formula `f` to be in Prenex normal form to work as expected.
 Requires `brs` to be distinct from `f.freeVarFinset` and `n + depth f < brs.card` to work properly.
 Requires `f.freeVarFinset ⊆ rs` to work properly.
 -/
-noncomputable def toRA
-  (f : (fol dbs).BoundedFormula String n) (rs brs : Finset String) : RA.Query ρ String :=
+def toRA
+  (f : (fol dbs).BoundedFormula α n) (rs brs : Finset α) : RA.Query ρ α :=
     match f with
     -- `adom rs - adom rs`
     | .falsum => .d (adom dbs rs) (adom dbs rs)
@@ -54,17 +54,9 @@ theorem toRA.schema_def :
 
 end toRA
 
-variable {ρ : Type} {dbi : DatabaseInstance ρ String μ}
+variable {ρ α : Type} {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [Inhabited α] [Inhabited μ]
 
-/- Proof `toRA` evaluation for `Set` of tuples to be equivalent to `RealizeDomSet` for the distinct cases -/
-theorem toRA.falsum_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] :
-    (toRA (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs).evaluateT dbi =
-      {t | ∃h, RealizeDomSet (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs t h} := by
-        have : (RA.Query.evaluateT dbi (adom dbi.schema rs)) \ (RA.Query.evaluateT dbi (adom dbi.schema rs)) = ∅ := Set.diff_self
-        simp_rw [toRA, RA.Query.evaluateT, differenceT, this]
-        simp [RealizeDomSet, BoundedFormula.Realize]
-
-theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (α := String) (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)} {t : String →. μ} {rs : Finset String}
+theorem toRA.term_equal_def [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (α ⊕ Fin n)} {t : α →. μ} {rs : Finset α}
   (h : t.Dom = ↑rs) (h' : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs):
     t (TermtoAtt brs t₁) = t (TermtoAtt brs t₂) ↔
       (BoundedFormula.equal t₁ t₂).Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) := by
@@ -93,7 +85,19 @@ theorem toRA.term_equal_def [Nonempty μ] [folStruc dbi (α := String) (μ := μ
           )
         )
 
-theorem toRA.equal_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (String ⊕ Fin n)}
+/- To use computable `adom`, we require the following properties for `ρ` -/
+variable [Inhabited ρ] [LinearOrder ρ]
+
+/- Proof `toRA` evaluation for `Set` of tuples to be equivalent to `RealizeDomSet` for the distinct cases -/
+theorem toRA.falsum_def [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] :
+    (toRA (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs).evaluateT dbi =
+      {t | ∃h, RealizeDomSet (BoundedFormula.falsum (L := fol dbi.schema) (n := n)) rs brs t h} := by
+        have : (RA.Query.evaluateT dbi (adom dbi.schema rs)) \ (RA.Query.evaluateT dbi (adom dbi.schema rs)) = ∅ := Set.diff_self
+        simp_rw [toRA, RA.Query.evaluateT, differenceT, this]
+        simp [RealizeDomSet, BoundedFormula.Realize]
+
+
+theorem toRA.equal_def [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] {t₁ t₂ : (fol dbi.schema).Term (α ⊕ Fin n)}
   (h : (t₁ =' t₂).freeVarFinset ∪ FRan (FreeMap n brs) ⊆ rs) :
     (toRA (t₁ =' t₂) rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (t₁ =' t₂) rs brs t h} := by
       simp_rw [Term.bdEqual, toRA, RA.Query.evaluateT, selectionT]
@@ -140,7 +144,7 @@ theorem toRA.equal_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.sche
           . use t
         . exact ((term_equal_def w_1 h).mpr h_2)
 
-theorem toRA.imp_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)]
+theorem toRA.imp_def [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)]
   (hμ : ∀v : μ, v ∈ dbi.domain)
   (ih₁ : (toRA (dbs := dbi.schema) q₁ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₁ rs brs t h})
   (ih₂ : (toRA (dbs := dbi.schema) q₂ rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q₂ rs brs t h}) :
@@ -158,13 +162,13 @@ theorem toRA.imp_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema
         simp_all [Finset.coe_inj, TupleToFun.tuple_eq_self, implies_true, and_self]
         apply adom.exists_tuple_from_value hμ
 
-theorem toRA.not_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)]
+theorem toRA.not_def [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)]
   (hμ : ∀v : μ, v ∈ dbi.domain)
   (ih : (toRA (dbs := dbi.schema) q rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet q rs brs t h}) :
     (toRA q.not rs brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q.not) rs brs t h} := by
       exact imp_def hμ ih falsum_def
 
-theorem toRA.all_def [Nonempty μ] [Nonempty ρ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] {q : (fol dbi.schema).BoundedFormula String (n + 1)}
+theorem toRA.all_def [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)] [Fintype ↑(adomRs dbi.schema)] {q : (fol dbi.schema).BoundedFormula α (n + 1)}
   (hμ : ∀v : μ, v ∈ dbi.domain) (hn : n + depth (∀'q) < brs.card) (h : (FreeMap (n + 1) brs) (Fin.last n) ∉ q.freeVarFinset)
   (ih : (toRA q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs).evaluateT dbi = {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap (n + 1) brs)) brs t h}) :
     (toRA q.all (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi = {t | ∃h, RealizeDomSet (q.all) (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by

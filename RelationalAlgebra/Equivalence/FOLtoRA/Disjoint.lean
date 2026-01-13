@@ -4,7 +4,7 @@ import RelationalAlgebra.FOL.ModelTheoryExtensions
 
 /-
 To simplify the conversion and proof, we decided to allow for the assumption that the attributes used to represent the bound variables (`brs`)
-  is disjoint from the named attributes used in any of the relations and from any of the free variables used in the query.
+  is disjoint from the named attributes used in any of the relations AND there is no intersection between free variables and relation attributes used in the query.
 This assumption is a short-cut, given we use `FreshAtts` to generate `brs` which avoids these variables.
 However, due to deadlines we decided to leave this proof as future work.
 -/
@@ -13,25 +13,27 @@ open FOL FirstOrder Language Term RM
 
 namespace FOL
 
-/-- Whether `brs : Finset String` has no intersection with any free variables in the formula. -/
+variable {α : Type} [DecidableEq α]
+
+/-- Whether there is no intersection between free variables and relation attributes in the formula. -/
 @[simp]
-def disjointSchemaL {dbs : ρ → Finset String} (brs : Finset String) : (fol dbs).BoundedFormula String n → Prop
+def disjointSchemaL {dbs : ρ → Finset α} : (fol dbs).BoundedFormula α n → Prop
   | .falsum => True
   | .rel R ts => match R with | .R rn => (Finset.univ.biUnion λ i => (ts i).varFinsetLeft) ∩ (dbs rn) = ∅
   | .equal _ _ => True
-  | .imp f₁ f₂ => disjointSchemaL brs f₁ ∧ disjointSchemaL brs f₂
-  | .all f' => disjointSchemaL brs f'
+  | .imp f₁ f₂ => disjointSchemaL f₁ ∧ disjointSchemaL f₂
+  | .all f' => disjointSchemaL f'
 
-/-- `brs` does not intersect with any relation schema nor any free variables in the formula.  -/
+/-- `brs` does not intersect with any relation schema AND free variables and relation attributes for a single relation never intersect in the formula.  -/
 @[simp]
-def disjointSchema {dbs : ρ → Finset String} (brs : Finset String) (q : (fol dbs).BoundedFormula String n): Prop :=
-  disjointSchemaL brs q ∧ ∀rn, brs ∩ dbs rn = ∅
+def disjointSchema {dbs : ρ → Finset α} (brs : Finset α) (q : (fol dbs).BoundedFormula α n): Prop :=
+  disjointSchemaL q ∧ ∀rn, brs ∩ dbs rn = ∅
 
 
 /- Helper theorems for the `disjointSchemaL` property. -/
 @[simp]
-theorem disjointSchemaL.castLE {m n} (φ : (fol dbs).BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
-  disjointSchemaL brs (φ.castLE h') ↔ disjointSchemaL brs φ := by
+theorem disjointSchemaL.castLE {m n} (φ : (fol dbs).BoundedFormula α m) (h : m = n) {h' : m ≤ n} :
+  disjointSchemaL (φ.castLE h') ↔ disjointSchemaL φ := by
     induction φ with
     | all f ih =>
       rename_i k
@@ -44,8 +46,8 @@ theorem disjointSchemaL.castLE {m n} (φ : (fol dbs).BoundedFormula String m) (h
     | _ => simp_all
 
 @[simp]
-theorem disjointSchemaL.liftAt {n n'} (φ : (fol dbs).BoundedFormula String n) (hmn : m + n' ≤ n + 1) :
-  disjointSchemaL brs (φ.liftAt n' m) ↔ disjointSchemaL brs φ := by
+theorem disjointSchemaL.liftAt {n n'} (φ : (fol dbs).BoundedFormula α n) (hmn : m + n' ≤ n + 1) :
+  disjointSchemaL (φ.liftAt n' m) ↔ disjointSchemaL φ := by
     rw [BoundedFormula.liftAt]
     induction φ with
     | all f ih =>
@@ -66,8 +68,8 @@ theorem disjointSchemaL.liftAt {n n'} (φ : (fol dbs).BoundedFormula String n) (
           simp_all only [fol.Term.relabel_varFinsetLeft_id, Finset.notMem_empty]
     | _ => simp_all [BoundedFormula.mapTermRel, Term.liftAt]; try grind
 
-theorem disjointSchemaL.toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula String n} (hφ : φ.IsQF) (hψ : ψ.IsPrenex) :
-    disjointSchemaL brs (φ.toPrenexImpRight ψ) ↔ disjointSchemaL brs (φ.imp ψ) := by
+theorem disjointSchemaL.toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula α n} (hφ : φ.IsQF) (hψ : ψ.IsPrenex) :
+    disjointSchemaL (φ.toPrenexImpRight ψ) ↔ disjointSchemaL (φ.imp ψ) := by
   induction hψ with
   | of_isQF hψ => rw [hψ.toPrenexImpRight]
   | all _ ih =>
@@ -85,8 +87,8 @@ theorem disjointSchemaL.toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula Strin
     rw [disjointSchemaL.liftAt _ (by grind)]
     exact BoundedFormula.IsQF.liftAt hφ
 
-theorem disjointSchemaL.toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} (hφ : φ.IsPrenex) (hψ : ψ.IsPrenex) :
-    disjointSchemaL brs (φ.toPrenexImp ψ) ↔ disjointSchemaL brs (φ.imp ψ) := by
+theorem disjointSchemaL.toPrenexImp {φ ψ : (fol dbs).BoundedFormula α n} (hφ : φ.IsPrenex) (hψ : ψ.IsPrenex) :
+    disjointSchemaL (φ.toPrenexImp ψ) ↔ disjointSchemaL (φ.imp ψ) := by
   revert ψ
   induction hφ with
   | of_isQF hφ =>
@@ -113,8 +115,8 @@ theorem disjointSchemaL.toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} 
     exact this
 
 @[simp]
-theorem disjointSchemaL.toPrenex (φ : (fol dbs).BoundedFormula String n) :
-    disjointSchemaL brs φ.toPrenex ↔ disjointSchemaL brs φ := by
+theorem disjointSchemaL.toPrenex (φ : (fol dbs).BoundedFormula α n) :
+    disjointSchemaL φ.toPrenex ↔ disjointSchemaL φ := by
   induction φ with
   | falsum => rfl
   | equal => rfl

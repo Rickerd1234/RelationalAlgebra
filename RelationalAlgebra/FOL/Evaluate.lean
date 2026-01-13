@@ -6,7 +6,7 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-variable {ρ α μ : Type} [Nonempty μ] [LinearOrder α]
+variable {ρ α μ : Type} [Inhabited μ] [LinearOrder α]
 
 /-- Query evaluation for a `Set` of tuples, get all tuples satisfying the FOL query, restricted to the variables used in the formula -/
 def Query.evaluateT (dbi : DatabaseInstance ρ α μ) (q : Query dbi.schema) [folStruc dbi] : Set (α →. μ) :=
