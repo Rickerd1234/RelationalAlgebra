@@ -5,7 +5,7 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-variable {ρ : Type}
+variable {ρ α : Type}
 
 /--
 Syntax for a `BoundedQuery` given a database schema `dbs` and bound `n : ℕ`.
@@ -13,16 +13,18 @@ Similar to `ModelTheory.BoundedFormula`.
 Note: Future work could remove this BoundedQuery intermediate layer,
       given the similarities with BoundedFormula in both syntax and semantics.
 -/
-inductive BoundedQuery (dbs : ρ → Finset String) : ℕ → Type
-  | R {n} : (rn : ρ) → (Fin (dbs rn).card → (fol dbs).Term (String ⊕ Fin n)) → BoundedQuery dbs n
+inductive BoundedQuery (dbs : ρ → Finset α) : ℕ → Type
+  | R {n} : (rn : ρ) → (Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) → BoundedQuery dbs n
   | and {n} (q1 q2 : BoundedQuery dbs n): BoundedQuery dbs n
-  | tEq {n} : (t₁ t₂ : (fol dbs).Term (String ⊕ Fin n)) → BoundedQuery dbs n
+  | tEq {n} : (t₁ t₂ : (fol dbs).Term (α ⊕ Fin n)) → BoundedQuery dbs n
   | ex {n} (q : BoundedQuery dbs (n + 1)) : BoundedQuery dbs n
   | or {n} (q₁ q₂ : BoundedQuery dbs n) : BoundedQuery dbs n
   | not {n} (q : BoundedQuery dbs n) : BoundedQuery dbs n
 
 /-- Syntax for a `Query` given a database schema `dbs` with bound `0`. Similar to `ModelTheory.Formula`. -/
-abbrev Query (dbs : ρ → Finset String) := BoundedQuery dbs 0
+abbrev Query (dbs : ρ → Finset α) := BoundedQuery dbs 0
+
+variable {dbs : ρ → Finset α}
 
 @[simp]
 def BoundedQuery.exs : ∀ {n}, BoundedQuery dbs n → Query dbs
@@ -31,7 +33,7 @@ def BoundedQuery.exs : ∀ {n}, BoundedQuery dbs n → Query dbs
 
 /-- `BoundedQuery` conversion to `BoundedFormula`. -/
 @[simp]
-def BoundedQuery.toFormula : (q : BoundedQuery dbs n) → (fol dbs).BoundedFormula String n
+def BoundedQuery.toFormula : (q : BoundedQuery dbs n) → (fol dbs).BoundedFormula α n
   | .R name vMap => Relations.boundedFormula (fol.Rel name) vMap
   | .tEq t₁ t₂ => .equal t₁ t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula

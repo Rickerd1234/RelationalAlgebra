@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {f q} {dbi : RM.DatabaseInstance ρ String μ} [struc : FOL.folStruc dbi] [Nonempty μ]
+variable {f q} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Nonempty μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
 theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
@@ -12,7 +12,10 @@ theorem ra_to_fol_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
         Set.mem_setOf_eq, and_imp] at ⊢ h
       intro t h_dom h_rel
       apply ih
-      . simp_all [FOL.Query.RealizeMin.and_def]
+      . simp_all only [FOL.Query.RealizeMin.and_def, and_imp, forall_true_left,
+        FOL.BoundedQuery.Realize.relabel_formula, Nat.add_zero,
+        FirstOrder.Language.BoundedFormula.realize_relabel, Fin.castAdd_zero, Fin.cast_refl,
+        Function.comp_id, Fin.natAdd_zero]
         apply And.intro
         . ext a
           rw [Set.ext_iff] at h_dom
@@ -46,7 +49,7 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
     ∀t, t ∈ RA.Query.evaluateT dbi (.r f q) → (ra_to_fol_query dbi.schema (.r f q)).RealizeMin dbi t := by
       intro t h_RA_eval
       rw [FOL.Query.RealizeMin.and_def]
-      apply And.intro (by simp_all [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval, ra_to_fol_query_schema])
+      apply And.intro (by simp_all only [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval, ra_to_fol_query_schema])
 
       simp only [ra_to_fol_query]
       simp_all only [ra_to_fol_query_schema, FOL.Query.RealizeMin.and_def, RA.Query.isWellTyped,
@@ -61,8 +64,8 @@ theorem ra_to_fol_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
         ext a
         simp_all only [Function.comp_apply, Sum.elim_inl]
         by_cases hc : (t (f a)).Dom
-        . simp_all [Part.getOrElse_of_dom]
-        . simp_all [Part.getOrElse_of_not_dom]
+        . simp_all only [Part.getOrElse_of_dom]
+        . simp_all only [not_false_eq_true, Part.getOrElse_of_not_dom]
       . exact RA.Query.evaluate.validSchema q left (Sum.elim t default ∘ Sum.inl ∘ f) h_RA_eval
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/

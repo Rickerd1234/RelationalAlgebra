@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {a b p q} {dbi : RM.DatabaseInstance ρ String μ} [struc : FOL.folStruc dbi] [Nonempty μ]
+variable {a b p q} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Nonempty μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Selection operation. -/
 theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q))
@@ -19,7 +19,8 @@ theorem ra_to_fol_evalT.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q)
       simp [ra_to_fol_query_schema, left, left_1, right] at ih a_1
       apply And.intro
       · apply ih
-        simp [FOL.Query.RealizeMin.ex_def, ra_to_fol_query_schema left, a_1]
+        simp only [FOL.Query.RealizeMin.ex_def, a_1, Finset.coe_inj, ra_to_fol_query_schema left,
+          exists_true_left, FOL.TupleToFun.tuple_eq_self]
         convert a_2
         simp [ra_to_fol_query_schema, left, left_1, right]
       · simp [FirstOrder.Language.BoundedFormula.Realize] at a_3

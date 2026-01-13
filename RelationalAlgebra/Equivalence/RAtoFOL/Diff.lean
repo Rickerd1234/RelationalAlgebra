@@ -1,13 +1,13 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {q nq} {dbi : RM.DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Nonempty μ]
+variable {q nq} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Nonempty μ]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Difference operation. -/
 theorem ra_to_fol_evalT.d_def_eq (h : RA.Query.isWellTyped dbi.schema (.d q nq))
   (ih : FOL.Query.evaluateT dbi (ra_to_fol_query dbi.schema q) = RA.Query.evaluateT dbi q)
   (nih : FOL.Query.evaluateT dbi (ra_to_fol_query dbi.schema nq) = RA.Query.evaluateT dbi nq) :
     FOL.Query.evaluateT dbi (ra_to_fol_query dbi.schema (q.d nq)) = RA.Query.evaluateT dbi (q.d nq) := by
-      simp_all [ra_to_fol_query]
+      simp_all only [RA.Query.isWellTyped, ra_to_fol_query, RA.Query.evaluateT, differenceT]
       simp only [FOL.Query.evaluateT, FOL.Query.RealizeMin.and_def, FOL.BoundedQuery.schema.and_def,
         FOL.BoundedQuery.schema.not_def, Finset.coe_union, FOL.BoundedQuery.Realize,
         FOL.BoundedQuery.toFormula, FirstOrder.Language.BoundedFormula.realize_inf,

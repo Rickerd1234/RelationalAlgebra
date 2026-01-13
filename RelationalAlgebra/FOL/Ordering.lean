@@ -7,17 +7,7 @@ namespace RM
 variable {α μ : Type}
 section order
 
-variable [LE α] [DecidableRel (α := α) (.≤.)] [IsTrans α (.≤.)] [IsAntisymm α (.≤.)] [IsTotal α (.≤.)]
-
--- Add ordering to Attribute
-instance Attribute.instLE : IsTrans String (.≤.) where
-  trans {_ _ _: String} := String.le_trans
-
-instance Attribute.instAntisymm : IsAntisymm String (.≤.) where
-  antisymm {_ _: String} := String.le_antisymm
-
-instance Attribute.instTotal : IsTotal String (.≤.) where
-  total := String.le_total
+variable [LinearOrder α]
 
 /--
 Define ordering for 'RelationSchema'.

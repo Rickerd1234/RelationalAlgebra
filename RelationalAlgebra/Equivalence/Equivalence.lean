@@ -18,7 +18,8 @@ Requires:
 -/
 section RAtoFOL
 
-variable {dbi : DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Nonempty μ] (raQ : RA.Query ρ String) (h : RA.Query.isWellTyped dbi.schema raQ)
+variable {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Nonempty μ]
+  (raQ : RA.Query ρ α) (h : RA.Query.isWellTyped dbi.schema raQ)
 
 /-- Query evaluation equivalence for a set of tuples -/
 theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :

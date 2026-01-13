@@ -23,7 +23,7 @@ theorem schema_mem_if_exists_v {dbi : DatabaseInstance ρ α μ} (h : t ∈ (dbi
 
 -- `PFun.Dom t a` derived from `v ∈ t a`
 @[simp]
-theorem value_mem_tuple_attr(h : v ∈ t a) : PFun.Dom t a := by
+theorem value_mem_tuple_attr (h : v ∈ t a) : PFun.Dom t a := by
   rw [PFun.dom_eq]
   exact Exists.intro v h
 

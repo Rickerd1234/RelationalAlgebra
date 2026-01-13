@@ -1,6 +1,7 @@
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 import RelationalAlgebra.FOL.Ordering
 import Mathlib.Data.Finset.Fin
+import Mathlib.Data.String.Basic
 
 open RM
 
@@ -143,7 +144,7 @@ theorem List.take_nodup (l : List String) : List.Nodup l → List.Nodup (List.ta
 
 theorem FreeMap.FRan_ordering_def (h : n ≤ brs.card) : RelationSchema.ordering (FRan (FreeMap n brs)) = (RelationSchema.ordering brs).take n := by
   rw [FreeMap.FRan_def h]
-  simp [RelationSchema.ordering]
+  rw [RelationSchema.ordering]
   refine (List.toFinset_sort (fun x1 x2 ↦ x1 ≤ x2) ?_).mpr ?_
   . exact List.take_nodup (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) brs) (Finset.sort_nodup (fun x1 x2 ↦ x1 ≤ x2) brs)
   . exact List.take_sorted (Finset.sort (fun x1 x2 ↦ x1 ≤ x2) brs) (Finset.sort_sorted (fun x1 x2 ↦ x1 ≤ x2) brs)
@@ -251,7 +252,8 @@ theorem FreeMap.FRan_card_def (h : n ≤ brs.card) : (FRan (FreeMap n brs)).card
   FRan.card_def (inj_n h)
 
 theorem FreeMap.get_def : (FreeMap n brs) i = (RelationSchema.ordering brs)[i]'h := by
-  simp [FreeMap, RelationSchema.ordering]
+  simp only [FreeMap, RelationSchema.ordering, String.default_eq,
+    List.getD_eq_getElem?_getD, Fin.getElem_fin]
   rw [@List.getD_getElem?]
   split
   . simp

@@ -1,6 +1,6 @@
 import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 
-variable {rs q} {dbi : RM.DatabaseInstance ρ String μ} [FOL.folStruc dbi] [Nonempty μ]
+variable {rs q} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Nonempty μ]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Projection operation. -/
 theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
@@ -29,7 +29,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
           intro a_1 a_2
           rw [h_dropSet]
           exact a_2
-        use (Sum.elim t (PFun.lift w) ∘ fun a' ↦ if h : a' ∈ dropSet then Sum.inr (RM.RelationSchema.index (this a' (by simp_all))) else Sum.inl a')
+        use (Sum.elim t (PFun.lift w) ∘ fun a' ↦ if h : a' ∈ dropSet then Sum.inr (RM.RelationSchema.index (this a' h)) else Sum.inl a')
         simp_all [Function.comp_apply]
         apply And.intro
         · apply And.intro

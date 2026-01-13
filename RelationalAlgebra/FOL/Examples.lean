@@ -1,6 +1,7 @@
 import RelationalAlgebra.Examples
 import RelationalAlgebra.Util.RenameFunc
 import RelationalAlgebra.FOL.Evaluate
+import Mathlib.Data.String.Basic
 
 -- Operations for BoundedFormula
 -- AND: ⊓

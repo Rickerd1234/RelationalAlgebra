@@ -7,8 +7,10 @@ open FOL FirstOrder Language Term RM
 /- Proofs how freeVarFinset/varFinsetLeft are defined on relabeled formula's -/
 namespace FOL
 
+variable {α : Type}
+
 @[simp]
-theorem fol.Term.relabelAux_sumInl {n k} (g : String → String ⊕ (Fin n)) {i a : String} :
+theorem fol.Term.relabelAux_sumInl {n k} (g : α → α ⊕ (Fin n)) {i a : α} :
   BoundedFormula.relabelAux g k (Sum.inl i) = Sum.inl a ↔ g i = Sum.inl a := by
     simp [BoundedFormula.relabelAux]
     apply Iff.intro
@@ -25,7 +27,7 @@ theorem fol.Term.relabelAux_sumInl {n k} (g : String → String ⊕ (Fin n)) {i 
       simp_all only [Equiv.sumAssoc_apply_inl_inl, Sum.map_inl, id_eq]
 
 @[simp]
-theorem fol.Term.relabelAux_castLE {g : String → String ⊕ Fin k} {t : (fol dbs).Term (String ⊕ Fin n)} :
+theorem fol.Term.relabelAux_castLE {g : α → α ⊕ Fin k} {t : (fol dbs).Term (α ⊕ Fin n)} :
   (Term.relabel (Sum.map id (Fin.castLE (Nat.le_add_right (k + n) 1)) ∘ BoundedFormula.relabelAux g n) t) =
     (Term.relabel (BoundedFormula.relabelAux g (n + 1) ∘ Sum.map id (Fin.castLE (Nat.le_add_right n 1))) t) := by
       have ⟨t, ht⟩ := Term.cases t
@@ -44,7 +46,7 @@ theorem fol.Term.relabelAux_castLE {g : String → String ⊕ Fin k} {t : (fol d
         rfl
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : (fol dbs).Term (String ⊕ Fin k)} :
+theorem fol.Term.relabel_varFinsetLeft_id [DecidableEq α] {k n} {f : Fin k → Fin n} {t : (fol dbs).Term (α ⊕ Fin k)} :
   (Term.relabel (Sum.map id f) t).varFinsetLeft = t.varFinsetLeft := by
     ext a
     unfold varFinsetLeft
@@ -72,7 +74,7 @@ theorem fol.Term.relabel_varFinsetLeft_id {k n} {f : Fin k → Fin n} {t : (fol 
         exact False.elim (fol_empty_fun _f)
 
 @[simp]
-theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : String → String ⊕ (Fin n)) (t : (fol dbs).Term (String ⊕ Fin k)) :
+theorem fol.Term.relabel_varFinsetLeft_relabelAux [DecidableEq α] {k n} (g : α → α ⊕ (Fin n)) (t : (fol dbs).Term (α ⊕ Fin k)) :
   (Term.relabel (BoundedFormula.relabelAux g _) t).varFinsetLeft = t.varFinsetLeft.pimage (λ a => (g a).getLeft?) := by
     simp [Finset.pimage]
     ext a
@@ -91,7 +93,7 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : String → String �
         next x_1 _i heq => simp_all only [var.injEq, Finset.notMem_empty]
         next x_1 l _f ts heq => simp_all only [reduceCtorEq]
       next x _i =>
-        simp_all only [relabel, Finset.notMem_empty, false_and, exists_const]
+        simp_all only [relabel, Finset.notMem_empty, false_and]
         split at a_1
         next x_1 i heq =>
           simp_all only [var.injEq, Finset.mem_singleton, BoundedFormula.relabelAux]
@@ -148,7 +150,7 @@ theorem fol.Term.relabel_varFinsetLeft_relabelAux {k n} (g : String → String �
           exact False.elim (fol_empty_fun _f)
 
 @[simp]
-theorem BoundedFormula.relabel_freeVarFinset {n k} (g : String → String ⊕ (Fin n)) (φ : (fol dbs).BoundedFormula String k) :
+theorem BoundedFormula.relabel_freeVarFinset [DecidableEq α] {n k} (g : α → α ⊕ (Fin n)) (φ : (fol dbs).BoundedFormula α k) :
   (φ.relabel g).freeVarFinset = (φ.freeVarFinset.pimage (λ a => (g a).getLeft?)) := by
     simp_all only [Finset.pimage]
     induction φ
@@ -167,8 +169,12 @@ theorem BoundedFormula.relabel_freeVarFinset {n k} (g : String → String ⊕ (F
 /- Proof that freeVarFinset is unchanged on `toPrenex` formula's -/
 open BoundedFormula
 
+section toPrenex
+
+variable [DecidableEq α]
+
 @[simp]
-theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : (fol dbs).BoundedFormula String m) (h : m = n) {h' : m ≤ n} :
+theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : (fol dbs).BoundedFormula α m) (h : m = n) {h' : m ≤ n} :
   (φ.castLE h').freeVarFinset = φ.freeVarFinset := by
     induction φ with
     | all f ih =>
@@ -178,7 +184,7 @@ theorem BoundedFormula.castLE_freeVarFinset {m n} (φ : (fol dbs).BoundedFormula
     | _ => simp_all
 
 @[simp]
-theorem liftAt_freeVarFinset {n n'} (φ : (fol dbs).BoundedFormula String n) (hmn : m + n' ≤ n + 1) :
+theorem liftAt_freeVarFinset {n n'} (φ : (fol dbs).BoundedFormula α n) (hmn : m + n' ≤ n + 1) :
   (φ.liftAt n' m).freeVarFinset = φ.freeVarFinset := by
     rw [BoundedFormula.liftAt]
     induction φ with
@@ -188,7 +194,7 @@ theorem liftAt_freeVarFinset {n n'} (φ : (fol dbs).BoundedFormula String n) (hm
       simp only [mapTermRel, freeVarFinset, castLE_freeVarFinset ?_ h, ih (hmn.trans k.succ.le_succ)]
     | _ => simp_all [mapTermRel, Term.liftAt]
 
-theorem freeVarFinset_toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula String n} (hφ : IsQF φ) (hψ : IsPrenex ψ) :
+theorem freeVarFinset_toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula α n} (hφ : IsQF φ) (hψ : IsPrenex ψ) :
     (φ.toPrenexImpRight ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by
   induction hψ with
   | of_isQF hψ => rw [hψ.toPrenexImpRight]
@@ -205,7 +211,7 @@ theorem freeVarFinset_toPrenexImpRight {φ ψ : (fol dbs).BoundedFormula String 
     simp only [freeVarFinset, le_refl, liftAt_freeVarFinset]
     exact IsQF.liftAt hφ
 
-theorem freeVarFinset_toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} (hφ : IsPrenex φ) (hψ : IsPrenex ψ) :
+theorem freeVarFinset_toPrenexImp {φ ψ : (fol dbs).BoundedFormula α n} (hφ : IsPrenex φ) (hψ : IsPrenex ψ) :
     (φ.toPrenexImp ψ).freeVarFinset = (φ.imp ψ).freeVarFinset := by
   revert ψ
   induction hφ with
@@ -229,7 +235,7 @@ theorem freeVarFinset_toPrenexImp {φ ψ : (fol dbs).BoundedFormula String n} (h
     exact this
 
 @[simp]
-theorem freeVarFinset_toPrenex (φ : (fol dbs).BoundedFormula String n) :
+theorem freeVarFinset_toPrenex (φ : (fol dbs).BoundedFormula α n) :
     φ.toPrenex.freeVarFinset = φ.freeVarFinset := by
   induction φ with
   | falsum => exact rfl
@@ -242,9 +248,11 @@ theorem freeVarFinset_toPrenex (φ : (fol dbs).BoundedFormula String n) :
     rw [freeVarFinset, toPrenex, freeVarFinset, h]
 
 
+end toPrenex
+
 /-- The depth of a formula, defined as the maximum number of 'bounded' variables occuring in the formula -/
 @[simp]
-def depth : BoundedFormula L Attribute n → ℕ
+def depth : BoundedFormula L α n → ℕ
   | .falsum => 0
   | .rel _ _ => 0
   | .equal _ _ => 0
@@ -252,7 +260,7 @@ def depth : BoundedFormula L Attribute n → ℕ
   | .all f' => 1 + depth f'
 
 @[simp]
-theorem depth.imp_def_left (f₁ f₂ : BoundedFormula L Attribute n) :
+theorem depth.imp_def_left (f₁ f₂ : BoundedFormula L α n) :
   ∃m, n + depth (.imp f₁ f₂) = n + m + depth f₁ := by
     simp
     have := max_cases (depth f₁) (depth f₂)
@@ -265,16 +273,16 @@ theorem depth.imp_def_left (f₁ f₂ : BoundedFormula L Attribute n) :
       use (depth f₂ - depth f₁)
       grind
 
-theorem depth.imp_comm (f₁ f₂ : BoundedFormula L Attribute n) :
+theorem depth.imp_comm (f₁ f₂ : BoundedFormula L α n) :
   depth (.imp f₁ f₂) = depth (.imp f₂ f₁) := by simp [max_comm]
 
 @[simp]
-theorem depth.imp_def_right (f₁ f₂ : BoundedFormula L Attribute n) :
+theorem depth.imp_def_right (f₁ f₂ : BoundedFormula L α n) :
   ∃m, n + depth (.imp f₁ f₂) = n + m + depth f₂ := by
     rw [depth.imp_comm]
     exact imp_def_left f₂ f₁
 
 @[simp]
-theorem depth.all_def (f : BoundedFormula L Attribute (n + 1)) :
+theorem depth.all_def (f : BoundedFormula L α (n + 1)) :
   n + depth (.all f) = n + 1 + depth f := by
     simp; grind

@@ -76,9 +76,7 @@ This is required for the conversion from unnamed `ModelTheory` to named `Relatio
 -/
 section ArityToTuple
 
-variable {μ : Type} {rs: Finset α} [DecidableEq α]
-  [LE α] [DecidableRel (α := α) fun x1 x2 ↦ x1 ≤ x2] [IsTrans α fun x1 x2 ↦ x1 ≤ x2]
-  [IsAntisymm α fun x1 x2 ↦ x1 ≤ x2] [IsTotal α fun x1 x2 ↦ x1 ≤ x2]
+variable {μ : Type} {rs: Finset α} [LinearOrder α]
 
 /-- Convert a arity mapping `va` for a relation into a tuple function `t` -/
 def ArityToTuple (va : Fin rs.card → μ) : α →. μ :=
@@ -126,9 +124,7 @@ open Language
 
 section struc
 
-variable [DecidableEq α]
-  [LE α] [DecidableRel (α := α) fun x1 x2 ↦ x1 ≤ x2] [IsTrans α fun x1 x2 ↦ x1 ≤ x2]
-  [IsAntisymm α fun x1 x2 ↦ x1 ≤ x2] [IsTotal α fun x1 x2 ↦ x1 ≤ x2]
+variable [LinearOrder α]
 
 /--
 The definition of the structure in ModelTheory, dependent on a `DatabaseInstance`.
@@ -146,7 +142,7 @@ class folStruc (dbi : DatabaseInstance ρ α μ) extends (fol dbi.schema).Struct
         )
 
 @[simp]
-theorem folStruc_apply_RelMap (dbi : DatabaseInstance ρ String μ) [folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
+theorem folStruc_apply_RelMap (dbi : DatabaseInstance ρ α μ) [folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :
   Structure.RelMap (fol.Rel rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
     := (folStruc.RelMap_R rn va)
 

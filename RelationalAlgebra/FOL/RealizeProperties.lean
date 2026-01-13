@@ -4,10 +4,10 @@ open FOL FirstOrder Language RM Term
 
 namespace FOL
 
-variable {ρ μ : Type} {dbi : DatabaseInstance ρ String μ}
+variable {ρ μ : Type} {dbi : DatabaseInstance ρ α μ} [LinearOrder α]
 
 /-- Proof that satisfiability for a `BoundedFormula` is equal if all (bound and free) variables have the same assignment. -/
-theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).BoundedFormula String n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}
+theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).BoundedFormula α n} {t₁ t₂ : α → μ} {iv₁ iv₂ : Fin n → μ}
   (hiv : ∀i, iv₁ i = iv₂ i) (ht : ∀a ∈ q.freeVarFinset, t₁ a = t₂ a) :
     q.Realize t₁ iv₁ ↔ q.Realize t₂ iv₂ := by
       induction q with
@@ -55,7 +55,7 @@ theorem BoundedFormula.Realize.equiv [folStruc dbi] {q : (fol dbi.schema).Bounde
       | _ => simp_all [BoundedFormula.Realize]
 
 /-- Proof that satisfiability for a `BoundedQuery` is equal if all (bound and free) variables have the same assignment. -/
-theorem BoundedQuery.Realize.equiv [folStruc dbi] {q : BoundedQuery dbi.schema n} {t₁ t₂ : String → μ} {iv₁ iv₂ : Fin n → μ}
+theorem BoundedQuery.Realize.equiv [folStruc dbi] {q : BoundedQuery dbi.schema n} {t₁ t₂ : α → μ} {iv₁ iv₂ : Fin n → μ}
   (hiv : ∀i, iv₁ i = iv₂ i) (ht : ∀a ∈ q.schema, t₁ a = t₂ a) :
     q.Realize dbi t₁ iv₁ ↔ q.Realize dbi t₂ iv₂ := by
       rw [Realize]
@@ -69,7 +69,7 @@ Proof that satisfiability for a `BoundedQuery` is equal if all free variables in
 Extra variables in the tuple do not impact satisifiability.
 -/
 @[simp]
-theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset String} {tup tup' : String →. μ} {q : BoundedQuery dbi.schema n}
+theorem BoundedQuery.Realize.enlarge [folStruc dbi] {rs rs' : Finset α} {tup tup' : α →. μ} {q : BoundedQuery dbi.schema n}
   (h_sub : tup'.Dom ⊆ tup.Dom)
   (h_res : tup.restrict h_sub = tup')
   (h_min : ↑q.schema ⊆ tup'.Dom)
@@ -214,7 +214,7 @@ Proof that satisfiability for a `BoundedQuery` is equal for a total function and
 Extra variables in the total function do not impact satisifiability of a tuple.
 -/
 @[simp]
-theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : Finset String} {q : BoundedQuery dbi.schema n}
+theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : Finset α} {q : BoundedQuery dbi.schema n}
   (h_res : PFun.res w rs = tup)
   (h_min : ↑q.schema ⊆ rs)
   {h : tup.Dom = rs}

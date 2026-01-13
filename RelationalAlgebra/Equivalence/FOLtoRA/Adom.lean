@@ -1,6 +1,7 @@
 import RelationalAlgebra.RA.Query
 import RelationalAlgebra.FOL.Ordering
 import Mathlib.Data.Finset.Union
+import Mathlib.Data.String.Basic
 
 open RM RA
 
@@ -255,7 +256,7 @@ theorem RelationAttributesToColumn.evalT_def [DecidableEq α] {a : α} {dbi : Da
 
 section adom_ordering
 
-variable [DecidableEq α] [LE α] [DecidableRel (α := α) (.≤.)] [IsTrans α (.≤.)] [IsAntisymm α (.≤.)] [IsTotal α (.≤.)] [Nonempty α]
+variable [LinearOrder α] [Nonempty α]
 
 /--
 Tuples with attribute `a` containing all values from relation `rn`.

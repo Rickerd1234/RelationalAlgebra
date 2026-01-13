@@ -34,7 +34,7 @@ theorem relabel.Injective_def {k n : ℕ} {g : (α ⊕ Fin k) → (α ⊕ Fin n)
 
 /-- `BoundedFormula.relabelAux g _` maintains injectivity of `g`. -/
 @[simp]
-theorem relabel.Injective_relabelAux {k n : ℕ} {g : String → (String ⊕ Fin n)} (h : g.Injective) :
+theorem relabel.Injective_relabelAux {k n : ℕ} {g : α → (α ⊕ Fin n)} (h : g.Injective) :
   Function.Injective (BoundedFormula.relabelAux g k) := by
     simp_all [Function.Injective]
     apply And.intro
@@ -108,7 +108,7 @@ theorem relabel.Injective_relabelAux {k n : ℕ} {g : String → (String ⊕ Fin
         simp_all [BoundedFormula.relabelAux]
 
 /-- `(BoundedFormula.relabel g).schema` is equivalent to the partial image of `λ a => (g a).getLeft?`. -/
-theorem BoundedQuery.relabel_schema {n k} {dbs : ρ → Finset String} (g : String → String ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
+theorem BoundedQuery.relabel_schema [DecidableEq α] {n k} {dbs : ρ → Finset α} (g : α → α ⊕ (Fin n)) (φ : BoundedQuery dbs k) :
   (φ.relabel g).schema = (φ.schema.pimage (λ a => (g a).getLeft?)) := by
     induction φ with
     | _ => aesop
