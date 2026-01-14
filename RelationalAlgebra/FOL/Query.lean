@@ -18,8 +18,15 @@ inductive BoundedQuery (dbs : ρ → Finset α) : ℕ → Type
   | and {n} (q1 q2 : BoundedQuery dbs n): BoundedQuery dbs n
   | tEq {n} : (t₁ t₂ : (fol dbs).Term (α ⊕ Fin n)) → BoundedQuery dbs n
   | ex {n} (q : BoundedQuery dbs (n + 1)) : BoundedQuery dbs n
-  | or {n} (q₁ q₂ : BoundedQuery dbs n) : BoundedQuery dbs n
   | not {n} (q : BoundedQuery dbs n) : BoundedQuery dbs n
+
+@[simp]
+def BoundedQuery.or (q₁ q₂ : BoundedQuery dbs n) : BoundedQuery dbs n :=
+  (q₁.not.and (q₂.not)).not
+
+@[simp]
+def BoundedQuery.all (q : BoundedQuery dbs (n + 1)) : BoundedQuery dbs n :=
+  q.not.ex.not
 
 /-- Syntax for a `Query` given a database schema `dbs` with bound `0`. Similar to `ModelTheory.Formula`. -/
 abbrev Query (dbs : ρ → Finset α) := BoundedQuery dbs 0
@@ -38,7 +45,6 @@ def BoundedQuery.toFormula : (q : BoundedQuery dbs n) → (fol dbs).BoundedFormu
   | .tEq t₁ t₂ => .equal t₁ t₂
   | .and q1 q2 => q1.toFormula ⊓ q2.toFormula
   | .ex q => .ex q.toFormula
-  | .or q1 q2 => q1.toFormula ⊔ q2.toFormula
   | .not q => .not q.toFormula
 
 @[simp]

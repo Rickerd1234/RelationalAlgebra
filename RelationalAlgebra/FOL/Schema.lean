@@ -49,10 +49,6 @@ theorem BoundedQuery.schema.ex_def {n : ℕ} (q : BoundedQuery dbs (n + 1)) :
   (ex q).schema = q.schema := by simp_all [schema]
 
 @[simp]
-theorem BoundedQuery.schema.or_def {n : ℕ} (q₁ q₂ : BoundedQuery dbs n) :
-  (or q₁ q₂).schema = q₁.schema ∪ q₂.schema := by simp_all [schema]
-
-@[simp]
 theorem BoundedQuery.schema.not_def {n : ℕ} (q : BoundedQuery dbs n) :
   (not q).schema = q.schema := by simp_all [schema]
 

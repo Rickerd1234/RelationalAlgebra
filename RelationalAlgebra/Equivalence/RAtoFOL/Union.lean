@@ -15,20 +15,4 @@ theorem ra_to_fol_evalT.u_def_eq (h : RA.Query.isWellTyped dbi.schema (.u q₁ q
       simp_all only [Set.mem_setOf_eq, Set.mem_union]
       obtain ⟨left, right⟩ := h
       obtain ⟨left_1, right⟩ := right
-      apply Iff.intro
-      · intro a
-        simp_all only [forall_true_left, true_and]
-        obtain ⟨left_2, right_1⟩ := a
-        convert right_1 left_2
-      · intro a
-        cases a with
-        | inl h =>
-          simp_all only [forall_true_left, true_and]
-          obtain ⟨left_2, right_1⟩ := h
-          apply Or.inl
-          convert right_1 left_2
-        | inr h_1 =>
-          simp_all only [forall_true_left, true_and]
-          obtain ⟨left_2, right_1⟩ := h_1
-          apply Or.inr
-          convert right_1 left_2
+      grind only [cases Or]

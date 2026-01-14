@@ -16,7 +16,6 @@ def BoundedQuery.mapTermRel {g : ℕ → ℕ} (ft : ∀ n, (fol dbs).Term (α �
   | _n, .tEq a b        => .tEq (ft _ a) (ft _ b)
   | _n, .and q1 q2      => .and (q1.mapTermRel ft h) (q2.mapTermRel ft h)
   | n,  .ex q           => (h n (q.mapTermRel ft h)).ex
-  | _n, .or q1 q2       => .or (q1.mapTermRel ft h) (q2.mapTermRel ft h)
   | _n, .not q          => (q.mapTermRel ft h).not
 
 /-- Casts `BoundedQuery dbs m` as `BoundedQuery dbs n`, where `m ≤ n`. -/
@@ -26,7 +25,6 @@ def BoundedQuery.castLE : ∀ {m n : ℕ} (_h : m ≤ n), BoundedQuery dbs m →
   | _m, _n, h, .tEq a b => .tEq (a.relabel (Sum.map id (Fin.castLE h))) (b.relabel (Sum.map id (Fin.castLE h)))
   | _m, _n, h, .and q₁ q₂ => (q₁.castLE h).and (q₂.castLE h)
   | _m, _n, h, .ex q => (q.castLE (add_le_add_right h 1)).ex
-  | _m, _n, h, .or q₁ q₂ => (q₁.castLE h).or (q₂.castLE h)
   | _m, _n, h, .not q => (q.castLE h).not
 
 /- Helper theorems for `castLE` and `mapTermRel` -/
@@ -44,7 +42,6 @@ theorem castLE_rfl {n} (h : n ≤ n) (φ : BoundedQuery dbs n) : φ.castLE h = �
   | tEq _ _ => simp
   | and _ _ ih₁ ih₂ => simp [ih₁, ih₂]
   | ex _ ih => simp [ih]
-  | or _ _ ih₁ ih₂ => simp [ ih₁, ih₂]
   | not _ ih => simp [ih]
 
 @[simp]
@@ -101,11 +98,6 @@ theorem BoundedQuery.relabel.ex_def (g : α → α ⊕ (Fin n)) {k} (φ : Bounde
   (ex φ).relabel g = ex (φ.relabel g) := by
     rw [relabel, mapTermRel, relabel]
     simp
-
-@[simp]
-theorem BoundedQuery.relabel.or_def (g : α → α ⊕ (Fin n)) {k} (φ ψ : BoundedQuery dbs k) :
-  (or φ ψ).relabel g = or (φ.relabel g) (ψ.relabel g) := by
-    rfl
 
 @[simp]
 theorem BoundedQuery.relabel.not_def (g : α → α ⊕ (Fin n)) {k} (φ : BoundedQuery dbs k) :

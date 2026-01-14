@@ -294,9 +294,4 @@ theorem BoundedQuery.Realize.restrict [folStruc dbi] {rs : Finset α} {q : Bound
       have : f₁.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_left h_min
       have : f₂.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_right h_min
       simp_all
-    | or f₁ f₂ ih₁ ih₂ =>
-      simp_all [BoundedQuery.toFormula]
-      have : f₁.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_left h_min
-      have : f₂.toFormula.freeVarFinset ⊆ rs := Finset.union_subset_right h_min
-      simp_all
     | _ => simp_all

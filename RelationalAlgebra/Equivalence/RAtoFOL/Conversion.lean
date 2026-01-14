@@ -47,5 +47,6 @@ theorem ra_to_fol_query_schema {dbs : ρ → Finset α} {raQ : RA.Query ρ α} (
         FirstOrder.Language.Term.varFinsetLeft, Finset.union_singleton, Finset.union_insert,
         Finset.insert_eq_of_mem, RA.Query.schema]
 
-    | _ => simp_all only [RA.Query.isWellTyped, ra_to_fol_query, FOL.BoundedQuery.schema.and_def,
-      FOL.BoundedQuery.schema.or_def, FOL.BoundedQuery.schema.not_def, Finset.union_idempotent, RA.Query.schema]
+    | _ => simp_all only [RA.Query.isWellTyped, ra_to_fol_query, FOL.BoundedQuery.or,
+        FOL.BoundedQuery.schema.not_def, FOL.BoundedQuery.schema.and_def, Finset.union_idempotent,
+        RA.Query.schema]
