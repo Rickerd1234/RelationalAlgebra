@@ -22,7 +22,7 @@ inductive BoundedQuery (dbs : ρ → Finset α) : ℕ → Type
 
 @[simp]
 def BoundedQuery.or (q₁ q₂ : BoundedQuery dbs n) : BoundedQuery dbs n :=
-  (q₁.not.and (q₂.not)).not
+  (q₁.not.and q₂.not).not
 
 @[simp]
 def BoundedQuery.all (q : BoundedQuery dbs (n + 1)) : BoundedQuery dbs n :=

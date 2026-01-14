@@ -112,7 +112,7 @@ theorem Query.evaluateT.mem_restrict [DecidableEq α] {q : Query ρ α} (z : ↑
       have z' := (q.evaluate dbi h).validSchema t h'; have z'' := PFun.restrict.def_eq z z'.symm; simp_all only
 
 /-- Proof that the range, for all tuples in a well-typed Query evaluation, is a subset of the database domain -/
-theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : DatabaseInstance ρ α μ} {q : Query ρ α} (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → t.ran ⊆ dbi.domain
+theorem Query.evaluateT.dbi_domain [DecidableEq α] {dbi : DatabaseInstance ρ α μ} {q : Query ρ α} (h : q.isWellTyped dbi.schema) : ∀t, t ∈ q.evaluateT dbi → t.ran ⊆ dbi.domain
   := by
     induction q with
     | R rn =>
@@ -158,18 +158,21 @@ theorem Query.evaluateT.dbi_domain [DecidableEq α] [Nonempty α] {dbi : Databas
         forall_const]
       intro t ht
 
-      have z := ih (t ∘ f) ht
-      have z' : (PFun.ran t) ⊆ PFun.ran (t ∘ f) := by
-        simp [PFun.ran]
-        intro v a ha
-        use (f.invFun a)
-        simp_all only [Function.Bijective, Function.Surjective]
-        obtain ⟨left, right⟩ := h
-        obtain ⟨left_1, right⟩ := right
-        rw [Function.invFun_eq (right a)]
-        exact ha
+      by_cases hc : Nonempty α
+      . have z := ih (t ∘ f) ht
+        have z' : (PFun.ran t) ⊆ PFun.ran (t ∘ f) := by
+          simp [PFun.ran]
+          intro v a ha
+          use (f.invFun a)
+          simp_all only [Function.Bijective, Function.Surjective]
+          obtain ⟨left, right⟩ := h
+          obtain ⟨left_1, right⟩ := right
+          rw [Function.invFun_eq (right a)]
+          exact ha
 
-      exact fun ⦃a⦄ a_1 ↦ z (z' a_1)
+        exact fun ⦃a⦄ a_1 ↦ z (z' a_1)
+      . simp at hc
+        simp [PFun.ran]
 
     | u q₁ q₂ ih₁ ih₂ =>
       simp_all only [isWellTyped, evaluateT, unionT, Set.mem_union, forall_const]

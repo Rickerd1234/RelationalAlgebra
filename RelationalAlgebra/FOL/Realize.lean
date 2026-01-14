@@ -37,7 +37,7 @@ variable (dbi) (φ : Query dbi.schema) [folStruc dbi] (t : α →. μ) [Inhabite
 Minimal 'realization' definition, uses `BoundedQuery.Realize` and the requirement that .
 Essentially a satisfiability check for a given `φ : BoundedQuery` and a tuple with the schema of the free variables (`φ.schema`) in the query.
 -/
-nonrec def Query.RealizeMin : Prop :=
+def Query.RealizeMin : Prop :=
   ∃(h : t.Dom = φ.schema), (φ.Realize dbi (TupleToFun h) default)
 
 theorem Query.RealizeMin.ex_def :

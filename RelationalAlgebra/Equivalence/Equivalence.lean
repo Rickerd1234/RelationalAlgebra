@@ -6,7 +6,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Rename
 import RelationalAlgebra.Equivalence.RAtoFOL.Union
 import RelationalAlgebra.Equivalence.RAtoFOL.Diff
 import RelationalAlgebra.Equivalence.FOLtoRA.Prenex
-import RelationalAlgebra.Equivalence.FOLtoRA.EvaluateAdom
+import RelationalAlgebra.FOL.EvaluateAdom
 
 open RM
 
@@ -36,14 +36,14 @@ theorem ra_to_fol_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
 
 /-- Query evaluation equivalence for `RelationInstance` -/
 theorem ra_to_fol_eval :
-  (ra_to_fol_query dbi.schema raQ).evaluate dbi = raQ.evaluate dbi h := by
-    simp [RA.Query.evaluate, FOL.Query.evaluate]
-    simp_all [ra_to_fol_query_schema]
-    exact ra_to_fol_evalT raQ h
+  (ra_to_fol_query dbi.schema raQ).evaluateAdom dbi = raQ.evaluate dbi h := by
+    simp [RA.Query.evaluate, FOL.Query.evaluateAdom, h,
+      ra_to_fol_query_schema, ra_to_fol_evalT raQ h]
+    exact RA.Query.evaluateT.dbi_domain h
 
 /-- Query expressivity equivalence -/
 theorem ra_to_fol :
-  ∃folQ : FOL.Query dbi.schema, folQ.evaluate dbi = raQ.evaluate dbi h := by
+  ∃folQ : FOL.Query dbi.schema, folQ.evaluateAdom dbi = raQ.evaluate dbi h := by
     use ra_to_fol_query dbi.schema raQ
     exact ra_to_fol_eval raQ h
 
