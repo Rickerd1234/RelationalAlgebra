@@ -10,12 +10,12 @@ variable {ρ : Type} {dbs : ρ → Finset α} [Inhabited α] [LinearOrder α]
 
 /--
 Deterministically convert a FOL variable (`(fol dbs).Term (α ⊕ Fin n)`) to an attribute (`α`).
-`brs` should be disjoint from the `α` FOL variables present in the query
+`brs` should be disjoint from the `α` FOL variables present in the query, to have bijectivity.
 -/
 def TermtoAtt (brs : Finset α) : (fol dbs).Term (α ⊕ Fin n) → α
   | var (Sum.inl s) => s
   | var (Sum.inr i) => FreeMap n brs i
-  | _ => default
+  | func f _ => False.elim (fol_empty_fun f)
 
 @[simp]
 def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (α ⊕ Fin n)} {brs : Finset α} (h : n ≤ brs.card) (h' : (t₁.varFinsetLeft ∪ t₂.varFinsetLeft) ∩ FRan (FreeMap n brs) = ∅) :

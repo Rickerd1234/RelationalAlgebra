@@ -37,8 +37,8 @@ def toRA
     | .equal t₁ t₂ => .s (TermtoAtt brs t₁) (TermtoAtt brs t₂) (adom dbs rs)
     -- Handled in `Relation.lean`
     | .rel (.R rn) ts => relToRA ts rs brs
-    -- `adom rs - (toRA f₁ rs - toRA f₂ rs)`
-    | .imp f₁ f₂ => .d (adom dbs rs) (.d (toRA f₁ rs brs) (toRA f₂ rs brs))
+    -- `(adom rs - toRA f₁ rs) ∪ toRA f₂ rs`
+    | .imp f₁ f₂ => .u (.d (adom dbs rs) (toRA f₁ rs brs)) (toRA f₂ rs brs)
     -- `adom rs - (π rs (adom rs' - toRA sf rs'))`
     --  where `rs'` is `rs` combined with all variables used to rename bound variables (`FRan (FreeMap (n + 1) brs))`).
     | .all sf => (adom dbs rs).d (.p rs ((adom dbs (rs ∪ FRan (FreeMap (n + 1) brs))).d (toRA sf (rs ∪ FRan (FreeMap (n + 1) brs)) brs)))
@@ -149,17 +149,17 @@ theorem toRA.imp_def [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)]
   (ih₂ : (toRA (dbs := dbi.schema) q₂ rs brs).evaluateT dbi = RealizeDomSet q₂ rs brs) :
     (toRA (q₁.imp q₂) rs brs).evaluateT dbi = RealizeDomSet (q₁.imp q₂) rs brs := by
       ext t
-      simp only [toRA, RA.Query.evaluateT, differenceT, adom.complete_def, Set.mem_diff, Set.mem_setOf_eq,
-        not_and, not_not, RealizeDomSet, BoundedFormula.realize_imp, exists_and_right]
-      simp_all only [nonempty_subtype, RealizeDomSet, Finset.coe_inj, exists_and_right,
-        Set.mem_setOf_eq, and_true, and_imp, forall_exists_index, exists_true_left,
-        TupleToFun.tuple_eq_self]
+      simp only [toRA, RA.Query.evaluateT, unionT, differenceT, adom.complete_def, Set.mem_union,
+        Set.mem_diff, Set.mem_setOf_eq, RealizeDomSet, BoundedFormula.realize_imp, exists_and_right]
+      simp_all only [nonempty_subtype, RealizeDomSet, exists_and_right, Set.mem_setOf_eq, not_and,
+        forall_exists_index]
+
       apply Iff.intro
       · intro a_1
-        simp_all only [implies_true, exists_const, and_self]
+        grind only [= Set.setOf_true, = Set.subset_def, = Set.setOf_false, cases Or]
       · intro ⟨⟨w_1, h_1⟩, right⟩
-        simp_all [Finset.coe_inj, TupleToFun.tuple_eq_self, implies_true, and_self]
-        apply adom.exists_tuple_from_value hμ
+        simp_all [Finset.coe_inj, TupleToFun.tuple_eq_self, and_self, adom.exists_tuple_from_value hμ]
+        grind only
 
 theorem toRA.not_def [Nonempty ↑(adomRs dbi.schema)] [Fintype ↑(adomRs dbi.schema)] [folStruc dbi (μ := μ)]
   (hμ : ∀v : μ, v ∈ dbi.domain)

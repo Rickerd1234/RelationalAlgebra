@@ -8,20 +8,13 @@ section FRan
 
 variable {α : Type} [DecidableEq α]
 
-/-- `Set` equal to the range of `f`. -/
-def FRanS (f : Fin n → α) : Set α := {a | ∃i, f i = a}
-
-instance FRanSFin {f : Fin n → α} : Fintype (FRanS f) := by
-  apply Fintype.ofFinset (((Finset.range n).attachFin (by intro n h; simp at h; apply h)).image f)
-  . simp [FRanS]
-
 /-- `Finset` equal to the range of `f`. -/
-def FRan (f : Fin n → α) : Finset α := (FRanS f).toFinset
+def FRan (f : Fin n → α) : Finset α := (Set.range f).toFinset
 
 @[simp]
 def FRan.card_def {f : Fin n → α} (hf : f.Injective) : (FRan f).card = n := by
   induction n
-  . simp [FRan, FRanS]
+  . simp [FRan]
   . rename_i n' ih
     rw [@Finset.card_eq_succ_iff_cons]
     use f 0
@@ -29,7 +22,7 @@ def FRan.card_def {f : Fin n → α} (hf : f.Injective) : (FRan f).card = n := b
     simp_all only [Finset.cons_eq_insert, exists_and_left, exists_prop]
     apply And.intro
     · ext a
-      simp [FRan, FRanS]
+      simp [FRan]
       apply Iff.intro
       · intro a_1
         cases a_1 with
@@ -50,7 +43,7 @@ def FRan.card_def {f : Fin n → α} (hf : f.Injective) : (FRan f).card = n := b
           use w.pred hc
           simp [Fin.tail]
     · apply And.intro
-      · simp [FRan, FRanS, Fin.tail]
+      · simp [FRan, Fin.tail]
         simp [Function.Injective] at hf
         intro x
         by_contra hc
@@ -65,10 +58,10 @@ def FRan.card_def {f : Fin n → α} (hf : f.Injective) : (FRan f).card = n := b
 def FRan.default := FRan Fin.elim0 (α := α)
 
 @[simp]
-theorem FRan.default_eq_empty : FRan Fin.elim0 (α := α) = ∅ := by simp [FRan, FRanS]
+theorem FRan.default_eq_empty : FRan Fin.elim0 (α := α) = ∅ := by simp [FRan]
 
 @[simp]
-theorem FRan.mem_def {f : Fin n → α}: f i ∈ FRan f := by simp [FRan, FRanS]
+theorem FRan.mem_def {f : Fin n → α}: f i ∈ FRan f := by simp [FRan]
 
 end FRan
 
@@ -86,7 +79,7 @@ def FreeMap (n : ℕ) (brs : Finset α) : Fin n → α :=
 
 /- A bunch of helper theorems to reason about the `FreeMap` and `FRan` defintions. -/
 theorem FreeMap.FRan_def (h : n ≤ brs.card) : FRan (FreeMap n brs) = ((RelationSchema.ordering brs).take n).toFinset := by
-  simp [FRan, FRanS, FreeMap]
+  simp [Set.range, FRan, FreeMap]
   ext a
   simp only [List.getD_eq_getElem?_getD, Set.mem_toFinset, Set.mem_setOf_eq, List.mem_toFinset]
   apply Iff.intro
@@ -230,7 +223,7 @@ theorem FreeMap.fromIndex_brs_def {brs : Finset α} {i : Fin n} (h : n ≤ brs.c
 theorem FreeMap.mem_FRan_add_one_cases (h : n + 1 ≤ brs.card) : x ∈ FRan (FreeMap (n + 1) brs) ↔ (x ∈ FRan (FreeMap n brs) ∨ x = FreeMap (n + 1) brs (Fin.last n)) := by
   apply Iff.intro
   · intro a
-    simp [FRan, FreeMap, FRanS] at a
+    simp [FRan, FreeMap] at a
     obtain ⟨i, hi⟩ := a
     induction i using Fin.lastCases with
     | cast j => apply Or.inl; subst hi; rw [FreeMap.FRan_def (Nat.le_of_succ_le h)]; simp [List.mem_take_iff_getElem]; use ↑j, (by grind); rw [@List.getD_getElem?]; simp; grind
@@ -252,7 +245,6 @@ theorem FreeMap.mem_FRan_add_one_cases (h : n + 1 ≤ brs.card) : x ∈ FRan (Fr
       simp only [FRan.mem_def]
 
 theorem FreeMap.inj_n  {brs : Finset α} (h : n ≤ brs.card) : (FreeMap n brs).Injective := by
-  simp [Function.Injective]
   intro a₁ a₂ h'
   rw [FreeMap.fromIndex_brs_def h, FreeMap.fromIndex_brs_def h] at h'
   have := RelationSchema.fromIndex_inj.mp h'
@@ -298,15 +290,14 @@ theorem FreeMap.reverse_def {brs : Finset α} {i : Fin n} (h : n ≤ brs.card) :
 
 theorem FRan.notMem_FreeMap_lift (h : n + 1 ≤ brs.card) : FreeMap (n + 1) brs (Fin.last n) ∉ FRan (FreeMap n brs) := by
   rw [FRan]
-  unfold FRanS
-  simp only [FreeMap, List.getD_eq_getElem?_getD, Set.mem_toFinset,
-    Set.mem_setOf_eq, not_exists, List.getD_getElem?, RelationSchema.ordering_card]
+  simp only [Set.toFinset_range, FreeMap, Fin.val_last, List.getD_eq_getElem?_getD,
+    List.getD_getElem?, RelationSchema.ordering_card, Finset.mem_image, Finset.mem_univ, true_and,
+    not_exists]
   intro i
   have : n < brs.card := by grind
-  simp only [Fin.val_last, this, ↓reduceDIte, ne_eq]
+  simp only [this, ↓reduceDIte, ne_eq]
   have : ↑i < brs.card := by grind
   simp only [this, ↓reduceDIte, ne_eq]
   by_contra hc
   have := (RelationSchema.ordering_inj brs).mp hc
-  simp_all
   grind

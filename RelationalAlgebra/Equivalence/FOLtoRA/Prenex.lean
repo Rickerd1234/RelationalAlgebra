@@ -51,7 +51,7 @@ theorem toRA.isWellTyped_def_IsAtomic [Nonempty ρ] {q : (fol dbs).BoundedFormul
             | inr
               val_2 =>
               simp_all only [Term.varFinsetLeft, Finset.empty_union, Finset.singleton_union]
-              simp_all [FRan, FRanS, Finset.insert_subset_iff]
+              simp_all [FRan, Set.range, Finset.insert_subset_iff]
               try simp_all [Set.subset_def]
           | inr val_1 =>
             cases k₂ with
@@ -59,12 +59,12 @@ theorem toRA.isWellTyped_def_IsAtomic [Nonempty ρ] {q : (fol dbs).BoundedFormul
               val =>
               simp_all only [Term.varFinsetLeft, Finset.singleton_union,
                 Finset.union_insert, Finset.empty_union]
-              simp_all [FRan, FRanS, Finset.insert_subset_iff]
+              simp_all [FRan, Set.range, Finset.insert_subset_iff]
               try simp_all [Set.subset_def]
             | inr
               val_2 =>
               simp_all only [Term.varFinsetLeft, Finset.empty_union]
-              simp [FRan, FRanS] at *
+              simp [FRan, Set.range] at *
               try simp_all [Set.subset_def]
         )
       | rel R ts =>
@@ -226,7 +226,7 @@ theorem fol_to_ra_query.schema_def [Nonempty ρ] (q : FOL.Query dbs) [Fintype (a
 theorem fol_to_ra_query.isWellTyped_def [Nonempty ρ] (q : FOL.Query dbs) [Fintype (adomRs dbs)] [Nonempty (adomRs dbs)]
   (hbrs : q.schema ∩ brs = ∅) (hdepth : 0 + depth (toPrenex q) < brs.card) :
     (fol_to_ra_query q brs).isWellTyped dbs := by
-      have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan (FreeMap 0 brs) = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan, FRanS]
+      have : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan (FreeMap 0 brs) = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan]
       rw [fol_to_ra_query, BoundedQuery.schema, ← freeVarFinset_toPrenex, ← this]
       apply toRA.isWellTyped_def_IsPrenex ?_ ?_ ?_ hdepth
       . simp [BoundedFormula.toPrenex_isPrenex]
@@ -247,7 +247,7 @@ theorem fol_to_ra_query.evalT [folStruc dbi] [Fintype (adomRs dbi.schema)] [None
 
       have hq := BoundedFormula.toPrenex_isPrenex (BoundedQuery.toFormula q)
       have helper : (BoundedQuery.toFormula q).toPrenex.freeVarFinset ∪ FRan (FreeMap 0 brs)
-        = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan, FRanS]
+        = (BoundedQuery.toFormula q).toPrenex.freeVarFinset := by simp [FRan]
       rw [← freeVarFinset_toPrenex, ← helper, toRA.evalT_def_IsPrenex hμ hq ?_ ?_ ?_ ?_ ?_]
 
       rw [Set.mem_setOf_eq]
