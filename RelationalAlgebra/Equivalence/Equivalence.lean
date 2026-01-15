@@ -73,7 +73,6 @@ Requires:
 - The value `default : α` is not contained in `brs`
 - `default` does not appear in the free variables of the query
 - `brs` is disjoint from all relation schemas and all relation schemas are disjoint from the free variables used for that relation
-- All relations referenced by the query have nonempty schemas (`FOL.NonemptyR folQ.toFormula`)
 -/
 section FOLtoRA
 
@@ -84,19 +83,18 @@ variable {ρ α μ : Type} [Inhabited α] [Inhabited ρ] [LinearOrder α] [Linea
 
 /-- Query evaluation equivalence for `RelationInstance` -/
 theorem fol_to_ra_eval (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + FOL.depth (toPrenex folQ) < brs.card) (brs_def : default ∉ brs)
-  (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
+  (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) :
     (fol_to_ra_query folQ brs).evaluate dbi (fol_to_ra_query.isWellTyped_def folQ brs_disj brs_depth) = folQ.evaluateAdom dbi := by
       simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
       apply And.intro
       · exact fol_to_ra_query.schema_def folQ
-      · exact fol_to_ra_query.evalT folQ hμ hdisj hdef hne brs_disj brs_depth brs_def
+      · exact fol_to_ra_query.evalT folQ hμ hdisj hdef brs_disj brs_depth brs_def
 
 /-- Query expressivity equivalence -/
 theorem fol_to_ra (brs : Finset α) (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + FOL.depth (toPrenex folQ) < brs.card) (brs_def : default ∉ brs)
-  (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) (hne : FOL.NonemptyR folQ.toFormula) :
+  (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) :
     ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
       use fol_to_ra_query folQ brs
       use fol_to_ra_query.isWellTyped_def folQ brs_disj brs_depth
-      exact fol_to_ra_eval folQ brs brs_disj brs_depth brs_def hμ hdisj hdef hne
-
+      exact fol_to_ra_eval folQ brs brs_disj brs_depth brs_def hμ hdisj hdef
 end FOLtoRA

@@ -883,7 +883,7 @@ theorem relToRA.isWellTyped_def [Nonempty ↑(adomRs dbs)] {ts : Fin (dbs rn).ca
     simp [relToRA, relJoinsMin.isWellTyped_def, adom.isWellTyped_def, adom.schema_def]
 
 theorem relToRA.evalT_def {dbi : DatabaseInstance ρ α μ} [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.schema)] [folStruc dbi] [Inhabited μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)}
-  (hrs : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) ⊆ rs) (hu : default ∉ rs) (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) (hne : dbi.schema rn ≠ ∅) :
+  (hrs : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) ⊆ rs) (hu : default ∉ rs) (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) (hμ : ∀ (v : μ), v ∈ dbi.domain) :
     RA.Query.evaluateT dbi (relToRA ts rs brs) = RealizeDomSet (Relations.boundedFormula (relations.R rn) ts) rs brs := by
       simp_rw [RealizeDomSet, BoundedFormula.realize_rel]
       simp_rw [folStruc_apply_RelMap, ArityToTuple.def_dite, exists_and_right]
@@ -997,9 +997,6 @@ theorem relToRA.evalT_def {dbi : DatabaseInstance ρ α μ} [Nonempty (adomRs db
             . use t
               apply And.intro
               . simp [w_1, right]
-                use rn
-                apply And.intro
-                . simp [adomRs, hne]
-                . use t ∘ renamer ts brs
+                apply adom.exists_tuple_from_value hμ
               . exact joinSingleT.restrict t
           . simp [Part.eq_none_iff', Part.dom_iff_mem, ← PFun.mem_dom, w_1]

@@ -52,23 +52,6 @@ theorem RA.Query.foldr_union_evalT (xs : List β) (qb : β → RA.Query ρ α) (
 def adomRs (dbs : ρ → Finset α) : Set ρ :=
   {rn | dbs rn ≠ ∅}
 
-/-- All attributes in the database schema -/
-def adomAtts (dbs : ρ → Finset α) : Set α :=
-  {a | ∃rn, a ∈ dbs rn}
-
-/-- Helper to demonstrate that Fintype adomRs → Fintype adomAtts -/
-theorem adomAtts.biUnion_adomRs : ra ∈ adomAtts dbs ↔ ∃rn ∈ adomRs dbs, ra ∈ dbs rn := by
-  simp [adomRs, adomAtts]
-  grind
-
-/-- Fintype adomRs → Fintype adomAtts -/
-instance {dbs : ρ → Finset α} [Fintype (adomRs dbs)] [DecidableEq α] : Fintype (adomAtts dbs) := by
-  have : adomAtts dbs = {ra | ∃rn ∈ adomRs dbs, ra ∈ dbs rn} := by
-    simp [Set.ext_iff, adomAtts.biUnion_adomRs]
-  rw [this]
-  apply Fintype.ofFinset ((adomRs dbs).toFinset.biUnion (λ r => dbs r))
-  simp only [Finset.mem_biUnion, Set.mem_toFinset, Set.mem_setOf_eq, implies_true]
-
 
 /-- Empty tuple for a relation -/
 def EmptyTupleFromRelation (rn : ρ) : RA.Query ρ α :=
