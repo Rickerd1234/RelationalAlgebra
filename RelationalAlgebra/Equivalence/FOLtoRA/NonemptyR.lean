@@ -1,5 +1,4 @@
 import RelationalAlgebra.Equivalence.FOLtoRA.FRan
-import RelationalAlgebra.Equivalence.FOLtoRA.FreshAtts
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 
 /-

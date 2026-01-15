@@ -1,6 +1,5 @@
 import RelationalAlgebra.Equivalence.FOLtoRA.Adom
 import RelationalAlgebra.Equivalence.FOLtoRA.Disjoint
-import RelationalAlgebra.Equivalence.FOLtoRA.FreshAtts
 import RelationalAlgebra.Equivalence.FOLtoRA.FRan
 import RelationalAlgebra.Equivalence.FOLtoRA.NonemptyR
 import RelationalAlgebra.Equivalence.FOLtoRA.Conversion
@@ -116,12 +115,11 @@ theorem toRA.isWellTyped_def_IsPrenex [Nonempty ρ] {q : (fol dbs).BoundedFormul
         simp only [adom.isWellTyped_def, adom.schema_def, toRA.schema_def, true_and, and_true, *]
         exact Finset.union_subset_union_right (FreeMap.FRan_sub_add_one (by grind))
 
-/- Proof that `toRA` evaluation is equivalent to the `Set` of tuples satisfying `RealizeDomSet` for the distinct prenex form cases -/
+/- Proof that `toRA` evaluation is equivalent to the `Set` of tuples of `RealizeDomSet` for the distinct prenex form cases -/
 theorem toRA.evalT_def_IsAtomic [Nonempty ρ] [Inhabited μ] [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi] {q : (fol dbi.schema).BoundedFormula α n}
   (hq : q.IsAtomic) [Fintype (adomRs dbi.schema)] (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card)
   (hdisj : disjointSchema brs q) (hdef : default ∉ rs) (hne : NonemptyR q) :
-    (toRA q rs brs).evaluateT dbi =
-      {t | ∃h, RealizeDomSet q rs brs t h} := by
+    (toRA q rs brs).evaluateT dbi = RealizeDomSet q rs brs := by
       induction hq with
       | equal t₁ t₂ => exact equal_def h
       | rel R ts =>
@@ -153,8 +151,7 @@ theorem toRA.evalT_def_IsAtomic [Nonempty ρ] [Inhabited μ] [Nonempty ↑(adomR
 theorem toRA.evalT_def_IsQF [Nonempty ρ] [Inhabited μ] [folStruc dbi] {q : (fol dbi.schema).BoundedFormula α n}
   (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsQF) [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)]
   (h : (q.freeVarFinset ∪ FRan (FreeMap n brs)) ⊆ rs) (hn : n + depth q < brs.card) (hdisj : disjointSchema brs q) (hdef : default ∉ rs) (hne : NonemptyR q) :
-    (toRA q rs brs).evaluateT dbi =
-      {t | ∃h, RealizeDomSet q rs brs t h} := by
+    (toRA q rs brs).evaluateT dbi = RealizeDomSet q rs brs := by
       induction hq with
       | falsum => exact falsum_def
       | of_isAtomic h_at => exact toRA.evalT_def_IsAtomic h_at h hn hdisj hdef hne
@@ -168,8 +165,7 @@ theorem toRA.evalT_def_IsQF [Nonempty ρ] [Inhabited μ] [folStruc dbi] {q : (fo
 
 theorem toRA.evalT_def_IsPrenex [Nonempty ρ] [Inhabited μ] [folStruc dbi] {q : (fol dbi.schema).BoundedFormula α n} [Fintype (adomRs dbi.schema)] [Nonempty ↑(adomRs dbi.schema)]
   (hμ : ∀v, v ∈ dbi.domain) (hq : q.IsPrenex) (h' : brs ∩ q.freeVarFinset = ∅) (hn : n + depth q < brs.card) (hdisj : disjointSchema brs q) (hdef : default ∉ q.freeVarFinset ∪ brs) (hne : NonemptyR q) :
-    (toRA q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi =
-      {t | ∃h, RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs t h} := by
+    (toRA q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs).evaluateT dbi = RealizeDomSet q (q.freeVarFinset ∪ FRan (FreeMap n brs)) brs := by
         induction hq with
         | of_isQF hqf =>
           rename_i n' q

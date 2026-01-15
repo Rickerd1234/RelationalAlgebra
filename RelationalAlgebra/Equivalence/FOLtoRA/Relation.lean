@@ -884,8 +884,7 @@ theorem relToRA.isWellTyped_def [Nonempty ↑(adomRs dbs)] {ts : Fin (dbs rn).ca
 
 theorem relToRA.evalT_def {dbi : DatabaseInstance ρ α μ} [Nonempty (adomRs dbi.schema)] [Fintype (adomRs dbi.schema)] [folStruc dbi] [Inhabited μ] {ts : Fin (dbi.schema rn).card → (fol dbi.schema).Term (α ⊕ Fin n)}
   (hrs : (Finset.univ.biUnion fun i ↦ (ts i).varFinsetLeft) ∪ FRan (FreeMap n brs) ⊆ rs) (hu : default ∉ rs) (hdisj : (dbi.schema rn) ∩ (dbi.schema rn).image (renamer ts brs) = ∅) (hne : dbi.schema rn ≠ ∅) :
-    RA.Query.evaluateT dbi (relToRA ts rs brs) =
-    {t | ∃h, RealizeDomSet (μ := μ) (Relations.boundedFormula (relations.R rn) ts) rs brs t h} := by
+    RA.Query.evaluateT dbi (relToRA ts rs brs) = RealizeDomSet (Relations.boundedFormula (relations.R rn) ts) rs brs := by
       simp_rw [RealizeDomSet, BoundedFormula.realize_rel]
       simp_rw [folStruc_apply_RelMap, ArityToTuple.def_dite, exists_and_right]
 

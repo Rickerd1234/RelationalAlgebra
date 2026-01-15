@@ -1,12 +1,10 @@
 import RelationalAlgebra.Equivalence.FOLtoRA.FRan
-import RelationalAlgebra.Equivalence.FOLtoRA.FreshAtts
 import RelationalAlgebra.FOL.ModelTheoryExtensions
 
 /-
 To simplify the conversion and proof, we decided to allow for the assumption that the attributes used to represent the bound variables (`brs`)
   is disjoint from the named attributes used in any of the relations AND there is no intersection between free variables and relation attributes used in the query.
-This assumption is a short-cut, given we use `FreshAtts` to generate `brs` which avoids these variables.
-However, due to deadlines we decided to leave this proof as future work.
+This assumption simplifies the proof without real loss of generality, since in practice renaming of attributes/variables could resolve the issues that would occur.
 -/
 
 open FOL FirstOrder Language Term RM

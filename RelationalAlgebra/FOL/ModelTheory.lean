@@ -1,6 +1,5 @@
 import RelationalAlgebra.RelationalModel
 import RelationalAlgebra.FOL.Ordering
-import RelationalAlgebra.Util.PFunFinRan
 
 import Mathlib.ModelTheory.Basic
 import Mathlib.ModelTheory.Syntax
@@ -130,11 +129,7 @@ class folStruc (dbi : DatabaseInstance ρ α μ) extends (fol dbi.schema).Struct
   RelMap_R :
       (rn : ρ) →
       (va : Fin (dbi.schema rn).card → μ) →
-
-        RelMap (.R rn) va ↔
-        (
-          ArityToTuple va ∈ (dbi.relations rn).tuples
-        )
+        RelMap (.R rn) va ↔ ArityToTuple va ∈ (dbi.relations rn).tuples
 
 @[simp]
 theorem folStruc_apply_RelMap (dbi : DatabaseInstance ρ α μ) [s : folStruc dbi] {rn} {va : Fin (dbi.schema rn).card → μ} :

@@ -10,7 +10,7 @@ variable {ρ : Type} {dbs : ρ → Finset α} [Inhabited α] [LinearOrder α]
 
 /--
 Deterministically convert a FOL variable (`(fol dbs).Term (α ⊕ Fin n)`) to an attribute (`α`).
-`brs` should be disjoint from the `α` FOL variables
+`brs` should be disjoint from the `α` FOL variables present in the query
 -/
 def TermtoAtt (brs : Finset α) : (fol dbs).Term (α ⊕ Fin n) → α
   | var (Sum.inl s) => s
@@ -50,7 +50,7 @@ def TermtoAtt.eq_iff {t₁ t₂ : (fol dbs).Term (α ⊕ Fin n)} {brs : Finset �
 
 /--
 Map an attribute `ra` (part of the schema for relation `rn`) to the corresponding 'variable' used in the FOL variable assignment `ts`
-Note: `ra` should be in schema `dbs rn`
+Note: `ra` should be in schema `dbs rn` and `brs` should be disjoint from the free variables
 -/
 def renamer (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) (ra : α) : α :=
   ((RelationSchema.index? (dbs rn) ra).map (TermtoAtt brs ∘ ts)).getD (default)
