@@ -88,7 +88,7 @@ theorem fol_to_ra_eval (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + F
       simp only [RA.Query.evaluate, FOL.Query.evaluateAdom, RelationInstance.mk.injEq]
       apply And.intro
       · exact fol_to_ra_query.schema_def folQ
-      · exact fol_to_ra_query.evalT folQ hμ hdisj hdef brs_disj brs_depth brs_def
+      · exact fol_to_ra_query.evalT_def folQ hμ hdisj hdef brs_disj brs_depth brs_def
 
 /-- Query expressivity equivalence -/
 theorem fol_to_ra (brs : Finset α) (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + FOL.depth (toPrenex folQ) < brs.card) (brs_def : default ∉ brs)
@@ -97,4 +97,5 @@ theorem fol_to_ra (brs : Finset α) (brs_disj : folQ.schema ∩ brs = ∅) (brs_
       use fol_to_ra_query folQ brs
       use fol_to_ra_query.isWellTyped_def folQ brs_disj brs_depth
       exact fol_to_ra_eval folQ brs brs_disj brs_depth brs_def hμ hdisj hdef
+
 end FOLtoRA

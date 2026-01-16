@@ -8,5 +8,5 @@ The set of tuples (`t : α →. μ`) satisfying a `BoundedFormula` with given `t
 -/
 @[simp]
 def RealizeDomSet {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [Inhabited α] [folStruc dbi] [Inhabited μ]
-  (q : (fol dbi.schema).BoundedFormula α n) (rs brs : Finset α) : Set (α →. μ) :=
-    {t : α →. μ | ∃h : t.Dom = rs, q.Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) ∧ t.ran ⊆ dbi.domain}
+  (f : (fol dbi.schema).BoundedFormula α n) (rs brs : Finset α) : Set (α →. μ) :=
+    {t : α →. μ | ∃h : t.Dom = rs, f.Realize (TupleToFun h) (TupleToFun h ∘ FreeMap n brs) ∧ t.ran ⊆ dbi.domain}

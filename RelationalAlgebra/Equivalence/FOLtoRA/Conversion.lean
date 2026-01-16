@@ -229,15 +229,7 @@ theorem toRA.all_def [Nonempty ↑(adomRs dbi.schema)] [folStruc dbi] [Fintype �
               by_contra hc'
               rw [FreeMap.mem_FRan_add_one_cases (by grind)] at hc'
               simp_all
-        . simp [PFun.ran, t'', Set.subset_def]
-          intro v a hv
-          split at hv
-          . apply right_1
-            simp [PFun.ran]
-            use a
-          . split at hv
-            . simp [hμ]
-            . simp at hv
+        . simp [PFun.ran, t'', Set.subset_def, hμ]
 
         . by_contra hc'
           apply hc
