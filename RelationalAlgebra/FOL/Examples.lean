@@ -21,9 +21,9 @@ open FOL Language
 
 abbrev exFol := (fol exDatabase.schema)
 
-def x : exFol.Term (String ⊕ Fin 0) := outVar "x"
-def y : exFol.Term (String ⊕ Fin 0) := outVar "y"
-def z : exFol.Term (String ⊕ Fin 1) := inVar 0
+def x : exFol.Term (String ⊕ Fin 0) := freeVar "x"
+def y : exFol.Term (String ⊕ Fin 0) := freeVar "y"
+def z : exFol.Term (String ⊕ Fin 1) := boundVar 0
 
 -- Explore formula concepts
 def n_xy : exFol.BoundedFormula String 0 := ∼(x =' y)
@@ -51,7 +51,7 @@ example [struc: exFol.Structure (String)] : ex_n_xy_and_yz.Realize v' := by
   rfl
 
 example [struc: exFol.Structure (String)] : all_xz_or_yz.Realize v' := by
-  simp only [Formula.Realize, all_xz_or_yz, x, y, z, outVar, inVar]
+  simp only [Formula.Realize, all_xz_or_yz, x, y, z, freeVar, boundVar]
   simp
   use ""
   simp [Term.liftAt, Fin.snoc]
@@ -61,7 +61,7 @@ example [struc: exFol.Structure (String)] : all_xz_or_yz.Realize v' := by
 def v := PFun.res v' {"x", "y"}
 
 -- Relation with variables
-def F : Query exDatabase.schema := (.R "employee" [outVar "x", outVar "y"].get)
+def F : Query exDatabase.schema := (.R "employee" [freeVar "x", freeVar "y"].get)
 
 example (h : a ∈ exDatabase.schema "employee") :
   RelationSchema.index h < (exDatabase.schema "employee").card := by

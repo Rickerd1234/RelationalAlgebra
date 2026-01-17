@@ -7,7 +7,7 @@ theorem toFOL.evalT_def.s_def.mp (h : RA.Query.isWellTyped dbi.schema (.s a b q)
   (ih: ∀t, (toFOL dbi.schema q).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (toFOL dbi.schema (.s a b q)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.s a b q) := by
       intro t
-      simp only [RA.Query.isWellTyped, toFOL, FOL.outVar.def, FOL.Query.RealizeMin.ex_def,
+      simp only [RA.Query.isWellTyped, toFOL, FOL.freeVar.def, FOL.Query.RealizeMin.ex_def,
         FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula,
         FirstOrder.Language.BoundedFormula.realize_inf, FOL.BoundedQuery.schema.and_def,
         FOL.BoundedQuery.schema.tEq_def, FirstOrder.Language.Term.varFinsetLeft, Finset.coe_union,
@@ -39,7 +39,7 @@ theorem toFOL.evalT_def.s_def.mpr (h : RA.Query.isWellTyped dbi.schema (.s a b q
         (by simp_all [toFOL.schema_def])
 
       simp only [toFOL, FOL.BoundedQuery.Realize]
-      simp_all only [FOL.Query.RealizeMin.ex_def, RA.Query.evaluateT, FOL.outVar.def]
+      simp_all only [FOL.Query.RealizeMin.ex_def, RA.Query.evaluateT, FOL.freeVar.def]
       obtain ⟨left, right⟩ := h
       obtain ⟨left_1, right⟩ := right
       simp_all [FOL.BoundedQuery.Realize, selectionT]

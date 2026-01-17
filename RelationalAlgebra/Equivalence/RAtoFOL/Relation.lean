@@ -8,7 +8,7 @@ theorem toFOL.evalT_def.R_def.mp :
       intro t
       simp_all only [FOL.Query.RealizeMin, FOL.BoundedQuery.Realize, toFOL,
         FOL.BoundedQuery.toFormula.eq_1, FirstOrder.Language.BoundedFormula.realize_rel,
-        Function.comp_apply, FOL.outVar.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
+        Function.comp_apply, FOL.freeVar.def, FirstOrder.Language.Term.realize_var, Sum.elim_inl,
         FOL.BoundedQuery.schema.R_def, FirstOrder.Language.Term.varFinsetLeft.eq_1,
         Finset.mem_singleton, RM.RelationSchema.Dom_sub_fromIndex, Finset.toFinset_coe,
         RA.Query.evaluateT, forall_exists_index]
@@ -25,7 +25,7 @@ theorem toFOL.evalT_def.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) 
 
     simp only [toFOL]
     simp_all only [FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula,
-      FirstOrder.Language.BoundedFormula.realize_rel, Function.comp_apply, FOL.outVar.def,
+      FirstOrder.Language.BoundedFormula.realize_rel, Function.comp_apply, FOL.freeVar.def,
       FirstOrder.Language.Term.realize_var, Sum.elim_inl, FOL.BoundedQuery.schema.R_def,
       FirstOrder.Language.Term.varFinsetLeft.eq_1, Finset.mem_singleton,
       RM.RelationSchema.Dom_sub_fromIndex, Finset.toFinset_coe, FOL.folStruc_apply_RelMap]
