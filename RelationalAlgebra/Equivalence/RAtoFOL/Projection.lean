@@ -3,14 +3,14 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {rs q} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Inhabited μ]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Projection operation. -/
-theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
-  (ih: (ra_to_fol_query dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
-    (ra_to_fol_query dbi.schema (.p rs q)).evaluateT dbi = RA.Query.evaluateT dbi (.p rs q) := by
+theorem toFOL_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
+  (ih: (toFOL dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
+    (toFOL dbi.schema (.p rs q)).evaluateT dbi = RA.Query.evaluateT dbi (.p rs q) := by
       simp at h
       obtain ⟨left, right⟩ := h
-      simp only [FOL.Query.evaluateT, ra_to_fol_query, FOL.Query.RealizeMin.and_def]
-      rw [← ra_to_fol_query_schema left] at right
-      rw [projectQuery.schema_def (ra_to_fol_query dbi.schema q) rs right]
+      simp only [FOL.Query.evaluateT, toFOL, FOL.Query.RealizeMin.and_def]
+      rw [← toFOL_schema left] at right
+      rw [projectQuery.schema_def (toFOL dbi.schema q) rs right]
       simp only [RA.Query.evaluateT, projectionT]
       ext t
       simp_all only [Set.mem_setOf_eq]
@@ -18,14 +18,14 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
       apply Iff.intro
       · intro a
         obtain ⟨h, right_1⟩ := a
-        have ⟨dropSet, h_dropSet⟩ : ∃s, (FOL.BoundedQuery.schema (ra_to_fol_query dbi.schema q) \ rs) = s := by simp
+        have ⟨dropSet, h_dropSet⟩ : ∃s, (FOL.BoundedQuery.schema (toFOL dbi.schema q) \ rs) = s := by simp
         simp_all only [projectQuery.def, Nat.add_zero, forall_true_left]
         rw [FOL.BoundedQuery.Realize.exs_def] at right_1
         obtain ⟨w, hw⟩ := right_1
         unfold projectAttribute at hw
         rw [← ih]
         simp only [FOL.Query.evaluateT.def, FOL.Query.RealizeMin.and_def]
-        have : ∀a' ∈ dropSet, a' ∈ FOL.BoundedQuery.schema (ra_to_fol_query dbi.schema q) \ rs := by
+        have : ∀a' ∈ dropSet, a' ∈ FOL.BoundedQuery.schema (toFOL dbi.schema q) \ rs := by
           intro a_1 a_2
           rw [h_dropSet]
           exact a_2
@@ -104,7 +104,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
         · ext a
           simp_all only [PFun.mem_dom, Finset.mem_coe]
           have h1 := RA.Query.evaluate.validSchema q left w left_1
-          have h2 := (ra_to_fol_query_schema left).symm
+          have h2 := (toFOL_schema left).symm
           apply Iff.intro
           · intro a_1
             obtain ⟨w_1, h⟩ := a_1
@@ -121,7 +121,7 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
           use λ i => (w (RM.RelationSchema.fromIndex i)).get (by
             rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom]
             have := RM.RelationSchema.fromIndex_mem i
-            simp_all [ra_to_fol_query_schema]
+            simp_all [toFOL_schema]
           )
           rw [← ih] at left_1
           simp at left_1
@@ -139,4 +139,4 @@ theorem ra_to_fol_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
             by_cases hc' : (w a).Dom
             all_goals
             . have := by rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom] at hc'; exact hc';
-              simp_all [Part.getOrElse, ra_to_fol_query_schema left]
+              simp_all [Part.getOrElse, toFOL_schema left]
