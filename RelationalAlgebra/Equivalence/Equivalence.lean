@@ -24,22 +24,22 @@ variable {ρ α μ : Type} {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [F
   (raQ : RA.Query ρ α) (h : RA.Query.isWellTyped dbi.schema raQ)
 
 /-- Query evaluation equivalence for a set of tuples -/
-theorem toFOL_evalT (h : RA.Query.isWellTyped dbi.schema raQ) :
+theorem toFOL.evalT_def (h : RA.Query.isWellTyped dbi.schema raQ) :
   (toFOL dbi.schema raQ).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
     induction raQ with
-    | R rn => exact toFOL_evalT.R_def_eq h
-    | s a b sq ih => exact toFOL_evalT.s_def_eq h (ih h.1)
-    | p rs sq ih => exact toFOL_evalT.p_def_eq h (ih h.1)
-    | j q₁ q₂ ih₁ ih₂ => exact toFOL_evalT.j_def_eq h (ih₁ h.1) (ih₂ h.2)
-    | r f q ih => exact toFOL_evalT.r_def_eq h (ih h.1)
-    | u q₁ q₂ ih₁ ih₂ => exact toFOL_evalT.u_def_eq h (ih₁ h.1) (ih₂ h.2.1)
-    | d q nq ih nih => exact toFOL_evalT.d_def_eq h (ih h.1) (nih h.2.1)
+    | R rn => exact toFOL.evalT_def.R_def_eq h
+    | s a b sq ih => exact toFOL.evalT_def.s_def_eq h (ih h.1)
+    | p rs sq ih => exact toFOL.evalT_def.p_def_eq h (ih h.1)
+    | j q₁ q₂ ih₁ ih₂ => exact toFOL.evalT_def.j_def_eq h (ih₁ h.1) (ih₂ h.2)
+    | r f q ih => exact toFOL.evalT_def.r_def_eq h (ih h.1)
+    | u q₁ q₂ ih₁ ih₂ => exact toFOL.evalT_def.u_def_eq h (ih₁ h.1) (ih₂ h.2.1)
+    | d q nq ih nih => exact toFOL.evalT_def.d_def_eq h (ih h.1) (nih h.2.1)
 
 /-- Query evaluation equivalence for `RelationInstance` -/
 theorem toFOL_eval :
   (toFOL dbi.schema raQ).evaluateAdom dbi = raQ.evaluate dbi h := by
     simp [RA.Query.evaluate, FOL.Query.evaluateAdom, h,
-      toFOL_schema, toFOL_evalT raQ h]
+      toFOL.schema_def, toFOL.evalT_def raQ h]
     exact RA.Query.evaluateT.dbi_domain h
 
 /-- Query expressivity equivalence -/

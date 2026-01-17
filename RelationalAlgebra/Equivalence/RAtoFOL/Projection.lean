@@ -3,13 +3,13 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {rs q} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Inhabited μ]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Projection operation. -/
-theorem toFOL_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
+theorem toFOL.evalT_def.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
   (ih: (toFOL dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
     (toFOL dbi.schema (.p rs q)).evaluateT dbi = RA.Query.evaluateT dbi (.p rs q) := by
       simp at h
       obtain ⟨left, right⟩ := h
       simp only [FOL.Query.evaluateT, toFOL, FOL.Query.RealizeMin.and_def]
-      rw [← toFOL_schema left] at right
+      rw [← toFOL.schema_def left] at right
       rw [projectQuery.schema_def (toFOL dbi.schema q) rs right]
       simp only [RA.Query.evaluateT, projectionT]
       ext t
@@ -104,7 +104,7 @@ theorem toFOL_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
         · ext a
           simp_all only [PFun.mem_dom, Finset.mem_coe]
           have h1 := RA.Query.evaluate.validSchema q left w left_1
-          have h2 := (toFOL_schema left).symm
+          have h2 := (toFOL.schema_def left).symm
           apply Iff.intro
           · intro a_1
             obtain ⟨w_1, h⟩ := a_1
@@ -121,7 +121,7 @@ theorem toFOL_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
           use λ i => (w (RM.RelationSchema.fromIndex i)).get (by
             rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom]
             have := RM.RelationSchema.fromIndex_mem i
-            simp_all [toFOL_schema]
+            simp_all [toFOL.schema_def]
           )
           rw [← ih] at left_1
           simp at left_1
@@ -139,4 +139,4 @@ theorem toFOL_evalT.p_def_eq (h : RA.Query.isWellTyped dbi.schema (.p rs q))
             by_cases hc' : (w a).Dom
             all_goals
             . have := by rw [@Part.dom_iff_mem, ← PFun.mem_dom, w_dom] at hc'; exact hc';
-              simp_all [Part.getOrElse, toFOL_schema left]
+              simp_all [Part.getOrElse, toFOL.schema_def left]

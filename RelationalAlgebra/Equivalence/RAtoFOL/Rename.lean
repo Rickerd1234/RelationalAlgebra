@@ -3,7 +3,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {f q} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Inhabited μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
-theorem toFOL_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
+theorem toFOL.evalT_def.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: ∀t, (toFOL dbi.schema q).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q) :
     ∀t, (toFOL dbi.schema (.r f q)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.r f q) := by
       simp only [RA.Query.isWellTyped, toFOL, FOL.Query.RealizeMin.and_def,
@@ -44,15 +44,15 @@ theorem toFOL_evalT.r_def.mp (h : RA.Query.isWellTyped dbi.schema (.r f q))
           . simp_all [Part.getOrElse_of_not_dom]
 
 /-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
-theorem toFOL_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
+theorem toFOL.evalT_def.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih : ∀t ∈ RA.Query.evaluateT dbi q, (toFOL dbi.schema q).RealizeMin dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.r f q) → (toFOL dbi.schema (.r f q)).RealizeMin dbi t := by
       intro t h_RA_eval
       rw [FOL.Query.RealizeMin.and_def]
-      apply And.intro (by simp_all only [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval, toFOL_schema])
+      apply And.intro (by simp_all only [RA.Query.evaluate.validSchema (.r f q) h t h_RA_eval, toFOL.schema_def])
 
       simp only [toFOL]
-      simp_all only [toFOL_schema, FOL.Query.RealizeMin.and_def, RA.Query.isWellTyped,
+      simp_all only [toFOL.schema_def, FOL.Query.RealizeMin.and_def, RA.Query.isWellTyped,
         RA.Query.evaluateT, renameT, Set.mem_setOf_eq]
       obtain ⟨left, right⟩ := h
       simp_all only [FOL.BoundedQuery.Realize.relabel_formula,
@@ -69,14 +69,14 @@ theorem toFOL_evalT.r_def.mpr (h : RA.Query.isWellTyped dbi.schema (.r f q))
       . exact RA.Query.evaluate.validSchema q left (Sum.elim t default ∘ Sum.inl ∘ f) h_RA_eval
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Rename operation. -/
-theorem toFOL_evalT.r_def_eq (h : RA.Query.isWellTyped dbi.schema (.r f q))
+theorem toFOL.evalT_def.r_def_eq (h : RA.Query.isWellTyped dbi.schema (.r f q))
   (ih: (toFOL dbi.schema q).evaluateT dbi = RA.Query.evaluateT dbi q) :
     (toFOL dbi.schema (.r f q)).evaluateT dbi = RA.Query.evaluateT dbi (.r f q) := by
       ext t
       apply Iff.intro
-      . exact toFOL_evalT.r_def.mp h
+      . exact toFOL.evalT_def.r_def.mp h
           (λ t' => ((Set.ext_iff.mp ih) t').mp)
           t
-      . exact toFOL_evalT.r_def.mpr h
+      . exact toFOL.evalT_def.r_def.mpr h
           (λ t' => ((Set.ext_iff.mp ih) t').mpr)
           t

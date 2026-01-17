@@ -3,7 +3,7 @@ import RelationalAlgebra.Equivalence.RAtoFOL.Conversion
 variable {rn} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Inhabited μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
-theorem toFOL_evalT.R_def.mp :
+theorem toFOL.evalT_def.R_def.mp :
     ∀t, (toFOL dbi.schema (.R rn)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.R rn) := by
       intro t
       simp_all only [FOL.Query.RealizeMin, FOL.BoundedQuery.Realize, toFOL,
@@ -18,10 +18,10 @@ theorem toFOL_evalT.R_def.mp :
       apply (FOL.ArityToTuple.def_fromIndex h).symm
 
 /-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
-theorem toFOL_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
+theorem toFOL.evalT_def.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
   ∀t, t ∈ RA.Query.evaluateT dbi (.R rn) → (toFOL dbi.schema (.R rn)).RealizeMin dbi t := by
     intro t h_RA_eval
-    apply Exists.intro (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval, toFOL_schema])
+    apply Exists.intro (by simp_all [RA.Query.evaluate.validSchema (.R rn) h t h_RA_eval, toFOL.schema_def])
 
     simp only [toFOL]
     simp_all only [FOL.BoundedQuery.Realize, FOL.BoundedQuery.toFormula,
@@ -34,9 +34,9 @@ theorem toFOL_evalT.R_def.mpr (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
     . exact h_RA_eval
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for a Relation. -/
-theorem toFOL_evalT.R_def_eq (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
+theorem toFOL.evalT_def.R_def_eq (h : RA.Query.isWellTyped dbi.schema (.R rn)) :
     (toFOL dbi.schema (.R rn)).evaluateT dbi = RA.Query.evaluateT dbi (.R rn) := by
       ext t
       apply Iff.intro
-      . exact toFOL_evalT.R_def.mp t
-      . exact toFOL_evalT.R_def.mpr h t
+      . exact toFOL.evalT_def.R_def.mp t
+      . exact toFOL.evalT_def.R_def.mpr h t

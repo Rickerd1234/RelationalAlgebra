@@ -16,7 +16,7 @@ def toFOL (dbs : ρ → Finset α) : RA.Query ρ α → FOL.Query dbs
   | .d sq nq => .and (toFOL dbs sq) (.not (toFOL dbs nq))
 
 /-- Theorem to show that the conversion maintains the schema. -/
-theorem toFOL_schema {dbs : ρ → Finset α} {raQ : RA.Query ρ α} (h : raQ.isWellTyped dbs) :
+theorem toFOL.schema_def {dbs : ρ → Finset α} {raQ : RA.Query ρ α} (h : raQ.isWellTyped dbs) :
   (toFOL dbs raQ).schema = raQ.schema dbs := by
     induction raQ with
     | R rn =>

@@ -4,7 +4,7 @@ import RelationalAlgebra.FOL.RealizeProperties
 variable {q₁ q₂} {dbi : RM.DatabaseInstance ρ α μ} [LinearOrder α] [struc : FOL.folStruc dbi] [Inhabited μ]
 
 /-- One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
-theorem toFOL_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
+theorem toFOL.evalT_def.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁: ∀t, (toFOL dbi.schema q₁).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₁)
   (ih₂: ∀t, (toFOL dbi.schema q₂).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi q₂) :
     ∀t, (toFOL dbi.schema (.j q₁ q₂)).RealizeMin dbi t → t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) := by
@@ -17,9 +17,9 @@ theorem toFOL_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂)
         FirstOrder.Language.BoundedFormula.realize_inf, and_imp]
       intro a_2 a_3 a_4
       have h_dom : t.Dom = ↑(q₁.schema dbi.schema) ∪ ↑(q₂.schema dbi.schema) := by
-        rw [← toFOL_schema h.1, ← toFOL_schema h.2]; exact a_2
+        rw [← toFOL.schema_def h.1, ← toFOL.schema_def h.2]; exact a_2
 
-      have z' : ↑(toFOL dbi.schema q₁).schema ⊆ t.Dom := by simp_all [toFOL_schema]
+      have z' : ↑(toFOL dbi.schema q₁).schema ⊆ t.Dom := by simp_all [toFOL.schema_def]
       use t.restrict z'
       apply And.intro
       . apply ih₁
@@ -34,7 +34,7 @@ theorem toFOL_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂)
             . rfl
             . simp_all only [FOL.BoundedQuery.schema.and_def, Finset.coe_union]
 
-      . have z' : ↑(toFOL dbi.schema q₂).schema ⊆ t.Dom := by simp_all [toFOL_schema]
+      . have z' : ↑(toFOL dbi.schema q₂).schema ⊆ t.Dom := by simp_all [toFOL.schema_def]
         use t.restrict z'
         apply And.intro
         . apply ih₂
@@ -67,11 +67,11 @@ theorem toFOL_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂)
             apply Part.eq_none_iff.mpr
             intro v
             by_cases c1 : (a ∈ q₁.schema dbi.schema)
-            . simp_all only [FOL.Query.RealizeMin, toFOL_schema, forall_exists_index,
+            . simp_all only [FOL.Query.RealizeMin, toFOL.schema_def, forall_exists_index,
               Set.subset_union_left, Set.subset_union_right, forall_const, not_false_eq_true,
               implies_true]
             . by_cases c2 : (a ∈ q₂.schema dbi.schema)
-              . simp_all only [FOL.Query.RealizeMin, toFOL_schema, forall_exists_index,
+              . simp_all only [FOL.Query.RealizeMin, toFOL.schema_def, forall_exists_index,
                 Set.subset_union_left, Set.subset_union_right, not_true_eq_false, implies_true,
                 forall_const, not_false_eq_true]
               . by_contra hc
@@ -81,7 +81,7 @@ theorem toFOL_evalT.j_def.mp (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂)
                 use v
 
 /-- (Reverse) One-sided proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
-theorem toFOL_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
+theorem toFOL.evalT_def.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁ : ∀t ∈ RA.Query.evaluateT dbi q₁, (toFOL dbi.schema q₁).RealizeMin dbi t)
   (ih₂ : ∀t ∈ RA.Query.evaluateT dbi q₂, (toFOL dbi.schema q₂).RealizeMin dbi t) :
     ∀t, t ∈ RA.Query.evaluateT dbi (.j q₁ q₂) → (toFOL dbi.schema (.j q₁ q₂)).RealizeMin dbi t := by
@@ -89,7 +89,7 @@ theorem toFOL_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂
       have t_Dom : t.Dom = q₁.schema dbi.schema ∪ q₂.schema dbi.schema := by
         exact RA.Query.evaluate.validSchema (.j q₁ q₂) h t h_RA_eval
 
-      apply Exists.intro (by simp_all [toFOL_schema])
+      apply Exists.intro (by simp_all [toFOL.schema_def])
 
       simp only [toFOL]
       simp_all only [RA.Query.evaluateT, joinT, joinSingleT, PFun.mem_dom, forall_exists_index, Set.mem_union,
@@ -129,10 +129,10 @@ theorem toFOL_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂
               exact a_1
 
         rw [← FOL.BoundedQuery.Realize]
-        rw [← FOL.BoundedQuery.Realize.enlarge h_sub ht' (by simp [toFOL_schema left, w_Dom])]
+        rw [← FOL.BoundedQuery.Realize.enlarge h_sub ht' (by simp [toFOL.schema_def left, w_Dom])]
         . exact z.2
-        . simp [toFOL_schema left, z.1]
-        . simp [t_Dom, toFOL_schema left, toFOL_schema right]
+        . simp [toFOL.schema_def left, z.1]
+        . simp [t_Dom, toFOL.schema_def left, toFOL.schema_def right]
 
       · have w_Dom : w₂.Dom = q₂.schema dbi.schema := by
           exact RA.Query.evaluate.validSchema q₂ right w₂ hw₂
@@ -160,23 +160,23 @@ theorem toFOL_evalT.j_def.mpr (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂
               exact a_1
 
         rw [← FOL.BoundedQuery.Realize]
-        rw [← FOL.BoundedQuery.Realize.enlarge h_sub ht' (by simp [toFOL_schema right, w_Dom])]
+        rw [← FOL.BoundedQuery.Realize.enlarge h_sub ht' (by simp [toFOL.schema_def right, w_Dom])]
         . exact z.2
-        . simp [toFOL_schema right, z.1]
-        . simp [t_Dom, toFOL_schema left, toFOL_schema right]
+        . simp [toFOL.schema_def right, z.1]
+        . simp [t_Dom, toFOL.schema_def left, toFOL.schema_def right]
 
 /-- Proof for the tuple evaluation equivalence of the RA to FOL conversion for the Join operation. -/
-theorem toFOL_evalT.j_def_eq (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
+theorem toFOL.evalT_def.j_def_eq (h : RA.Query.isWellTyped dbi.schema (.j q₁ q₂))
   (ih₁ : (toFOL dbi.schema q₁).evaluateT dbi = RA.Query.evaluateT dbi q₁)
   (ih₂ : (toFOL dbi.schema q₂).evaluateT dbi = RA.Query.evaluateT dbi q₂) :
     (toFOL dbi.schema (.j q₁ q₂)).evaluateT dbi = RA.Query.evaluateT dbi (.j q₁ q₂) := by
       ext t
       apply Iff.intro
-      . exact toFOL_evalT.j_def.mp h
+      . exact toFOL.evalT_def.j_def.mp h
           (λ t' => ((Set.ext_iff.mp ih₁) t').mp)
           (λ t' => ((Set.ext_iff.mp ih₂) t').mp)
           t
-      . exact toFOL_evalT.j_def.mpr h
+      . exact toFOL.evalT_def.j_def.mpr h
           (λ t' => ((Set.ext_iff.mp ih₁) t').mpr)
           (λ t' => ((Set.ext_iff.mp ih₂) t').mpr)
           t
