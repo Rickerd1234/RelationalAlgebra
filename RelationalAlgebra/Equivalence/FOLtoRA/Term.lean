@@ -53,7 +53,7 @@ Map an attribute `ra` (part of the schema for relation `rn`) to the correspondin
 Note: `ra` should be in schema `dbs rn` and `brs` should be disjoint from the free variables
 -/
 def renamer (ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)) (brs : Finset α) (ra : α) : α :=
-  ((RelationSchema.index? (dbs rn) ra).map (TermtoAtt brs ∘ ts)).getD (default)
+  ((RelationSchema.index? (dbs rn) ra).map (TermtoAtt brs ∘ ts)).getD default
 
 theorem renamer.notMem_def {ts : Fin (dbs rn).card → (fol dbs).Term (α ⊕ Fin n)} (h : ra ∉ dbs rn) :
   renamer ts brs ra = default := by

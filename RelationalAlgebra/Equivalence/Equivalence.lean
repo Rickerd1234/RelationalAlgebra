@@ -25,7 +25,7 @@ variable {ρ α μ : Type} {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [F
 
 /-- Query evaluation equivalence for a set of tuples -/
 theorem toFOL.evalT_def (h : RA.Query.isWellTyped dbi.schema raQ) :
-  (toFOL dbi.schema raQ).evaluateT dbi = RA.Query.evaluateT dbi raQ := by
+  (toFOL dbi.schema raQ).evaluateT dbi = raQ.evaluateT dbi := by
     induction raQ with
     | R rn => exact toFOL.evalT_def.R_def_eq h
     | s a b sq ih => exact toFOL.evalT_def.s_def_eq h (ih h.1)
