@@ -21,10 +21,10 @@ Requires:
 section RAtoFOL
 
 variable {ρ α μ : Type} {dbi : DatabaseInstance ρ α μ} [LinearOrder α] [FOL.folStruc dbi] [Inhabited μ]
-  (raQ : RA.Query ρ α) (h : RA.Query.isWellTyped dbi.schema raQ)
+  (raQ : RA.Query ρ α) (h : raQ.isWellTyped dbi.schema)
 
 /-- Query evaluation equivalence for a set of tuples -/
-theorem toFOL.evalT_def (h : RA.Query.isWellTyped dbi.schema raQ) :
+theorem toFOL.evalT_def (h : raQ.isWellTyped dbi.schema) :
   (toFOL dbi.schema raQ).evaluateT dbi = raQ.evaluateT dbi := by
     induction raQ with
     | R rn => exact toFOL.evalT_def.R_def_eq h
@@ -94,7 +94,7 @@ theorem queryToRA_eval (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + F
 /-- Query expressivity equivalence -/
 theorem fol_to_ra_equivalence (brs : Finset α) (brs_disj : folQ.schema ∩ brs = ∅) (brs_depth : 0 + FOL.depth (toPrenex folQ) < brs.card) (brs_def : default ∉ brs)
   (hμ : ∀v, v ∈ dbi.domain) (hdisj : FOL.disjointSchema brs (folQ.toFormula)) (hdef : default ∉ folQ.schema) :
-    ∃raQ : RA.Query _ _, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
+    ∃raQ : RA.Query ρ α, ∃(h' : raQ.isWellTyped dbi.schema), raQ.evaluate dbi h' = folQ.evaluateAdom dbi := by
       use queryToRA folQ brs
       use queryToRA.isWellTyped_def folQ brs_disj brs_depth
       exact queryToRA_eval folQ brs brs_disj brs_depth brs_def hμ hdisj hdef
