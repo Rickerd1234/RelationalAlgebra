@@ -83,7 +83,7 @@ section rename
 /-- Rename on `S : Set` of tuples using function `f`. Result: tuples `t'` where `t' ∘ f ∈ S`  -/
 @[simp]
 def renameT (inTuples : Set (α →. μ)) (f : α → α) : Set (α →. μ) :=
-  { t' | t' ∘ f ∈ inTuples }
+  { t | t ∘ f ∈ inTuples }
 
 theorem renameDom {f t} (inst : RelationInstance α μ) (f_sur : f.Surjective) (h : t ∈ renameT inst.tuples f) [DecidableEq α]:
   PFun.Dom t = inst.schema.image f := by
