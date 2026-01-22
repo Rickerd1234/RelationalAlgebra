@@ -33,8 +33,8 @@ def selection (inst : RelationInstance α μ) (x y : α) : RelationInstance α �
 
 /-- Difference on `S₁ S₂ : Set` of tuples. Result: tuples `t` where `t ∈ S₁ ∧ t ∉ S₂`  -/
 @[simp]
-def differenceT (inTuplesA inTuplesB : Set (α →. μ)) : Set (α →. μ) :=
-  inTuplesA \ inTuplesB
+def differenceT (inTuples inTuples' : Set (α →. μ)) : Set (α →. μ) :=
+  inTuples \ inTuples'
 
 /-- Difference on `R₁ R₂ : RelationInstance` (`R₁ - R₂`) -/
 def difference (inst inst' : RelationInstance α μ) : RelationInstance α μ :=
@@ -179,11 +179,11 @@ theorem joinSingleT.restrict (t : α →. μ) {h : rs ⊆ t.Dom} :
 
 /--
 Join on `S₁ S₂ : Set` of tuples.
-Result: tuples which are the natural join of two arbitrary tuples in `inTuples1` and `inTuples2`
+Result: tuples which are the natural join of two arbitrary tuples in `inTuples` and `inTuples'`
 -/
 @[simp]
-def joinT (inTuples1 inTuples2 : Set (α →. μ)) : Set (α →. μ) :=
-  { t | ∃ t1 ∈ inTuples1, ∃ t2 ∈ inTuples2,
+def joinT (inTuples inTuples' : Set (α →. μ)) : Set (α →. μ) :=
+  { t | ∃ t1 ∈ inTuples, ∃ t2 ∈ inTuples',
     joinSingleT t t1 t2
   }
 
